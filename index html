@@ -8,24 +8,48 @@
 </head>
 <body>
 
-    <body>
-
     <div class="sidebar">
-        <h2>FANatical</h2>
-        <ul>
-            <li onclick="showPage('home')">Home</li>
-            <li onclick="showPage('news')">News</li>
-            <li onclick="showPage('cheer')">Cheer</li>
-            <li onclick="showPage('events')">Events</li>
-            <li onclick="showPage('quiz')">Quiz</li>
-            <li onclick="showPage('profile')">Profile</li>
+        <div class="sidebar-logo">
+            <img src="images/fanatical.png" alt="FANatical logo">
+        </div>
+
+        <ul class="nav-top">
+            <li onclick="showPage('home')"><img src="images/home.png" alt="Home">Home</li>
+            <li onclick="showPage('news')"><img src="images/news.png" alt="News">News</li>
+            <li onclick="showPage('events')"><img src="images/events.png" alt="Events">Events</li>
+            <li onclick="showPage('cheer')"><img src="images/cheer.png" alt="Cheer">Cheer</li>
+            <li onclick="showPage('quiz')"><img src="images/quiz.jpeg" alt="Quiz">Quiz</li>
+        </ul>
+
+        <ul class="nav-bottom">
+            <li onclick="showPage('profile')"><img src="images/profile.png" alt="Profile">Profile</li>
+            <li><img src="images/settings.png" alt="Settings">Settings</li>
         </ul>
     </div>
 
     <div class="main">
+        <div class="topbar">
+            <div class="profile-icon" onclick="showPage('profile')">
+                <img src="images/profile.png" alt="Profile">
+            </div>
+        </div>
+
         <div id="home" class="page">
-            <h1>Home</h1>
-            <div class="content-box">Home dashboard</div>
+            <div class="team-bar">
+                <span>Oilers</span>
+                <span>Elks</span>
+                <span>Jays</span>
+                <span>More</span>
+            </div>
+
+            <div class="hero-box">Main image / user banner</div>
+
+            <div class="home-grid">
+                <div class="content-box">Latest News</div>
+                <div class="content-box">Upcoming Events</div>
+                <div class="content-box">Live Cheer</div>
+                <div class="content-box">Featured Quiz</div>
+            </div>
         </div>
 
         <div id="news" class="page" style="display:none;">
@@ -34,16 +58,16 @@
             <div class="content-box">News content area</div>
         </div>
 
-        <div id="cheer" class="page" style="display:none;">
-            <h1>Cheer</h1>
-            <div class="subnav">Browse | Create | Live | My Cheers</div>
-            <div class="content-box">Cheer content area</div>
-        </div>
-
         <div id="events" class="page" style="display:none;">
             <h1>Events</h1>
             <div class="subnav">Calendar | Tailgates | Watch Parties | Check-In</div>
             <div class="content-box">Events content area</div>
+        </div>
+
+        <div id="cheer" class="page" style="display:none;">
+            <h1>Cheer</h1>
+            <div class="subnav">Browse | Create | Live | My Cheers</div>
+            <div class="content-box">Cheer content area</div>
         </div>
 
         <div id="quiz" class="page" style="display:none;">
@@ -62,12 +86,10 @@
     <script>
         function showPage(pageId) {
             const pages = document.querySelectorAll('.page');
-            pages.forEach(p => p.style.display = 'none');
+            pages.forEach(page => page.style.display = 'none');
             document.getElementById(pageId).style.display = 'block';
         }
     </script>
-
-</body>
 
 </body>
 </html>
