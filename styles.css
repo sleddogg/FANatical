@@ -28,3 +28,21 @@ body {
     margin-left: 220px;
     padding: 20px;
 }
+.page h1 {
+    margin-top: 0;
+}
+
+.subnav {
+    margin: 20px 0;
+    padding: 12px;
+    background-color: #eee;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.content-box {
+    min-height: 300px;
+    padding: 20px;
+    background-color: #f4f4f4;
+    border-radius: 8px;
+}
