@@ -10,18 +10,33 @@
 
     <div class="sidebar">
         <h2>FANatical</h2>
+
+        <!-- UPDATED UL -->
         <ul>
-            <li>Home</li>
-            <li>Cheer</li>
-            <li>Events</li>
-            <li>Profile</li>
+            <li onclick="showPage('home')">Home</li>
+            <li onclick="showPage('cheer')">Cheer</li>
+            <li onclick="showPage('events')">Events</li>
+            <li onclick="showPage('profile')">Profile</li>
         </ul>
     </div>
 
+    <!-- UPDATED MAIN -->
     <div class="main">
-        <h1>Home</h1>
-        <p>Welcome to FANatical</p>
+        <div id="home" class="page">Welcome to FANatical</div>
+        <div id="cheer" class="page" style="display:none;">Cheer Page</div>
+        <div id="events" class="page" style="display:none;">Events Page</div>
+        <div id="profile" class="page" style="display:none;">Profile Page</div>
     </div>
+
+    <!-- SCRIPT GOES HERE -->
+    <script>
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.style.display = 'none');
+
+            document.getElementById(pageId).style.display = 'block';
+        }
+    </script>
 
 </body>
 </html>
