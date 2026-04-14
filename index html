@@ -12,21 +12,46 @@
         <h2>FANatical</h2>
 
         <!-- UPDATED UL -->
-        <ul>
-            <li onclick="showPage('home')">Home</li>
-            <li onclick="showPage('cheer')">Cheer</li>
-            <li onclick="showPage('events')">Events</li>
-            <li onclick="showPage('profile')">Profile</li>
-        </ul>
+     <ul>
+    <li onclick="showPage('home')">Home</li>
+    <li onclick="showPage('news')">News</li>
+    <li onclick="showPage('cheer')">Cheer</li>
+    <li onclick="showPage('events')">Events</li>
+    <li onclick="showPage('profile')">Profile</li>
+</ul>
+
+<div class="main">
+
+    <div id="home" class="page">
+        <h1>Home</h1>
+        <div class="content-box">Home dashboard</div>
     </div>
 
-    <!-- UPDATED MAIN -->
-    <div class="main">
-        <div id="home" class="page">Welcome to FANatical</div>
-        <div id="cheer" class="page" style="display:none;">Cheer Page</div>
-        <div id="events" class="page" style="display:none;">Events Page</div>
-        <div id="profile" class="page" style="display:none;">Profile Page</div>
+    <div id="news" class="page" style="display:none;">
+        <h1>News</h1>
+        <div class="subnav">My Feed | Discover | Saved</div>
+        <div class="content-box">News content area</div>
     </div>
+
+    <div id="cheer" class="page" style="display:none;">
+        <h1>Cheer</h1>
+        <div class="subnav">Browse | Create | Live | My Cheers</div>
+        <div class="content-box">Cheer content area</div>
+    </div>
+
+    <div id="events" class="page" style="display:none;">
+        <h1>Events</h1>
+        <div class="subnav">Calendar | Tailgates | Watch Parties | Check-In</div>
+        <div class="content-box">Events content area</div>
+    </div>
+
+    <div id="profile" class="page" style="display:none;">
+        <h1>Profile</h1>
+        <div class="subnav">Card | FANcave | Game Face | Memorabilia</div>
+        <div class="content-box">Profile content area</div>
+    </div>
+
+</div>
 
     <!-- SCRIPT GOES HERE -->
     <script>
