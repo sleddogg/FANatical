@@ -45,7 +45,8 @@
     </div>
 
     <div class="hero-box">
-        Main image / user banner
+  <img src="/images/logos/main-image.jpg" alt="Main">
+</div>
     </div>
 
 </div>
