@@ -5,19 +5,20 @@ body {
 }
 
 .sidebar {
-    position: fixed;
-    left: 20px;
-    top: 20px;
-    width: 210px;
-    height: calc(100vh - 40px);
-    background-color: #111111;
-    color: white;
-    padding: 20px 15px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    border-radius: 16px;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 210px;
+  height: calc(100% - 32px);
+  background-color: rgba(17, 17, 17, 0.85);
+  color: white;
+  padding: 20px 15px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  border-radius: 16px;
+  z-index: 2;
 }
 
 .sidebar-logo {
@@ -54,7 +55,7 @@ body {
 }
 
 .main {
-    margin-left: 250px;
+    margin-left: 0;
     padding: 20px 24px 20px 20px;
     box-sizing: border-box;
 }
