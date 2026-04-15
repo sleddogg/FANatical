@@ -34,23 +34,20 @@
             </div>
         </div>
 
-        <div id="home" class="page">
-            <div class="team-bar">
-                <span>Oilers</span>
-                <span>Elks</span>
-                <span>Jays</span>
-                <span>More</span>
-            </div>
+     <div id="home" class="page">
 
-            <div class="hero-box">Main image / user banner</div>
+    <div class="team-bar">
+        <span>Oilers</span>
+        <span>Elks</span>
+        <span>Jays</span>
+        <span>More</span>
+    </div>
 
-            <div class="home-grid">
-                <div class="content-box">Latest News</div>
-                <div class="content-box">Upcoming Events</div>
-                <div class="content-box">Live Cheer</div>
-                <div class="content-box">Featured Quiz</div>
-            </div>
-        </div>
+    <div class="hero-box">
+        Main image / user banner
+    </div>
+
+</div>
 
         <div id="news" class="page" style="display:none;">
             <h1>News</h1>
