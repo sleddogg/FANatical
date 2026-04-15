@@ -9,9 +9,6 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="images/fanatical.png" alt="FANatical logo">
-        </div>
 
         <ul class="nav-top">
             <li onclick="showPage('home')"><img src="images/home.png" alt="Home">Home</li>
