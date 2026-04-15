@@ -71,7 +71,7 @@ body {
   width: 100px;
   height: calc(100% - 44px);
   background: #ffffff;
-box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+box-shadow: 0 6px 24px rgba(0,0,0,0.2);
   border-radius: 28px;
   display: flex;
   flex-direction: column;
@@ -104,6 +104,7 @@ box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   height: 52px;
   object-fit: contain;
   display: block;
+  filter: brightness(0);
 }
 
 /* Hidden labels */
