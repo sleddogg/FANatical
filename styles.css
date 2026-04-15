@@ -103,12 +103,13 @@ body {
 }
 
 .hero-box {
-  height: 180px;
   border-radius: 12px;
   margin-bottom: 20px;
   width: 100%;
   position: relative;
   overflow: hidden;
+aspect-ratio: 16/9;
+    
 }
 .hero-box img {
   width: 100%;
