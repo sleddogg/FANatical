@@ -19,6 +19,8 @@ body {
   justify-content: flex-start;
   border-radius: 16px;
   z-index: 2;
+  overflow-y: auto;
+  overflow-x: hidden;  
 }
 
 .sidebar-logo {
