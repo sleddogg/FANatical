@@ -66,6 +66,10 @@ body {
     margin-bottom: 20px;
     min-height: 50px;
 }
+.topbar-left img {
+    height: 40px;
+    object-fit: contain;
+}
 
 .profile-icon {
     width: 44px;
