@@ -51,9 +51,10 @@ body {
 }
 
 .sidebar li img {
-    width: 20px;
-    height: 20px;
+    width: 36px;
+    height: 36px;
     object-fit: contain;
+    display: block;
 }
 
 .main {
