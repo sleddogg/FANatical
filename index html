@@ -26,10 +26,14 @@
 
     <div class="main">
         <div class="topbar">
-            <div class="profile-icon" onclick="showPage('profile')">
-                <img src="images/profile.png" alt="Profile">
-            </div>
-        </div>
+    <div class="topbar-left">
+        <img src="images/fanatical.png" alt="FANatical">
+    </div>
+
+    <div class="profile-icon" onclick="showPage('profile')">
+        <img src="images/profile.png" alt="Profile">
+    </div>
+</div>
 
      <div id="home" class="page">
 
