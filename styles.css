@@ -127,3 +127,10 @@ body {
     background-color: #f4f4f4;
     border-radius: 8px;
 }
+.nav-top {
+    margin-bottom: 30px;
+}
+
+.nav-bottom {
+    margin-top: auto;
+}
