@@ -8,22 +8,6 @@
 </head>
 <body>
 
-    <div class="sidebar">
-
-        <ul class="nav-top">
-            <li onclick="showPage('home')"><img src="images/icons/home.png" alt="Home">Home</li>
-            <li onclick="showPage('news')"><img src="images/icons/news.png" alt="News">News</li>
-            <li onclick="showPage('events')"><img src="images/icons/events.png" alt="Events">Events</li>
-            <li onclick="showPage('cheer')"><img src="images/icons/cheer.png" alt="Cheer">Cheer</li>
-            <li onclick="showPage('quiz')"><img src="images/icons/quiz.jpeg" alt="Quiz">Quiz</li>
-        </ul>
-
-        <ul class="nav-bottom">
-            <li onclick="showPage('profile')"><img src="images/icons/profile.png" alt="Profile">Profile</li>
-            <li><img src="images/icons/settings.png" alt="Settings">Settings</li>
-        </ul>
-    </div>
-
     <div class="main">
         <div class="topbar">
     <div class="topbar-left">
@@ -46,6 +30,21 @@
 
     <div class="hero-box">
   <img src="images/logos/main-image.jpg" alt="Main">
+<div class="sidebar">
+
+        <ul class="nav-top">
+            <li onclick="showPage('home')"><img src="images/icons/home.png" alt="Home">Home</li>
+            <li onclick="showPage('news')"><img src="images/icons/news.png" alt="News">News</li>
+            <li onclick="showPage('events')"><img src="images/icons/events.png" alt="Events">Events</li>
+            <li onclick="showPage('cheer')"><img src="images/icons/cheer.png" alt="Cheer">Cheer</li>
+            <li onclick="showPage('quiz')"><img src="images/icons/quiz.jpeg" alt="Quiz">Quiz</li>
+        </ul>
+
+        <ul class="nav-bottom">
+            <li onclick="showPage('profile')"><img src="images/icons/profile.png" alt="Profile">Profile</li>
+            <li><img src="images/icons/settings.png" alt="Settings">Settings</li>
+        </ul>
+    </div>
 </div>
     </div>
 
