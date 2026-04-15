@@ -70,9 +70,9 @@ body {
   left: 22px;
   width: 100px;
   height: calc(100% - 44px);
-  background: red !important;
-box-shadow: 0 6px 24px rgba(0,0,0,0.2);
-  border-radius: 28pxu;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  border-radius: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -111,7 +111,4 @@ box-shadow: 0 6px 24px rgba(0,0,0,0.2);
 .nav-label {
   position: absolute;
   left: -9999px;
-}
-.sidebar {
-  background: red !important;
 }
