@@ -70,7 +70,8 @@ body {
   left: 22px;
   width: 100px;
   height: calc(100% - 44px);
-  background: #f4f4f4;
+  background: #ffffff;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   border-radius: 28px;
   display: flex;
   flex-direction: column;
