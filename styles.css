@@ -56,11 +56,11 @@ body {
 
 /* Sidebar */
 .sidebar {
-  position: fixed;
+  position: absolute;
   top: 16px;
   left: 16px;
   width: 72px;
-  height: calc(100vh - 32px);
+  height: calc(100% - 32px);
 
   background: rgba(255,255,255,0.88);
   border: 1px solid rgba(0,0,0,0.08);
