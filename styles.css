@@ -110,6 +110,8 @@ body {
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
+    width: 100%;
+    display: block;
 }
 
 .home-grid {
