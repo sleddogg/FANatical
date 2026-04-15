@@ -1,4 +1,7 @@
 body {
+  background: lime !important;
+}
+body {
   margin: 0;
   font-family: Arial, sans-serif;
   background-color: #efefef;
