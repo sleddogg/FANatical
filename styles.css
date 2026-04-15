@@ -58,6 +58,7 @@ body {
     margin-left: 0;
     padding: 20px 24px 20px 20px;
     box-sizing: border-box;
+    width: 100%;
 }
 
 .topbar {
@@ -67,7 +68,9 @@ body {
     margin-bottom: 20px;
     min-height: 50px;
     width: 100%;
+    max-width: none;
 }
+
 .topbar-left img {
     height: 40px;
     object-fit: contain;
