@@ -66,12 +66,6 @@
     <img src="images/icons/settings.png" alt="Settings">
     <span class="nav-label">Settings</span>
   </li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
-<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
         </ul>
     </div>
 </div>
