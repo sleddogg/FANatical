@@ -1,117 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FANatical</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FANatical</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div class="main">
-        <div class="topbar">
-    <div class="topbar-left">
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
         <img src="images/icons/fanatical.png" alt="FANatical">
-    </div>
-
-    <div class="profile-icon" onclick="showPage('profile')">
+      </div>
+      <div class="profile-icon" onclick="showPage('profile')">
         <img src="images/icons/profile.png" alt="Profile">
+      </div>
     </div>
-</div>
 
-     <div id="home" class="page">
-
-    <div class="team-bar">
+    <div id="home" class="page">
+      <div class="team-bar">
         <span>Oilers</span>
         <span>Elks</span>
         <span>Jays</span>
         <span>Add Team</span>
+      </div>
+
+      <div class="hero-box">
+        <img src="images/logos/main-image.jpg" alt="Main">
+
+        <div class="sidebar">
+          <ul class="nav-top">
+            <li onclick="showPage('home')"><img src="images/icons/home.png"><span class="nav-label">Home</span></li>
+            <li onclick="showPage('news')"><img src="images/icons/news.png"><span class="nav-label">News</span></li>
+            <li onclick="showPage('events')"><img src="images/icons/events.png"><span class="nav-label">Events</span></li>
+            <li onclick="showPage('cheer')"><img src="images/icons/cheer.png"><span class="nav-label">Cheer</span></li>
+            <li onclick="showPage('quiz')"><img src="images/icons/quiz.jpeg"><span class="nav-label">Quiz</span></li>
+            <li onclick="showPage('profile')"><img src="images/icons/profile.png"><span class="nav-label">Profile</span></li>
+            <li><img src="images/icons/settings.png"><span class="nav-label">Settings</span></li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <div class="hero-box">
-  <img src="images/logos/main-image.jpg" alt="Main">
-<div class="sidebar">
-
-        <ul class="nav-top">
-  <li onclick="showPage('home')">
-    <img src="images/icons/home.png" alt="Home">
-    <span class="nav-label">Home</span>
-  </li>
-
-  <li onclick="showPage('news')">
-    <img src="images/icons/news.png" alt="News">
-    <span class="nav-label">News</span>
-  </li>
-
-  <li onclick="showPage('events')">
-    <img src="images/icons/events.png" alt="Events">
-    <span class="nav-label">Events</span>
-  </li>
-
-  <li onclick="showPage('cheer')">
-    <img src="images/icons/cheer.png" alt="Cheer">
-    <span class="nav-label">Cheer</span>
-  </li>
-
-  <li onclick="showPage('quiz')">
-    <img src="images/icons/quiz.jpeg" alt="Quiz">
-    <span class="nav-label">Quiz</span>
-  </li>
-<li onclick="showPage('profile')">
-    <img src="images/icons/profile.png" alt="Profile">
-    <span class="nav-label">Profile</span>
-  </li>
-
-  <li>
-    <img src="images/icons/settings.png" alt="Settings">
-    <span class="nav-label">Settings</span>
-  </li>
-        </ul>
-    </div>
-</div>
+    <div id="news" class="page" style="display:none;">
+      <h1>News</h1>
+      <div class="subnav">My Feed | Discover | Saved</div>
+      <div class="content-box">News content area</div>
     </div>
 
-</div>
-
-        <div id="news" class="page" style="display:none;">
-            <h1>News</h1>
-            <div class="subnav">My Feed | Discover | Saved</div>
-            <div class="content-box">News content area</div>
-        </div>
-
-        <div id="events" class="page" style="display:none;">
-            <h1>Events</h1>
-            <div class="subnav">Calendar | Tailgates | Watch Parties | Check-In</div>
-            <div class="content-box">Events content area</div>
-        </div>
-
-        <div id="cheer" class="page" style="display:none;">
-            <h1>Cheer</h1>
-            <div class="subnav">Browse | Create | Live | My Cheers</div>
-            <div class="content-box">Cheer content area</div>
-        </div>
-
-        <div id="quiz" class="page" style="display:none;">
-            <h1>Quiz</h1>
-            <div class="subnav">Browse | Create | Live | My Quizzes</div>
-            <div class="content-box">Quiz content area</div>
-        </div>
-
-        <div id="profile" class="page" style="display:none;">
-            <h1>Profile</h1>
-            <div class="subnav">Card | FANcave | Game Face | Memorabilia</div>
-            <div class="content-box">Profile content area</div>
-        </div>
-
+    <div id="events" class="page" style="display:none;">
+      <h1>Events</h1>
+      <div class="subnav">Calendar | Tailgates | Watch Parties | Check-In</div>
+      <div class="content-box">Events content area</div>
     </div>
 
-    <script>
-        function showPage(pageId) {
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(page => page.style.display = 'none');
-            document.getElementById(pageId).style.display = 'block';
-        }
-    </script>
+    <div id="cheer" class="page" style="display:none;">
+      <h1>Cheer</h1>
+      <div class="subnav">Browse | Create | Live | My Cheers</div>
+      <div class="content-box">Cheer content area</div>
+    </div>
+
+    <div id="quiz" class="page" style="display:none;">
+      <h1>Quiz</h1>
+      <div class="subnav">Browse | Create | Live | My Quizzes</div>
+      <div class="content-box">Quiz content area</div>
+    </div>
+
+    <div id="profile" class="page" style="display:none;">
+      <h1>Profile</h1>
+      <div class="subnav">Card | FANcave | Game Face | Memorabilia</div>
+      <div class="content-box">Profile content area</div>
+    </div>
+  </div>
+
+  <script>
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+      document.getElementById(pageId).style.display = 'block';
+    }
+  </script>
 
 </body>
 </html>
