@@ -102,6 +102,12 @@
             <div class="subnav">Card | FANcave | Game Face | Memorabilia</div>
             <div class="content-box">Profile content area</div>
         </div>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
+<li><img src="images/icons/home.png" alt="Test"><span class="nav-label">Test</span></li>
     </div>
 
     <script>
