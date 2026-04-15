@@ -57,11 +57,15 @@
     <img src="images/icons/quiz.jpeg" alt="Quiz">
     <span class="nav-label">Quiz</span>
   </li>
-</ul>
+<li onclick="showPage('profile')">
+    <img src="images/icons/profile.png" alt="Profile">
+    <span class="nav-label">Profile</span>
+  </li>
 
-        <ul class="nav-bottom">
-            <li onclick="showPage('profile')"><img src="images/icons/profile.png" alt="Profile">Profile</li>
-            <li><img src="images/icons/settings.png" alt="Settings">Settings</li>
+  <li>
+    <img src="images/icons/settings.png" alt="Settings">
+    <span class="nav-label">Settings</span>
+  </li>
         </ul>
     </div>
 </div>
