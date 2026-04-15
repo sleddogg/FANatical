@@ -110,6 +110,12 @@ body {
   position: relative;
   overflow: hidden;
 }
+.hero-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 .home-grid {
     display: grid;
