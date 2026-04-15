@@ -103,15 +103,12 @@ body {
 }
 
 .hero-box {
-    height: 180px;
-    background-color: #d9d9d9;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    width: 100%;
-    display: block;
+  height: 180px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .home-grid {
