@@ -10,8 +10,9 @@ body {
     left: 16px;
     width: 72px;
     height: calc(100% - 32px);
-    background-color: rgba(17, 17, 17, 0.85);
-    color: white;
+    background-color: var(--sidebar-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: 20px 0;
     box-sizing: border-box;
     display: flex;
@@ -21,6 +22,7 @@ body {
     z-index: 2;
     overflow-y: auto;
     overflow-x: hidden;
+    border: 1px solid var(--sidebar-border);
 }
 
 
@@ -51,8 +53,8 @@ body {
 }
 
 .sidebar li img {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
     display: block;
 }
@@ -154,8 +156,12 @@ aspect-ratio: 16/9;
     margin-bottom: 30px;
 }
 
-
 .nav-label {
   position: absolute;
   left: -9999px;
+}
+
+:root {
+    --sidebar-bg: rgba(255, 255, 255, 0.88);
+    --sidebar-border: rgba(0, 0, 0, 0.08);
 }
