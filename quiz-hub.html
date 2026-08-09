@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FANatical - Quiz Hub</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div class="page quiz-page">
+  <h1>FANatical Quiz Hub</h1>
+<div class="subnav">Pick your sport, league, difficulty, then prove your fan brain.</div>
+
+<!-- QUIZ HUB STATS PANEL -->
+<section class="quiz-stats-panel">
+
+  <!-- PRIMARY DAILY ACTION STATS -->
+  <div class="quiz-stats-primary">
+    <div class="stat-card stat-card-large">
+      <span class="stat-label">🔥 Streak</span>
+      <strong class="stat-value">5 days</strong>
+    </div>
+
+    <div class="stat-card stat-card-large">
+      <span class="stat-label">📅 Today</span>
+      <strong class="stat-value">2 / 3</strong>
+    </div>
+  </div>
+
+  <!-- SECONDARY USER STATS -->
+  <div class="quiz-stats-secondary">
+    <button class="stat-card stat-card-small">
+      <span class="stat-label">⭐ Fan Score</span>
+      <strong class="stat-value">12,450</strong>
+    </button>
+
+    <button class="stat-card stat-card-small">
+      <span class="stat-label">💰 Fan Coins</span>
+      <strong class="stat-value">320</strong>
+    </button>
+
+    <button class="stat-card stat-card-small">
+      <span class="stat-label">🧠 Completed</span>
+      <strong class="stat-value">42</strong>
+    </button>
+
+    <button class="stat-card stat-card-small">
+      <span class="stat-label">📊 Avg Score</span>
+      <strong class="stat-value">78%</strong>
+    </button>
+  </div>
+
+</section>
+
+<div class="content-box">
+  <div class="quiz-card">
+    <section id="sport-section" class="hub-step">
+  <h2 class="quiz-question">Pick a sport</h2>
+
+    <div class="quiz-answers">
+      <button class="answer-btn hub-sport-btn" data-sport="hockey">Hockey</button>
+      <button class="answer-btn hub-sport-btn" data-sport="football">Football</button>
+      <button class="answer-btn hub-sport-btn" data-sport="baseball">Baseball</button>
+      <button class="answer-btn hub-sport-btn" data-sport="soccer">Soccer</button>
+    </div>
+     </section>
+
+    <section id="league-section" class="hub-step hidden">
+      <h2 class="quiz-question">
+  Pick a league
+  <span id="back-to-sport" style="float:right; font-size:16px; cursor:pointer;">Back</span>
+      </h2>
+
+      <div id="league-options" class="quiz-answers">
+        <!-- League buttons will appear here -->
+      </div>
+    </section>
+
+<section id="difficulty-section" class="hub-step hidden">
+  <h2 class="quiz-question">
+  Pick difficulty
+  <span id="back-to-league" style="float:right; font-size:16px; cursor:pointer;">Back</span>
+</h2>
+
+  <div class="quiz-answers">
+  <button class="answer-btn hub-difficulty-btn" data-difficulty="all-star">All-Star</button>
+  <button class="answer-btn hub-difficulty-btn" data-difficulty="star">Star</button>
+  <button class="answer-btn hub-difficulty-btn" data-difficulty="league-average">League Average</button>
+  <button class="answer-btn hub-difficulty-btn" data-difficulty="grinder">Grinder</button>
+  <button class="answer-btn hub-difficulty-btn" data-difficulty="rookie">Rookie</button>
+  </div>
+</section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  /* QUIZ HUB SPORT TO LEAGUE REVEAL */
+  const leagueOptions = {
+    hockey: ["NHL", "SHL", "Liiga", "DEL", "KHL", "International"],
+    football: ["NFL", "NCAA Football", "CFL"],
+    baseball: ["MLB", "NPB", "KBO", "CPBL"],
+    soccer: ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1", "UEFA", "MLS", "International"]
+  };
+
+  const sportButtons = document.querySelectorAll(".hub-sport-btn");
+  const sportSection = document.getElementById("sport-section");
+  const leagueSection = document.getElementById("league-section");
+  const leagueOptionsBox = document.getElementById("league-options");
+
+const backButton = document.getElementById("back-to-sport");
+
+backButton.onclick = function () {
+  leagueSection.style.display = "none";
+  leagueSection.classList.add("hidden");
+
+  sportSection.style.display = "block";
+};
+
+function showDifficulty() {
+  leagueSection.style.display = "none";
+  leagueSection.classList.add("hidden");
+
+  const difficultySection = document.getElementById("difficulty-section");
+  difficultySection.classList.remove("hidden");
+  difficultySection.style.display = "block";
+}
+
+const backToLeague = document.getElementById("back-to-league");
+
+backToLeague.onclick = function () {
+  const difficultySection = document.getElementById("difficulty-section");
+
+  difficultySection.style.display = "none";
+  difficultySection.classList.add("hidden");
+
+  leagueSection.classList.remove("hidden");
+  leagueSection.style.display = "block";
+};
+
+  sportButtons.forEach(function (button) {
+    button.onclick = function () {
+      const selectedSport = button.getAttribute("data-sport");
+
+      leagueOptionsBox.innerHTML = "";
+
+      leagueOptions[selectedSport].forEach(function (league) {
+        leagueOptionsBox.innerHTML += `
+          <button class="answer-btn hub-league-btn" type="button" onclick="showDifficulty()">${league}</button>
+        `;
+      });
+
+      sportSection.style.display = "none";
+      leagueSection.classList.remove("hidden");
+      leagueSection.style.display = "block";
+    };
+  });
+
+  /* DIFFICULTY → GO TO LANDING PAGE */
+  const difficultyButtons = document.querySelectorAll(".hub-difficulty-btn");
+
+  difficultyButtons.forEach(function(button) {
+    button.onclick = function() {
+      const selectedDifficulty = button.getAttribute("data-difficulty");
+
+      localStorage.setItem("quizCategory", "nhl");
+      localStorage.setItem("quizDifficulty", selectedDifficulty);
+
+      window.location.href = "quiz.html";
+    };
+  });
+
+</script>
+
+<!-- =========================
+BOTTOM BAR (INNER PAGES)
+========================= -->
+<div class="bottom-bar">
+
+  <!-- HOME -->
+  <div class="topbar-left">
+    <a class="home-btn" href="index.html">
+      <img src="images/icons/fanatical.png" alt="Home">
+    </a>
+  </div>
+
+  <!-- NAV BAR -->
+  <div class="bottom-bar-center navbar">
+
+    <a class="top-nav-btn" href="quiz-hub.html">
+      <img src="images/icons/quiz.jpeg" alt="Quiz">
+    </a>
+
+    <a class="top-nav-btn" href="news.html">
+      <img src="images/icons/news.png" alt="News">
+    </a>
+
+    <a class="top-nav-btn" href="fanbase.html">
+      <img src="images/icons/events.png" alt="Fanbase">
+    </a>
+
+    <a class="top-nav-btn" href="cheer.html">
+      <img src="images/icons/cheer.png" alt="Cheer">
+    </a>
+
+  </div>
+
+  <!-- PROFILE -->
+  <a class="profile-icon" href="profile.html">
+    <img src="images/logos/profile.jpg" alt="Profile">
+  </a>
+
+</div>
+
+</body>
+</html>

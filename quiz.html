@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FANatical - Quiz</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- QUIZ LANDING PAGE -->
+<div class="page quiz-page">
+  <a class="back-arrow-btn" href="quiz-hub.html">←</a>
+
+  <div class="quiz-landing-card">
+    <h1 class="quiz-landing-title">NHL Quiz</h1>
+
+           <div class="quiz-landing-info">
+      <p class="quiz-landing-detail">
+        Sport: <span id="landingSport">Hockey</span>
+      </p>
+
+      <p class="quiz-landing-detail">
+        Category: <span id="landingCategory">NHL</span>
+      </p>
+
+      <p class="quiz-landing-detail">
+        Difficulty: <span id="landingDifficulty">All-Star</span>
+      </p>
+
+      <p class="quiz-landing-detail">
+        Average Score: <span id="landingAverageScore" class="landing-average-percent">60%</span>
+      </p>
+    </div>
+
+    <button class="quiz-start-btn" onclick="startQuiz()">
+      Start Quiz
+    </button>
+  </div>
+
+ <div id="quiz-container" class="hidden"></div>
+ 
+</div>
+
+<script src="quiz-data.js"></script>
+<script src="quiz.js"></script>
+
+<!-- =========================
+BOTTOM BAR (INNER PAGES)
+========================= -->
+<div class="bottom-bar">
+
+  <!-- HOME -->
+  <div class="topbar-left">
+    <a class="home-btn" href="index.html">
+      <img src="images/icons/fanatical.png" alt="Home">
+    </a>
+  </div>
+
+  <!-- NAV BAR -->
+  <div class="bottom-bar-center navbar">
+
+    <a class="top-nav-btn" href="quiz-hub.html">
+      <img src="images/icons/quiz.jpeg" alt="Quiz">
+    </a>
+
+    <a class="top-nav-btn" href="news.html">
+      <img src="images/icons/news.png" alt="News">
+    </a>
+
+    <a class="top-nav-btn" href="fanbase.html">
+      <img src="images/icons/events.png" alt="Fanbase">
+    </a>
+
+    <a class="top-nav-btn" href="cheer.html">
+      <img src="images/icons/cheer.png" alt="Cheer">
+    </a>
+
+  </div>
+
+  <!-- PROFILE -->
+  <a class="profile-icon" href="profile.html">
+    <img src="images/logos/profile.jpg" alt="Profile">
+  </a>
+
+</div>
+
+</body>
+</html>
