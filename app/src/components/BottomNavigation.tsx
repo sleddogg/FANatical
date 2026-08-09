@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { featureNavigation } from "../app/navigation";
 import { BrandMark } from "./BrandMark";
+import { FollowedTeamStrip } from "./FollowedTeamStrip";
 import { NavIcon } from "./NavIcon";
 
 type BottomNavigationProps = {
@@ -19,13 +20,7 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
       </NavLink>
 
       {variant === "home" ? (
-        <div className="bottom-navigation__team-context" aria-label="Team context placeholder">
-          <span className="team-context__marker" aria-hidden="true" />
-          <span>
-            <strong>Team context</strong>
-            <small>Selection coming later</small>
-          </span>
-        </div>
+        <FollowedTeamStrip />
       ) : (
         <div className="bottom-navigation__feature-links">
           {featureNavigation.map((item) => (

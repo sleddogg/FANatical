@@ -18,6 +18,10 @@ describe("FANatical application shell", () => {
 
     expect(screen.getByRole("heading", { name: "Your home for fandom." })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Home navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Select New England Patriots" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it.each([
