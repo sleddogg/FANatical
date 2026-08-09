@@ -196,16 +196,16 @@ function EventsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "
   if (selectedEvent) {
     return (
       <>
-        <article className="fanbase-detail-card surface">
-          <span className="fanbase-detail-card__glyph" aria-hidden="true">◫</span><span className="eyebrow">{selectedEvent.eventType}</span><h2>{selectedEvent.title}</h2><p>{selectedEvent.description}</p>
-          <dl><div><dt>When</dt><dd>{formatEventDate(selectedEvent.startsAt)}</dd></div><div><dt>Where</dt><dd>{selectedEvent.location}</dd></div><div><dt>Host</dt><dd>{selectedEvent.host}</dd></div><div><dt>Fans joined</dt><dd>{selectedEvent.joinCount}</dd></div></dl>
+        <article className="fanbase-detail-card fanbase-detail-card--event surface">
+          <span className="fanbase-status fanbase-event-detail__type">{selectedEvent.eventType}</span><h2>{selectedEvent.title}</h2><p>{selectedEvent.description}</p>
+          <dl><div><dt>When</dt><dd>{formatEventDate(selectedEvent.startsAt)}</dd></div><div><dt>Where</dt><dd>{selectedEvent.location.label}</dd></div><div><dt>Host</dt><dd>{selectedEvent.host}</dd></div><div><dt>Fans joined</dt><dd>{selectedEvent.joinCount}</dd></div></dl>
           <div className="fanbase-detail-actions"><button className="fanbase-primary-button" type="button" aria-pressed={selectedEvent.joined} onClick={() => fanbase.toggleEventJoined(selectedEvent.id)}>{selectedEvent.joined ? "Joined ✓" : "Join event"}</button><button type="button" aria-pressed={selectedEvent.saved} onClick={() => fanbase.toggleEventSaved(selectedEvent.id)}>{selectedEvent.saved ? "Saved ✓" : "Save"}</button><button type="button" onClick={() => fanbase.reportEvent(selectedEvent.id)}>{selectedEvent.reported ? "Reported" : "Report"}</button></div>
         </article>
       </>
     );
   }
   return (
-    <div className="fanbase-card-grid">{teamEvents.map((event) => <button className="fanbase-simple-card" key={event.id} type="button" onClick={() => onOpenItem(event.id)}><span className="fanbase-status">{event.eventType}</span><strong>{event.title}</strong><span>{formatEventDate(event.startsAt)}</span><small>{event.location} · {event.joinCount} joined {event.joined ? "· You’re going" : ""}</small></button>)}</div>
+    <div className="fanbase-card-grid">{teamEvents.map((event) => <button className="fanbase-simple-card" key={event.id} type="button" onClick={() => onOpenItem(event.id)}><span className="fanbase-status">{event.eventType}</span><strong>{event.title}</strong><span>{formatEventDate(event.startsAt)}</span><small>{event.location.label} · {event.joinCount} joined {event.joined ? "· You’re going" : ""}</small></button>)}</div>
   );
 }
 
@@ -215,10 +215,16 @@ function GroupsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "
   const selectedGroup = itemId ? teamGroups.find((group) => group.id === itemId) : undefined;
   const thread = selectedGroup ? fanbase.threads.find((candidate) => candidate.id === selectedGroup.threadId) : undefined;
   if (selectedGroup) {
+    const initials = selectedGroup.name.split(" ").map((word) => word[0]).slice(0, 2).join("");
+    const canJoinDirectly = selectedGroup.joined || selectedGroup.visibility === "Public";
     return (
       <>
-        <article className="group-detail-banner surface"><span className="fanbase-detail-card__glyph" aria-hidden="true">◉</span><div><span className="eyebrow">{selectedGroup.visibility} group</span><h2>{selectedGroup.name}</h2><p>{selectedGroup.description}</p></div><div className="fanbase-detail-actions"><button className="fanbase-primary-button" type="button" aria-pressed={selectedGroup.joined} onClick={() => fanbase.toggleGroupJoined(selectedGroup.id)}>{selectedGroup.joined ? "Joined ✓" : "Join group"}</button><button type="button" onClick={() => fanbase.reportGroup(selectedGroup.id)}>{selectedGroup.reported ? "Reported" : "Report"}</button></div></article>
-        {selectedGroup.joined ? <CommunityThreadView thread={thread} title={`${selectedGroup.name} conversation`} context="Group conversation" emptyMessage="Start the group conversation." onSubmitComment={(body, parentId) => thread && fanbase.addComment(thread.id, body, parentId)} onReactToThread={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)} onReactToComment={(commentId, reaction) => thread && fanbase.reactToComment(thread.id, commentId, reaction)} onReportThread={() => thread && fanbase.reportThread(thread.id)} onReportComment={(commentId) => thread && fanbase.reportComment(thread.id, commentId)} /> : <EmptyArea>Join this public group to participate in its conversation.</EmptyArea>}
+        <article className="group-identity-card surface">
+          <span className="group-identity-card__avatar" aria-hidden="true">{initials}</span>
+          <div className="group-identity-card__context"><span className="fanbase-status">{selectedGroup.visibility}</span><span>{selectedGroup.memberCount} members</span><span>{selectedGroup.joined ? `${selectedGroup.viewerRole ?? "Member"} · Joined` : "Not joined"}</span>{selectedGroup.invitedUserIds.length ? <span>{selectedGroup.invitedUserIds.length} pending invites</span> : null}</div>
+          <div className="fanbase-detail-actions">{canJoinDirectly ? <button className="fanbase-primary-button" type="button" aria-pressed={selectedGroup.joined} onClick={() => fanbase.toggleGroupJoined(selectedGroup.id)}>{selectedGroup.joined ? "Joined ✓" : "Join group"}</button> : null}<button type="button" onClick={() => fanbase.reportGroup(selectedGroup.id)}>{selectedGroup.reported ? "Reported" : "Report"}</button></div>
+        </article>
+        {selectedGroup.joined ? <CommunityThreadView thread={thread} title={`${selectedGroup.name} conversation`} context="Group conversation" compactTopicMode compactComposerPosition="bottom" emptyMessage="Start the group conversation." onSubmitComment={(body, parentId) => thread && fanbase.addComment(thread.id, body, parentId)} onReactToThread={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)} onReactToComment={(commentId, reaction) => thread && fanbase.reactToComment(thread.id, commentId, reaction)} onReportThread={() => thread && fanbase.reportThread(thread.id)} onReportComment={(commentId) => thread && fanbase.reportComment(thread.id, commentId)} /> : <EmptyArea>{selectedGroup.visibility === "Public" ? "Join this public group to participate in its conversation." : "An invitation is required to participate in this group."}</EmptyArea>}
       </>
     );
   }

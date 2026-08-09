@@ -7,6 +7,7 @@ import type {
   CreateLockerRoomInput,
   FanbaseAreaId,
 } from "./types";
+import { mockFanConnections } from "./mockFanbaseData";
 
 export type FanbaseCreationType = "locker" | "photo" | "event" | "group";
 
@@ -32,6 +33,43 @@ function readFormValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function ConnectionInvitePicker({ selectedIds, onToggle }: { readonly selectedIds: readonly string[]; readonly onToggle: (userId: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const matchingConnections = mockFanConnections.filter((connection) => connection.username.toLowerCase().includes(search.trim().toLowerCase()));
+
+  return (
+    <section className="fanbase-invite-picker" aria-labelledby="fanbase-invite-picker-title">
+      <div className="fanbase-invite-picker__heading">
+        <div><strong id="fanbase-invite-picker-title">Invite Fans</strong><small>Optional · mock FANatical connections</small></div>
+        <button type="button" aria-expanded={open} onClick={() => setOpen((current) => !current)}>{open ? "Done" : "Choose fans"}</button>
+      </div>
+      {selectedIds.length ? (
+        <div className="fanbase-invite-picker__selected" aria-label="Selected invitees">
+          {selectedIds.map((userId) => {
+            const connection = mockFanConnections.find((candidate) => candidate.id === userId);
+            return connection ? <button key={userId} type="button" aria-label={`Remove ${connection.username} from invites`} onClick={() => onToggle(userId)}><span className="community-avatar" aria-hidden="true">{connection.initials}</span>@{connection.username}<span aria-hidden="true">×</span></button> : null;
+          })}
+        </div>
+      ) : <p className="fanbase-invite-picker__empty">No fans selected.</p>}
+      {open ? (
+        <div className="fanbase-invite-picker__panel">
+          <label>Search connections<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by username" /></label>
+          <div className="fanbase-invite-picker__list" role="group" aria-label="Mock FANatical friends and connections">
+            {matchingConnections.length ? matchingConnections.map((connection) => (
+              <label key={connection.id}>
+                <input type="checkbox" checked={selectedIds.includes(connection.id)} onChange={() => onToggle(connection.id)} />
+                <span className="community-avatar" aria-hidden="true">{connection.initials}</span>
+                <span><strong>@{connection.username}</strong><small>FANatical connection</small></span>
+              </label>
+            )) : <p>No connections match that search.</p>}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export function FanbaseCreateDialog({
   team,
   initialCreationType,
@@ -43,7 +81,12 @@ export function FanbaseCreateDialog({
   onClose,
 }: FanbaseCreateDialogProps) {
   const [creationType, setCreationType] = useState<FanbaseCreationType | null>(initialCreationType ?? null);
+  const [selectedInviteeIds, setSelectedInviteeIds] = useState<readonly string[]>([]);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const toggleInvitee = (userId: string) => {
+    setSelectedInviteeIds((current) => current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]);
+  };
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -90,9 +133,10 @@ export function FanbaseCreateDialog({
         title: readFormValue(formData, "title"),
         eventType: readFormValue(formData, "eventType") as CreateEventInput["eventType"],
         startsAt: new Date(readFormValue(formData, "startsAt")).toISOString(),
-        location: readFormValue(formData, "location"),
+        location: { label: readFormValue(formData, "location") },
         visibility: readFormValue(formData, "visibility") as CreateEventInput["visibility"],
         description: readFormValue(formData, "description"),
+        invitedUserIds: selectedInviteeIds,
       });
       onCreated("events", id);
     } else {
@@ -101,6 +145,7 @@ export function FanbaseCreateDialog({
         name: readFormValue(formData, "name"),
         visibility: readFormValue(formData, "visibility") as CreateGroupInput["visibility"],
         description: readFormValue(formData, "description"),
+        invitedUserIds: selectedInviteeIds,
       });
       onCreated("groups", id);
     }
@@ -150,12 +195,13 @@ export function FanbaseCreateDialog({
               <>
                 <label>Event title<input name="title" required maxLength={100} /></label>
                 <div className="fanbase-form-row">
-                  <label>Type<select name="eventType" defaultValue="Watch Party"><option>Watch Party</option><option>Meetup</option><option>Rivalry Event</option><option>Online</option></select></label>
+                  <label>Type<select name="eventType" defaultValue="Watch Party"><option>Watch Party</option><option>Meetup</option><option>Rivalry Event</option><option>Online Event</option></select></label>
                   <label>Visibility<select name="visibility" defaultValue="Private"><option>Private</option><option>Public</option></select></label>
                 </div>
                 <label>Date and time<input name="startsAt" type="datetime-local" required /></label>
                 <label>Location or online label<input name="location" required maxLength={120} /></label>
                 <label>Description<textarea name="description" required rows={4} maxLength={800} /></label>
+                <ConnectionInvitePicker selectedIds={selectedInviteeIds} onToggle={toggleInvitee} />
                 <p className="fanbase-form-note">Public event promotion may require review when backend moderation is added.</p>
               </>
             ) : null}
@@ -165,6 +211,7 @@ export function FanbaseCreateDialog({
                 <label>Group name<input name="name" required maxLength={80} /></label>
                 <label>Visibility<select name="visibility" defaultValue="Private"><option>Public</option><option>Private</option><option>Invite Only</option></select></label>
                 <label>Description<textarea name="description" required rows={5} maxLength={800} /></label>
+                <ConnectionInvitePicker selectedIds={selectedInviteeIds} onToggle={toggleInvitee} />
                 <p className="fanbase-form-note">Visibility is represented for the demo; final discovery and invitation rules remain a product To-Do.</p>
               </>
             ) : null}

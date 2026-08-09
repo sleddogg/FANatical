@@ -83,16 +83,23 @@ export type FanPhoto = Readonly<{
   reported: boolean;
 }>
 
+export type FanEventLocation = Readonly<{
+  label: string;
+  venueId?: string;
+  coordinates?: Readonly<{ latitude: number; longitude: number }>;
+}>;
+
 export type FanEvent = Readonly<{
   id: string;
   teamId: TeamId;
   title: string;
-  eventType: "Watch Party" | "Meetup" | "Rivalry Event" | "Online";
+  eventType: "Watch Party" | "Meetup" | "Rivalry Event" | "Online Event";
   startsAt: string;
-  location: string;
+  location: FanEventLocation;
   host: string;
   visibility: "Public" | "Private";
   description: string;
+  invitedUserIds: readonly CommunityUser["id"][];
   joinCount: number;
   joined: boolean;
   saved: boolean;
@@ -107,6 +114,10 @@ export type FanGroup = Readonly<{
   visibility: GroupVisibility;
   memberCount: number;
   joined: boolean;
+  viewerRole: "Owner" | "Moderator" | "Member" | null;
+  memberUserIds: readonly CommunityUser["id"][];
+  invitedUserIds: readonly CommunityUser["id"][];
+  moderatorUserIds: readonly CommunityUser["id"][];
   latestActivity: string;
   threadId: string;
   reported: boolean;
@@ -131,9 +142,10 @@ export type CreateEventInput = Readonly<{
   title: string;
   eventType: FanEvent["eventType"];
   startsAt: string;
-  location: string;
+  location: FanEventLocation;
   visibility: FanEvent["visibility"];
   description: string;
+  invitedUserIds: readonly CommunityUser["id"][];
 }>;
 
 export type CreateGroupInput = Readonly<{
@@ -141,6 +153,7 @@ export type CreateGroupInput = Readonly<{
   name: string;
   visibility: GroupVisibility;
   description: string;
+  invitedUserIds: readonly CommunityUser["id"][];
 }>;
 
 export type GameThreadStatus = "Scheduled" | "Live" | "Post-game" | "Archived";

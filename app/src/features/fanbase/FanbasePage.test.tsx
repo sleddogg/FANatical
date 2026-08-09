@@ -156,6 +156,139 @@ describe("FANbase frontend", () => {
     expect(screen.getByRole("dialog", { name: dialogName })).toBeInTheDocument();
   });
 
+  it("uses a compact event-type tag without the generic detail icon", () => {
+    renderRoute("/fanbase?area=events&item=event-pats-watch");
+
+    const eventHeadings = screen.getAllByRole("heading", { name: "Opening Night Watch Party" });
+    expect(eventHeadings).toHaveLength(2);
+    expect(eventHeadings.some((heading) => heading.tagName === "H1")).toBe(true);
+    const detail = eventHeadings.find((heading) => heading.closest("article"))?.closest("article");
+    expect(detail).not.toBeNull();
+    expect(within(detail as HTMLElement).getByText("Watch Party")).toHaveClass("fanbase-event-detail__type");
+    expect((detail as HTMLElement).querySelector(".fanbase-detail-card__glyph")).not.toBeInTheDocument();
+    expect(within(detail as HTMLElement).getByText("Harbor Street Social · Boston")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to Events" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Invite/Add People to event" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create Event" })).not.toBeInTheDocument();
+  });
+
+  it("invites additional mock connections from an Event detail", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=events&item=event-pats-watch");
+
+    await user.click(screen.getByRole("button", { name: "Invite/Add People to event" }));
+    let dialog = screen.getByRole("dialog", { name: "Invite/Add People" });
+    let search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Green");
+    await user.click(within(dialog).getByRole("checkbox", { name: /GreenLine/i }));
+    expect(within(dialog).getByRole("button", { name: "Remove GreenLine from selection" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Send invitations" }));
+
+    await user.click(screen.getByRole("button", { name: "Invite/Add People to event" }));
+    dialog = screen.getByRole("dialog", { name: "Invite/Add People" });
+    search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Green");
+    expect(within(dialog).getByRole("checkbox", { name: /GreenLine.*Already invited/i })).toBeDisabled();
+  });
+
+  it("searches and selects multiple mock connections before creating an Event", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=events");
+
+    await user.click(screen.getByRole("button", { name: "Create Event" }));
+    const dialog = screen.getByRole("dialog", { name: "Event" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Event title" }), "Film Room Meetup");
+    await user.type(within(dialog).getByLabelText("Date and time"), "2026-08-20T19:00");
+    await user.type(within(dialog).getByRole("textbox", { name: "Location or online label" }), "North End Fan Club");
+    await user.type(within(dialog).getByRole("textbox", { name: "Description" }), "A local meetup to compare preseason notes.");
+    await user.click(within(dialog).getByRole("button", { name: "Choose fans" }));
+
+    const search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Maya");
+    await user.click(within(dialog).getByRole("checkbox", { name: /Maya84/i }));
+    await user.clear(search);
+    await user.type(search, "Road");
+    await user.click(within(dialog).getByRole("checkbox", { name: /RoadGameRob/i }));
+
+    expect(within(dialog).getByRole("button", { name: "Remove Maya84 from invites" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Remove RoadGameRob from invites" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Create Event" }));
+
+    expect(screen.getAllByRole("heading", { name: "Film Room Meetup" })).toHaveLength(2);
+    expect(screen.getByText("North End Fan Club")).toBeInTheDocument();
+  });
+
+  it("selects optional invitees before creating a Group", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=groups");
+
+    await user.click(screen.getByRole("button", { name: "Create Group" }));
+    const dialog = screen.getByRole("dialog", { name: "Group" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Group name" }), "Fourth Quarter Club");
+    await user.selectOptions(within(dialog).getByRole("combobox", { name: "Visibility" }), "Invite Only");
+    await user.type(within(dialog).getByRole("textbox", { name: "Description" }), "A focused place for late-game strategy talk.");
+    await user.click(within(dialog).getByRole("button", { name: "Choose fans" }));
+    const selector = within(dialog).getByRole("group", { name: "Mock FANatical friends and connections" });
+    await user.click(within(selector).getByRole("checkbox", { name: /Maya84/i }));
+    await user.click(within(selector).getByRole("checkbox", { name: /GreenLine/i }));
+    expect(within(dialog).getByRole("button", { name: "Remove Maya84 from invites" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Remove GreenLine from invites" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Create Group" }));
+
+    expect(screen.getByRole("heading", { name: "Fourth Quarter Club" })).toBeInTheDocument();
+    expect(screen.getByText("Invite Only")).toBeInTheDocument();
+    expect(screen.getByText("2 pending invites")).toBeInTheDocument();
+  });
+
+  it("uses the group name header and keeps the composer below the conversation", () => {
+    renderRoute("/fanbase?area=groups&item=group-pats-road-crew");
+
+    expect(screen.getAllByRole("heading", { name: "New England Road Crew" })).toHaveLength(1);
+    expect(screen.queryByRole("heading", { name: "Groups" })).not.toBeInTheDocument();
+    expect(screen.getByText("Away-game travel plans, ticket tips, and meetup coordination.")).toBeInTheDocument();
+    expect(screen.getByText("318 members")).toBeInTheDocument();
+    expect(screen.getByText("Owner · Joined")).toBeInTheDocument();
+    expect(document.querySelector(".community-thread__lead")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Manage group membership" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create Group" })).not.toBeInTheDocument();
+
+    const conversationHeading = screen.getByRole("heading", { name: "Conversation" });
+    const composer = screen.getByRole("textbox", { name: "Add to the conversation" }).closest("form");
+    expect(composer).not.toBeNull();
+    expect(conversationHeading.compareDocumentPosition(composer!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("uses role-aware local group membership actions", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=groups&item=group-pats-road-crew");
+
+    await user.click(screen.getByRole("button", { name: "Manage group membership" }));
+    let dialog = screen.getByRole("dialog", { name: "Group membership" });
+    expect(within(dialog).getByRole("button", { name: "Invite/Add People" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Add as Moderator" })).toBeInTheDocument();
+    let search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Fenway");
+    await user.click(within(dialog).getByRole("checkbox", { name: /FenwayFaithful/i }));
+    expect(within(dialog).getByRole("button", { name: "Remove FenwayFaithful from selection" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Send invitations" }));
+    expect(screen.getByText("1 pending invites")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Manage group membership" }));
+    dialog = screen.getByRole("dialog", { name: "Group membership" });
+    await user.click(within(dialog).getByRole("button", { name: "Add as Moderator" }));
+    search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Maya");
+    await user.click(within(dialog).getByRole("checkbox", { name: /Maya84/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Add moderators" }));
+
+    await user.click(screen.getByRole("button", { name: "Manage group membership" }));
+    dialog = screen.getByRole("dialog", { name: "Group membership" });
+    await user.click(within(dialog).getByRole("button", { name: "Add as Moderator" }));
+    search = within(dialog).getByRole("searchbox", { name: "Search connections" });
+    await user.type(search, "Maya");
+    expect(within(dialog).getByRole("checkbox", { name: /Maya84.*Already a moderator/i })).toBeDisabled();
+  });
+
   it("centers one Fan Photo category with both neighboring categories secondary", async () => {
     const user = userEvent.setup();
     const { router } = renderRoute("/fanbase?area=fan-photos");

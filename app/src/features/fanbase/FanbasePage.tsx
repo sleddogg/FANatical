@@ -2,9 +2,11 @@ import { useSearchParams } from "react-router-dom";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseAreaView } from "./FanbaseAreaViews";
 import { FanbaseCreateDialog, type FanbaseCreationType } from "./FanbaseCreateDialog";
+import { EventInviteDialog } from "./EventInviteDialog";
 import { useFanbaseContext } from "./FanbaseContext";
 import { FanbaseHub } from "./FanbaseHub";
 import { FanbaseTeamFilter } from "./FanbaseTeamFilter";
+import { GroupMembershipDialog } from "./GroupMembershipDialog";
 import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 import { useState } from "react";
 import { formatEventDate } from "./fanbaseFormatting";
@@ -62,12 +64,16 @@ export function FanbasePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [teamFilterOpen, setTeamFilterOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [groupMembershipOpen, setGroupMembershipOpen] = useState(false);
+  const [eventInviteOpen, setEventInviteOpen] = useState(false);
   const areaParam = searchParams.get("area");
   const area = isFanbaseArea(areaParam) ? areaParam : null;
   const itemId = searchParams.get("item");
   const photoCategoryParam = searchParams.get("category");
   const photoCategory = area === "fan-photos" && isFanPhotoCategory(photoCategoryParam) ? photoCategoryParam : null;
   const itemOrigin = area === "fan-photos" && searchParams.get("origin") === "rating-queue" ? "rating-queue" : null;
+  const selectedEvent = area === "events" && itemId ? fanbase.events.find((candidate) => candidate.id === itemId) : undefined;
+  const selectedGroup = area === "groups" && itemId ? fanbase.groups.find((candidate) => candidate.id === itemId) : undefined;
 
   const openArea = (nextArea: FanbaseAreaId) => {
     setSearchParams({ area: nextArea });
@@ -110,7 +116,7 @@ export function FanbasePage() {
     setSearchParams(createdPhotoCategory ? { area: createdArea, category: createdPhotoCategory, item: createdItemId } : { area: createdArea, item: createdItemId });
   };
 
-  const contextualCreationType = area ? areaCreationTypes[area] : null;
+  const contextualCreationType = area ? ((area === "groups" && selectedGroup) || (area === "events" && selectedEvent) ? null : areaCreationTypes[area]) : null;
   const subpageContext = (() => {
     if (!area) return `${selectedTeam.name} fan community`;
     if (area === "article-comments") return `${selectedTeam.name} News discussions`;
@@ -122,14 +128,18 @@ export function FanbasePage() {
       return photoCategory ? `${selectedTeam.name} · ${photoCategory}` : "Game Face, Fan Cave, and Memorabilia";
     }
     if (area === "events") {
-      const event = itemId ? fanbase.events.find((candidate) => candidate.id === itemId) : undefined;
-      return event ? `${event.eventType} · ${formatEventDate(event.startsAt)} · ${event.location}` : `${selectedTeam.name} gatherings and watch parties`;
+      return selectedEvent ? `${selectedEvent.eventType} · ${formatEventDate(selectedEvent.startsAt)} · ${selectedEvent.location.label}` : `${selectedTeam.name} gatherings and watch parties`;
     }
-    const group = itemId ? fanbase.groups.find((candidate) => candidate.id === itemId) : undefined;
-    return group ? `${group.visibility} · ${group.memberCount} members` : `${selectedTeam.name} joined and discoverable groups`;
+    return selectedGroup ? selectedGroup.description : `${selectedTeam.name} joined and discoverable groups`;
   })();
 
   const backTarget = itemId ? (photoCategory ?? (area ? areaTitles[area] : "FANbase")) : photoCategory ? "Fan Photos" : "FANbase";
+  const pageTitle = selectedEvent?.title ?? selectedGroup?.name ?? (area === "fan-photos" && photoCategory ? photoCategory : area ? areaTitles[area] : "FANbase");
+  const contextualAction = selectedEvent
+    ? { accessible: "Invite/Add People to event", visible: "Invite People" }
+    : selectedGroup
+      ? { accessible: "Manage group membership", visible: "Members" }
+      : area ? areaActionLabels[area] : null;
 
   return (
     <div className="fanbase-page">
@@ -143,19 +153,19 @@ export function FanbasePage() {
         )}
         <div className="fanbase-topbar__title">
           <span className="eyebrow">{area ? "FANbase" : "Community hub"}</span>
-          <h1>{area === "fan-photos" && photoCategory ? photoCategory : area ? areaTitles[area] : "FANbase"}</h1>
+          <h1>{pageTitle}</h1>
           <p>{subpageContext}</p>
         </div>
         {area ? (
           <button
             className="fanbase-create-trigger fanbase-create-trigger--contextual"
             type="button"
-            aria-label={areaActionLabels[area].accessible}
-            aria-expanded={contextualCreationType ? createOpen : undefined}
-            disabled={!contextualCreationType}
-            onClick={() => contextualCreationType && setCreateOpen(true)}
+            aria-label={contextualAction?.accessible}
+            aria-expanded={selectedEvent ? eventInviteOpen : selectedGroup ? groupMembershipOpen : contextualCreationType ? createOpen : undefined}
+            disabled={!contextualCreationType && !selectedGroup && !selectedEvent}
+            onClick={() => selectedEvent ? setEventInviteOpen(true) : selectedGroup ? setGroupMembershipOpen(true) : contextualCreationType && setCreateOpen(true)}
           >
-            <span aria-hidden="true">＋</span><span>{areaActionLabels[area].visible}</span>
+            <span aria-hidden="true">＋</span><span>{contextualAction?.visible}</span>
           </button>
         ) : (
           <button className="fanbase-create-trigger" type="button" aria-label="Create in FANbase" aria-expanded={createOpen} onClick={() => setCreateOpen(true)}><span aria-hidden="true">＋</span><span>Create</span></button>
@@ -169,6 +179,8 @@ export function FanbasePage() {
       )}
 
       {teamFilterOpen ? <FanbaseTeamFilter teams={followedTeams} selectedTeamId={selectedTeamId} onSelect={chooseTeam} onClose={() => setTeamFilterOpen(false)} /> : null}
+      {eventInviteOpen && selectedEvent ? <EventInviteDialog event={selectedEvent} onInvite={(userIds) => fanbase.invitePeopleToEvent(selectedEvent.id, userIds)} onClose={() => setEventInviteOpen(false)} /> : null}
+      {groupMembershipOpen && selectedGroup ? <GroupMembershipDialog group={selectedGroup} onInvite={(userIds) => fanbase.invitePeopleToGroup(selectedGroup.id, userIds)} onAddModerators={(userIds) => fanbase.addGroupModerators(selectedGroup.id, userIds)} onClose={() => setGroupMembershipOpen(false)} /> : null}
       {createOpen ? (
         <FanbaseCreateDialog
           team={selectedTeam}

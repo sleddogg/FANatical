@@ -55,9 +55,12 @@ type FanbaseContextValue = Readonly<{
   createEvent: (input: CreateEventInput) => string;
   toggleEventJoined: (eventId: string) => void;
   toggleEventSaved: (eventId: string) => void;
+  invitePeopleToEvent: (eventId: string, userIds: readonly string[]) => void;
   reportEvent: (eventId: string) => void;
   createGroup: (input: CreateGroupInput) => string;
   toggleGroupJoined: (groupId: string) => void;
+  invitePeopleToGroup: (groupId: string, userIds: readonly string[]) => void;
+  addGroupModerators: (groupId: string, userIds: readonly string[]) => void;
   reportGroup: (groupId: string) => void;
 }>;
 
@@ -283,10 +286,11 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
       title: input.title.trim(),
       eventType: input.eventType,
       startsAt: input.startsAt,
-      location: input.location.trim(),
+      location: { ...input.location, label: input.location.label.trim() },
       host: demoUser.username,
       visibility: input.visibility,
       description: input.description.trim(),
+      invitedUserIds: [...input.invitedUserIds],
       joinCount: 1,
       joined: true,
       saved: false,
@@ -303,6 +307,12 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
 
   const toggleEventSaved = useCallback((eventId: string) => {
     setEvents((current) => current.map((event) => event.id === eventId ? { ...event, saved: !event.saved } : event));
+  }, []);
+
+  const invitePeopleToEvent = useCallback((eventId: string, userIds: readonly string[]) => {
+    setEvents((current) => current.map((event) => event.id === eventId
+      ? { ...event, invitedUserIds: [...new Set([...event.invitedUserIds, ...userIds])] }
+      : event));
   }, []);
 
   const reportEvent = useCallback((eventId: string) => {
@@ -334,6 +344,10 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
       visibility: input.visibility,
       memberCount: 1,
       joined: true,
+      viewerRole: "Owner",
+      memberUserIds: [demoUser.id],
+      invitedUserIds: [...input.invitedUserIds],
+      moderatorUserIds: [],
       latestActivity: new Date().toISOString(),
       threadId,
       reported: false,
@@ -343,8 +357,35 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
 
   const toggleGroupJoined = useCallback((groupId: string) => {
     setGroups((current) => current.map((group) => group.id === groupId
-      ? { ...group, joined: !group.joined, memberCount: Math.max(0, group.memberCount + (group.joined ? -1 : 1)) }
+      ? {
+          ...group,
+          joined: !group.joined,
+          viewerRole: group.joined ? null : "Member",
+          memberUserIds: group.joined ? group.memberUserIds.filter((id) => id !== demoUser.id) : [...new Set([...group.memberUserIds, demoUser.id])],
+          memberCount: Math.max(0, group.memberCount + (group.joined ? -1 : 1)),
+        }
       : group));
+  }, []);
+
+  const invitePeopleToGroup = useCallback((groupId: string, userIds: readonly string[]) => {
+    setGroups((current) => current.map((group) => group.id === groupId
+      ? { ...group, invitedUserIds: [...new Set([...group.invitedUserIds, ...userIds])], latestActivity: new Date().toISOString() }
+      : group));
+  }, []);
+
+  const addGroupModerators = useCallback((groupId: string, userIds: readonly string[]) => {
+    setGroups((current) => current.map((group) => {
+      if (group.id !== groupId) return group;
+      const newMemberIds = userIds.filter((id) => !group.memberUserIds.includes(id));
+      return {
+        ...group,
+        memberUserIds: [...new Set([...group.memberUserIds, ...userIds])],
+        moderatorUserIds: [...new Set([...group.moderatorUserIds, ...userIds])],
+        invitedUserIds: group.invitedUserIds.filter((id) => !userIds.includes(id)),
+        memberCount: group.memberCount + newMemberIds.length,
+        latestActivity: new Date().toISOString(),
+      };
+    }));
   }, []);
 
   const reportGroup = useCallback((groupId: string) => {
@@ -374,9 +415,12 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     createEvent,
     toggleEventJoined,
     toggleEventSaved,
+    invitePeopleToEvent,
     reportEvent,
     createGroup,
     toggleGroupJoined,
+    invitePeopleToGroup,
+    addGroupModerators,
     reportGroup,
   }), [
     addArticleComment,
@@ -391,6 +435,9 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     getArticleCommentCount,
     getArticleThread,
     groups,
+    invitePeopleToEvent,
+    invitePeopleToGroup,
+    addGroupModerators,
     rateFanPhoto,
     reactToComment,
     reactToFanPhoto,

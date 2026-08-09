@@ -12,6 +12,7 @@ type CommunityThreadViewProps = {
   readonly emptyMessage?: string;
   readonly locked?: boolean;
   readonly compactTopicMode?: boolean;
+  readonly compactComposerPosition?: "top" | "bottom";
   readonly onSubmitComment: (body: string, parentId: string | null) => void;
   readonly onReactToThread: (reaction: ReactionType) => void;
   readonly onReactToComment: (commentId: string, reaction: ReactionType) => void;
@@ -27,6 +28,7 @@ export function CommunityThreadView({
   emptyMessage = "Be the first fan to start this discussion.",
   locked = false,
   compactTopicMode = false,
+  compactComposerPosition = "top",
   onSubmitComment,
   onReactToThread,
   onReactToComment,
@@ -78,7 +80,7 @@ export function CommunityThreadView({
       ) : null}
 
       <section className="community-comments" aria-labelledby="community-comments-title">
-        {compactTopicMode ? composer : null}
+        {compactTopicMode && compactComposerPosition === "top" ? composer : null}
         <div className="community-comments__heading">
           <h3 id="community-comments-title">Conversation</h3>
           <span>{thread?.comments.length ?? 0} recent shown</span>
@@ -101,7 +103,7 @@ export function CommunityThreadView({
           <div className="community-comments__empty"><span aria-hidden="true">◌</span><p>{emptyMessage}</p></div>
         )}
 
-        {!compactTopicMode ? composer : null}
+        {!compactTopicMode || compactComposerPosition === "bottom" ? composer : null}
       </section>
     </div>
   );

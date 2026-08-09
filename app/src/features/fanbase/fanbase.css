@@ -382,6 +382,207 @@
   font-size: var(--font-size-xs);
 }
 
+.fanbase-invite-picker {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.fanbase-invite-picker__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fanbase-invite-picker__heading > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.fanbase-invite-picker__heading small,
+.fanbase-invite-picker__empty,
+.fanbase-invite-picker__list small,
+.fanbase-invite-picker__list > p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.fanbase-invite-picker__heading button,
+.fanbase-invite-picker__selected button {
+  min-height: 2.35rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fanbase-invite-picker__empty {
+  margin: 0;
+}
+
+.fanbase-invite-picker__selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.fanbase-invite-picker__selected button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fanbase-invite-picker__selected .community-avatar {
+  width: 1.65rem;
+  height: 1.65rem;
+  font-size: 0.62rem;
+}
+
+.fanbase-invite-picker__panel {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.fanbase-invite-picker__list {
+  display: grid;
+  max-height: 13rem;
+  gap: var(--space-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.fanbase-create__form .fanbase-invite-picker__list label {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.group-membership-dialog__body .fanbase-invite-picker__list label {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.fanbase-create__form .fanbase-invite-picker__list label:hover {
+  background: var(--color-surface);
+}
+
+.group-membership-dialog__body .fanbase-invite-picker__list label:hover {
+  background: var(--color-surface-muted);
+}
+
+.fanbase-create__form .fanbase-invite-picker__list input[type="checkbox"] {
+  width: 1.15rem;
+  min-height: 1.15rem;
+  margin: 0;
+  accent-color: var(--color-control);
+}
+
+.group-membership-dialog__body .fanbase-invite-picker__list input[type="checkbox"] {
+  width: 1.15rem;
+  min-height: 1.15rem;
+  margin: 0;
+  accent-color: var(--color-control);
+}
+
+.fanbase-invite-picker__list label > span:last-child {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.group-membership-dialog__body {
+  display: grid;
+  min-height: 0;
+  gap: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5);
+}
+
+.group-membership-dialog__body > label {
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 800;
+}
+
+.group-membership-dialog__body > label input {
+  width: 100%;
+  min-height: var(--control-size);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #f7f7f5;
+  color: var(--color-text);
+}
+
+.group-membership-dialog__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.group-membership-dialog__actions button {
+  min-height: var(--control-size);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.group-membership-dialog__actions button[aria-pressed="true"] {
+  border-color: var(--color-control);
+  background: var(--color-control);
+  color: var(--color-control-text);
+}
+
+.group-membership-dialog__body > .fanbase-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.group-membership-dialog__restricted {
+  display: grid;
+  min-height: 18rem;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  padding: var(--space-7);
+  text-align: center;
+}
+
+.group-membership-dialog__restricted .community-avatar {
+  width: 4rem;
+  height: 4rem;
+  font-size: var(--font-size-lg);
+}
+
+.group-membership-dialog__restricted p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
 .fanbase-primary-button,
 .fanbase-text-button,
 .fanbase-report-button,
@@ -2189,6 +2390,20 @@ th.fan-photo-ranking-table__identity {
   padding: clamp(var(--space-6), 5vw, var(--space-10));
 }
 
+.fanbase-detail-card--event {
+  position: relative;
+  padding-top: clamp(var(--space-8), 6vw, var(--space-11));
+  overflow: visible;
+}
+
+.fanbase-event-detail__type {
+  position: absolute;
+  top: 0;
+  left: clamp(var(--space-5), 5vw, var(--space-8));
+  transform: translateY(-38%);
+  box-shadow: 0 0 0 0.25rem var(--color-app-background);
+}
+
 .fanbase-detail-card__glyph {
   margin-bottom: var(--space-5);
 }
@@ -2259,6 +2474,38 @@ th.fan-photo-ranking-table__identity {
   gap: var(--space-5);
   margin-bottom: var(--space-5);
   padding: var(--space-6);
+}
+
+.group-identity-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+}
+
+.group-identity-card__avatar {
+  display: grid;
+  width: clamp(3.25rem, 7vw, 4.75rem);
+  height: clamp(3.25rem, 7vw, 4.75rem);
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-control);
+  color: var(--color-control-text);
+  font-size: var(--font-size-lg);
+  font-weight: 900;
+}
+
+.group-identity-card__context {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
 }
 
 .group-detail-banner p {
@@ -2470,6 +2717,14 @@ th.fan-photo-ranking-table__identity {
   }
 
   .group-detail-banner .fanbase-detail-actions {
+    grid-column: 1 / -1;
+  }
+
+  .group-identity-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .group-identity-card .fanbase-detail-actions {
     grid-column: 1 / -1;
   }
 
