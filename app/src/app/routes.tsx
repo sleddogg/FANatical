@@ -5,6 +5,7 @@ import { InnerPageLayout } from "../layouts/InnerPageLayout";
 import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
+import { NewsPage } from "../features/news/NewsPage";
 import { featureNavigation } from "./navigation";
 
 export const appRoutes: RouteObject[] = [
@@ -19,7 +20,11 @@ export const appRoutes: RouteObject[] = [
       {
         element: <InnerPageLayout />,
         children: [
-          ...featureNavigation.map((item) => ({
+          {
+            path: "news",
+            element: <NewsPage />,
+          },
+          ...featureNavigation.filter((item) => item.path !== "/news").map((item) => ({
             path: item.path.slice(1),
             element: <PlaceholderPage title={item.label} description={item.description} />,
           })),
