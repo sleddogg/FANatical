@@ -139,7 +139,6 @@ export const mockNewsItems = [
     imageUrl: patriotsLogo,
     imageAlt: "New England Patriots logo",
     viewCount: 3240,
-    discussionCount: 86,
     reactionCount: 241,
   },
   {
@@ -160,7 +159,6 @@ export const mockNewsItems = [
     teamIds: [],
     viewType: "local",
     viewCount: 1880,
-    discussionCount: 42,
     reactionCount: 118,
   },
   {
@@ -183,7 +181,6 @@ export const mockNewsItems = [
     imageUrl: redSoxLogo,
     imageAlt: "Boston Red Sox logo",
     viewCount: 2910,
-    discussionCount: 64,
     reactionCount: 193,
   },
   {
@@ -201,7 +198,6 @@ export const mockNewsItems = [
     viewType: "external",
     externalDestination: "Weekend Sports Radio episode page",
     viewCount: 1490,
-    discussionCount: 31,
     reactionCount: 94,
   },
   {
@@ -224,7 +220,6 @@ export const mockNewsItems = [
     imageUrl: celticsLogo,
     imageAlt: "Boston Celtics logo",
     viewCount: 4270,
-    discussionCount: 109,
     reactionCount: 356,
   },
   {
@@ -242,7 +237,6 @@ export const mockNewsItems = [
     viewType: "external",
     externalDestination: "Fan Field Journal league desk",
     viewCount: 5210,
-    discussionCount: 128,
     reactionCount: 404,
   },
   {
@@ -263,7 +257,6 @@ export const mockNewsItems = [
     teamIds: [],
     viewType: "local",
     viewCount: 970,
-    discussionCount: 17,
     reactionCount: 63,
   },
   {
@@ -284,7 +277,6 @@ export const mockNewsItems = [
     teamIds: [],
     viewType: "local",
     viewCount: 2210,
-    discussionCount: 54,
     reactionCount: 176,
   },
   {
@@ -302,7 +294,6 @@ export const mockNewsItems = [
     viewType: "external",
     externalDestination: "Film Room Lab video page",
     viewCount: 3460,
-    discussionCount: 73,
     reactionCount: 289,
   },
   {
@@ -323,7 +314,6 @@ export const mockNewsItems = [
     teamIds: [],
     viewType: "local",
     viewCount: 1320,
-    discussionCount: 39,
     reactionCount: 101,
   },
   {
@@ -346,7 +336,6 @@ export const mockNewsItems = [
     imageUrl: redSoxLogo,
     imageAlt: "Boston Red Sox logo",
     viewCount: 1640,
-    discussionCount: 28,
     reactionCount: 87,
   },
   {
@@ -364,7 +353,6 @@ export const mockNewsItems = [
     viewType: "external",
     externalDestination: "Weekend Sports Radio episode page",
     viewCount: 2380,
-    discussionCount: 47,
     reactionCount: 152,
   },
   {
@@ -385,7 +373,6 @@ export const mockNewsItems = [
     teamIds: [],
     viewType: "local",
     viewCount: 6190,
-    discussionCount: 144,
     reactionCount: 488,
   },
 ] as const satisfies readonly NewsItem[];

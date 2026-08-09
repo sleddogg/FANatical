@@ -6,6 +6,7 @@ import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 import { NewsPage } from "../features/news/NewsPage";
+import { FanbasePage } from "../features/fanbase/FanbasePage";
 import { featureNavigation } from "./navigation";
 
 export const appRoutes: RouteObject[] = [
@@ -24,7 +25,11 @@ export const appRoutes: RouteObject[] = [
             path: "news",
             element: <NewsPage />,
           },
-          ...featureNavigation.filter((item) => item.path !== "/news").map((item) => ({
+          {
+            path: "fanbase",
+            element: <FanbasePage />,
+          },
+          ...featureNavigation.filter((item) => item.path !== "/news" && item.path !== "/fanbase").map((item) => ({
             path: item.path.slice(1),
             element: <PlaceholderPage title={item.label} description={item.description} />,
           })),

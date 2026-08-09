@@ -3,6 +3,7 @@ import type { NewsItem } from "./types";
 
 type NewsActionRowProps = {
   readonly item: NewsItem;
+  readonly discussionCount: number;
   readonly reacted: boolean;
   readonly variant: "card" | "detail";
   readonly onReaction: () => void;
@@ -12,6 +13,7 @@ type NewsActionRowProps = {
 
 export function NewsActionRow({
   item,
+  discussionCount,
   reacted,
   variant,
   onReaction,
@@ -28,7 +30,7 @@ export function NewsActionRow({
       </button>
       <button type="button" aria-label="Open FANbase discussion" onClick={onDiscussion}>
         <span aria-hidden="true">◯</span>
-        <small>{formatCount(item.discussionCount)}</small>
+        <small>{formatCount(discussionCount)}</small>
       </button>
       <button type="button" aria-label="Share News item" onClick={onShare}>
         <span aria-hidden="true">↗</span>

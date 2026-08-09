@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTeamContext } from "../../state/TeamContext";
+import { useFanbaseContext } from "../fanbase/FanbaseContext";
 import { NewsCard } from "./NewsCard";
 import { NewsFilterMenu } from "./NewsFilterMenu";
 import { NewsItemOverlay } from "./NewsItemOverlay";
@@ -27,6 +28,7 @@ type OverlayLocationState = Readonly<{ newsItemOverlay?: boolean }>;
 
 export function NewsPage() {
   const { followedTeams, selectedTeamId, selectTeam } = useTeamContext();
+  const { getArticleCommentCount } = useFanbaseContext();
   const [feedContext, setFeedContext] = useState<NewsFeedContext>({ kind: "team", teamId: selectedTeamId });
   const [sourcePreferences, setSourcePreferences] = useState<FollowedSourcePreference[]>(createInitialFollowedSourcePreferences);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -161,10 +163,11 @@ export function NewsPage() {
                 key={item.id}
                 item={item}
                 source={source}
+                discussionCount={getArticleCommentCount(item.id)}
                 reacted={reactedItemIds.has(item.id)}
                 onOpen={() => openItem(item.id)}
                 onReaction={() => toggleReaction(item.id)}
-                onDiscussion={() => showNotice("News discussions will open a connected FANbase thread in a later feature task.")}
+                onDiscussion={() => navigate(`/fanbase?area=article-comments&item=${item.id}`)}
                 onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
               />
             );
@@ -203,10 +206,11 @@ export function NewsPage() {
         <NewsItemOverlay
           item={selectedItem}
           source={selectedItemSource}
+          discussionCount={getArticleCommentCount(selectedItem.id)}
           reacted={reactedItemIds.has(selectedItem.id)}
           onClose={closeItem}
           onReaction={() => toggleReaction(selectedItem.id)}
-          onDiscussion={() => showNotice("News discussions will open a connected FANbase thread in a later feature task.")}
+          onDiscussion={() => navigate(`/fanbase?area=article-comments&item=${selectedItem.id}`)}
           onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
           onExternalContinue={() => showNotice("External destinations are not connected in this mock frontend.")}
         />

@@ -41,7 +41,6 @@ export type NewsItem = Readonly<{
   imageAlt?: string;
   externalDestination?: string;
   viewCount: number;
-  discussionCount: number;
   reactionCount: number;
 }>;
 

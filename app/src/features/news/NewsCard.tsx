@@ -5,6 +5,7 @@ import type { NewsItem, NewsSource } from "./types";
 type NewsCardProps = {
   readonly item: NewsItem;
   readonly source: NewsSource;
+  readonly discussionCount: number;
   readonly reacted: boolean;
   readonly onOpen: () => void;
   readonly onReaction: () => void;
@@ -15,6 +16,7 @@ type NewsCardProps = {
 export function NewsCard({
   item,
   source,
+  discussionCount,
   reacted,
   onOpen,
   onReaction,
@@ -46,6 +48,7 @@ export function NewsCard({
 
       <NewsActionRow
         item={item}
+        discussionCount={discussionCount}
         reacted={reacted}
         variant="card"
         onReaction={onReaction}

@@ -6,6 +6,7 @@ import type { NewsItem, NewsSource } from "./types";
 type NewsItemOverlayProps = {
   readonly item: NewsItem;
   readonly source: NewsSource;
+  readonly discussionCount: number;
   readonly reacted: boolean;
   readonly onClose: () => void;
   readonly onReaction: () => void;
@@ -17,6 +18,7 @@ type NewsItemOverlayProps = {
 export function NewsItemOverlay({
   item,
   source,
+  discussionCount,
   reacted,
   onClose,
   onReaction,
@@ -93,6 +95,7 @@ export function NewsItemOverlay({
 
           <NewsActionRow
             item={item}
+            discussionCount={discussionCount}
             reacted={reacted}
             variant="detail"
             onReaction={onReaction}
