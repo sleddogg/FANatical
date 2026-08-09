@@ -156,6 +156,93 @@ describe("FANbase frontend", () => {
     expect(screen.getByRole("dialog", { name: dialogName })).toBeInTheDocument();
   });
 
+  it("centers one Fan Photo category with both neighboring categories secondary", async () => {
+    const user = userEvent.setup();
+    const { router } = renderRoute("/fanbase?area=fan-photos");
+
+    expect(screen.getByText("Game Face, Fan Cave, and Memorabilia")).toBeInTheDocument();
+    expect(screen.getByText("Swipe or select a category to browse, rate, and celebrate how fans show up.")).toBeInTheDocument();
+    expect(screen.queryByText("Explore FANfotos")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Choose a category" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Fan Cave Fan Photos" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "Open Game Face Fan Photos" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("button", { name: "Open Memorabilia Fan Photos" })).not.toHaveAttribute("aria-current");
+
+    await user.click(screen.getByRole("button", { name: "Open Game Face Fan Photos" }));
+    expect(router.state.location.search).toBe("?area=fan-photos");
+    expect(screen.getByRole("button", { name: "Open Game Face Fan Photos" })).toHaveAttribute("aria-current", "true");
+    await user.click(screen.getByRole("button", { name: "Open Game Face Fan Photos" }));
+    expect(router.state.location.search).toContain("category=Game+Face");
+  });
+
+  it("uses an unrated visual queue and replaces a FANfoto after a half-star rating", async () => {
+    const user = userEvent.setup();
+    const { router } = renderRoute("/fanbase?area=fan-photos&category=Game%20Face");
+
+    expect(screen.getByRole("heading", { name: "Game Face" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Fan Photos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back to Fan Photos" })).toBeInTheDocument();
+    const queue = screen.getByRole("region", { name: "Photos to Rate" });
+    expect(within(queue).getByText("Ready before sunrise")).toBeInTheDocument();
+    const readyCard = within(queue).getByRole("button", { name: "Open Ready before sunrise" }).closest("article");
+    expect(readyCard).not.toBeNull();
+    expect(within(readyCard as HTMLElement).getByText("@Maya84")).toBeInTheDocument();
+    expect(within(queue).queryByText(/ratings/i)).not.toBeInTheDocument();
+    expect(within(queue).queryByRole("group", { name: /Rate Ready before sunrise/i })).not.toBeInTheDocument();
+
+    await user.click(within(queue).getByRole("button", { name: "Open Ready before sunrise" }));
+    expect(router.state.location.search).toContain("origin=rating-queue");
+    let viewer = screen.getByRole("dialog", { name: "Ready before sunrise" });
+    expect(within(viewer).getByRole("button", { name: "Rate this FANfoto to unlock details" })).toBeDisabled();
+    expect(viewer.querySelectorAll(".fan-photo-star-rating__star")).toHaveLength(5);
+
+    await user.click(within(viewer).getByRole("button", { name: "Close FANfoto" }));
+    expect(within(queue).getByText("Ready before sunrise")).toBeInTheDocument();
+    await user.click(within(queue).getByRole("button", { name: "Open Ready before sunrise" }));
+    viewer = screen.getByRole("dialog", { name: "Ready before sunrise" });
+    await user.click(within(viewer).getByRole("button", { name: "Rate 4.5 out of 5" }));
+    expect(within(viewer).getByRole("button", { name: "Flip" })).toBeEnabled();
+    await user.click(within(viewer).getByRole("button", { name: "Close FANfoto" }));
+
+    expect(within(queue).queryByText("Ready before sunrise")).not.toBeInTheDocument();
+    expect(within(queue).getByText("Sunday alter ego")).toBeInTheDocument();
+    const rankings = screen.getByRole("region", { name: "Rankings" });
+    await user.click(within(rankings).getByRole("button", { name: "Show Team rankings for Patriots" }));
+    const ratedRow = within(rankings).getByRole("button", { name: "Open Ready before sunrise" }).closest("tr");
+    expect(ratedRow).not.toBeNull();
+    expect(within(ratedRow as HTMLElement).getByLabelText("Rated 4.5 out of 5")).toHaveTextContent("✓");
+  });
+
+  it("moves across ranking columns around the same FANfoto and jumps to the active rank 1", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=fan-photos&category=Game%20Face");
+
+    const rankings = screen.getByRole("region", { name: "Rankings" });
+    expect(within(rankings).getByRole("button", { name: "Show Personal rankings for You" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(rankings).getByRole("button", { name: "Show Team rankings for Patriots" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "Show League rankings for NFL" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "Show Sport rankings for Football" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View The lucky game-day fit at Personal rank 1" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View All in from the stands at Personal rank 2" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View The lucky game-day fit at Team rank 75" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View The lucky game-day fit at League rank 174" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View The lucky game-day fit at Sport rank 541" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View The lucky game-day fit at Global rank 795" })).toBeInTheDocument();
+
+    await user.click(within(rankings).getByRole("button", { name: "View The lucky game-day fit at Team rank 75" }));
+    expect(within(rankings).getByRole("button", { name: "Show Team rankings for Patriots" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(rankings).getByRole("button", { name: "View Ready before sunrise at Team rank 74" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View All in from the stands at Team rank 76" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "View Double coverage at Team rank 77" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "Jump to Team rank 1" })).toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "Open The lucky game-day fit" }).closest("tr")).toHaveAttribute("data-focused", "true");
+
+    await user.click(within(rankings).getByRole("button", { name: "Jump to Team rank 1" }));
+    expect(within(rankings).queryByRole("button", { name: "Jump to Team rank 1" })).not.toBeInTheDocument();
+    expect(within(rankings).getByRole("button", { name: "Open Built for kickoff" }).closest("tr")).toHaveAttribute("data-focused", "true");
+    expect(rankings.querySelector(".fan-photo-ranking-viewport")).toBeInTheDocument();
+  });
+
   it("keeps local Fan Photo creation connected to the chosen category and shared record", async () => {
     const user = userEvent.setup();
     renderRoute("/fanbase?area=fan-photos&category=Fan%20Cave");
@@ -171,8 +258,8 @@ describe("FANbase frontend", () => {
     await user.click(within(viewer).getByRole("button", { name: "Flip" }));
     expect(within(viewer).getByText("Built together over three offseasons.")).toBeInTheDocument();
     await user.click(within(viewer).getByRole("button", { name: "Close FANfoto" }));
-    expect(screen.getByRole("heading", { name: "Your Photos" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Our new watch room/i })).toHaveLength(2);
+    expect(screen.queryByRole("heading", { name: "Your Photos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Rankings" })).toBeInTheDocument();
   });
 
   it("demonstrates the 24-hour Game Thread lock", async () => {
@@ -199,14 +286,15 @@ describe("FANbase frontend", () => {
     await user.click(screen.getByRole("button", { name: /Fan Photos/i }));
     expect(screen.getByRole("button", { name: "Open Game Face Fan Photos" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Photos to Rate" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show Game Face" }));
     await user.click(screen.getByRole("button", { name: "Open Game Face Fan Photos" }));
     expect(screen.getByRole("heading", { name: "Photos to Rate" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Your Photos" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Your Photos" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Rankings" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Ready before sunrise/i }));
     const viewer = screen.getByRole("dialog", { name: "Ready before sunrise" });
     expect(screen.queryByRole("navigation", { name: "Application navigation" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Rate 5 out of 5" }));
+    await user.click(within(viewer).getByRole("button", { name: "Rate 4.5 out of 5" }));
     await user.click(within(viewer).getByRole("button", { name: "Flip" }));
     await user.click(within(viewer).getByRole("button", { name: /Fire, 24 reactions/i }));
     await user.type(screen.getByRole("textbox", { name: "Add a comment" }), "The game-day details are perfect.");
@@ -217,7 +305,7 @@ describe("FANbase frontend", () => {
     expect(screen.getByText("The game-day details are perfect.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reported" })).toBeInTheDocument();
     await user.click(within(viewer).getByRole("button", { name: "Photo" }));
-    expect(screen.getByRole("button", { name: "Rate 5 out of 5" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Rate 4.5 out of 5" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("keeps multiple images inside one canonical FANfoto while flipping front and back", async () => {
@@ -244,7 +332,7 @@ describe("FANbase frontend", () => {
     expect(screen.getByRole("heading", { name: "Photos to Rate" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Application navigation" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back to Fan Photos" }));
-    expect(screen.getByRole("heading", { name: "Choose a category" })).toBeInTheDocument();
+    expect(screen.getByText("Swipe or select a category to browse, rate, and celebrate how fans show up.")).toBeInTheDocument();
   });
 
   it("opens News Discussion in the one linked Article Discussion and reflects the first comment count", async () => {

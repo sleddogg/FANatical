@@ -67,6 +67,7 @@ export function FanbasePage() {
   const itemId = searchParams.get("item");
   const photoCategoryParam = searchParams.get("category");
   const photoCategory = area === "fan-photos" && isFanPhotoCategory(photoCategoryParam) ? photoCategoryParam : null;
+  const itemOrigin = area === "fan-photos" && searchParams.get("origin") === "rating-queue" ? "rating-queue" : null;
 
   const openArea = (nextArea: FanbaseAreaId) => {
     setSearchParams({ area: nextArea });
@@ -79,6 +80,11 @@ export function FanbasePage() {
 
   const openPhotoCategory = (nextCategory: FanPhotoCategory) => {
     setSearchParams({ area: "fan-photos", category: nextCategory });
+  };
+
+  const openRatingItem = (nextItemId: string) => {
+    if (!photoCategory) return;
+    setSearchParams({ area: "fan-photos", category: photoCategory, item: nextItemId, origin: "rating-queue" });
   };
 
   const back = () => {
@@ -113,7 +119,7 @@ export function FanbasePage() {
     if (area === "fan-photos") {
       const photo = itemId ? fanbase.fanPhotos.find((candidate) => candidate.id === itemId) : undefined;
       if (photo) return `${photo.category} · @${photo.owner.username}`;
-      return photoCategory ? `${selectedTeam.name} · ${photoCategory}` : `${selectedTeam.name} Game Face, Fan Cave, and Memorabilia`;
+      return photoCategory ? `${selectedTeam.name} · ${photoCategory}` : "Game Face, Fan Cave, and Memorabilia";
     }
     if (area === "events") {
       const event = itemId ? fanbase.events.find((candidate) => candidate.id === itemId) : undefined;
@@ -137,7 +143,7 @@ export function FanbasePage() {
         )}
         <div className="fanbase-topbar__title">
           <span className="eyebrow">{area ? "FANbase" : "Community hub"}</span>
-          <h1>{area ? areaTitles[area] : "FANbase"}</h1>
+          <h1>{area === "fan-photos" && photoCategory ? photoCategory : area ? areaTitles[area] : "FANbase"}</h1>
           <p>{subpageContext}</p>
         </div>
         {area ? (
@@ -157,7 +163,7 @@ export function FanbasePage() {
       </header>
 
       {area ? (
-        <FanbaseAreaView area={area} itemId={itemId} photoCategory={photoCategory} teamId={selectedTeamId} onOpenPhotoCategory={openPhotoCategory} onOpenItem={openItem} onCloseItem={back} />
+        <FanbaseAreaView area={area} itemId={itemId} itemOrigin={itemOrigin} photoCategory={photoCategory} teamId={selectedTeamId} onOpenPhotoCategory={openPhotoCategory} onOpenItem={openItem} onOpenRatingItem={openRatingItem} onCloseItem={back} />
       ) : (
         <FanbaseHub teamId={selectedTeamId} onOpenArea={openArea} />
       )}

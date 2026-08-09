@@ -10,6 +10,8 @@ import type { TeamId } from "../../domain/team";
 import { demoUser } from "./mockFanbaseData";
 import { useFanbaseContext } from "./FanbaseContext";
 import { formatFanbaseTime, formatRating, totalReactions } from "./fanbaseFormatting";
+import { FanPhotoRankings } from "./FanPhotoRankings";
+import { FanPhotoRating } from "./FanPhotoRating";
 import { ReactionPicker } from "./ReactionPicker";
 import type { FanPhoto, FanPhotoCategory } from "./types";
 
@@ -29,23 +31,26 @@ type FanPhotosAreaProps = {
   readonly category: FanPhotoCategory | null;
   readonly onOpenCategory: (category: FanPhotoCategory) => void;
   readonly onOpenItem: (itemId: string) => void;
+  readonly onOpenRatingItem: (itemId: string) => void;
   readonly onCloseItem: () => void;
+  readonly itemOrigin: "rating-queue" | null;
 };
-
-function ratingAverage(photo: FanPhoto) {
-  return photo.ratingCount ? photo.ratingTotal / photo.ratingCount : 0;
-}
 
 function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: readonly FanPhoto[]; readonly onOpenCategory: (category: FanPhotoCategory) => void }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(1);
 
   const moveTo = (nextIndex: number) => {
     const clampedIndex = Math.max(0, Math.min(categories.length - 1, nextIndex));
     const card = scrollerRef.current?.querySelector<HTMLElement>(`[data-category-index="${clampedIndex}"]`);
-    card?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    card?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "center" });
     setActiveIndex(clampedIndex);
   };
+
+  useEffect(() => {
+    const initialCard = scrollerRef.current?.querySelector<HTMLElement>("[data-category-index=\"1\"]");
+    initialCard?.scrollIntoView?.({ block: "nearest", inline: "center" });
+  }, []);
 
   const updateActiveCard = () => {
     const scroller = scrollerRef.current;
@@ -61,11 +66,9 @@ function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: read
   };
 
   return (
-    <section className="fan-photo-category-hub" aria-labelledby="fan-photo-category-title">
+    <section className="fan-photo-category-hub" aria-label="Fan Photo categories">
       <div className="fan-photo-category-hub__intro">
-        <span className="eyebrow">Explore FANfotos</span>
-        <h2 id="fan-photo-category-title">Choose a category</h2>
-        <p>Browse, rate, and celebrate how fans show up. Swipe or scroll to see all three.</p>
+        <p>Swipe or select a category to browse, rate, and celebrate how fans show up.</p>
       </div>
       <div className="fan-photo-category-carousel-shell">
         <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--previous" type="button" aria-label="Previous Fan Photo category" disabled={activeIndex === 0} onClick={() => moveTo(activeIndex - 1)}>‹</button>
@@ -80,8 +83,7 @@ function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: read
                 type="button"
                 aria-label={`Open ${category} Fan Photos`}
                 aria-current={activeIndex === index ? "true" : undefined}
-                onFocus={() => setActiveIndex(index)}
-                onClick={() => onOpenCategory(category)}
+                onClick={() => activeIndex === index ? onOpenCategory(category) : moveTo(index)}
               >
                 {cover ? <img src={cover.url} alt="" /> : <span className="fan-photo-category-card__empty" aria-hidden="true">▧</span>}
                 <span className="fan-photo-category-card__shade" />
@@ -99,55 +101,36 @@ function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: read
   );
 }
 
-function FanPhotoCard({ photo, onOpen }: { readonly photo: FanPhoto; readonly onOpen: () => void }) {
-  const image = photo.images[0];
-  return (
-    <button className="fan-photo-card" type="button" onClick={onOpen}>
-      <span className="fan-photo-card__visual">
-        <img src={image?.url} alt="" />
-        {photo.rankingBadge ? <span className="fan-photo-badge">{photo.rankingBadge}</span> : null}
-        {photo.images.length > 1 ? <span className="fan-photo-image-count" aria-label={`${photo.images.length} images`}>▣ {photo.images.length}</span> : null}
-      </span>
-      <span className="fan-photo-card__copy">
-        <small>@{photo.owner.username} · {formatFanbaseTime(photo.createdAt)}</small>
-        <strong>{photo.title}</strong>
-        <span>★ {formatRating(photo.ratingTotal, photo.ratingCount)} · {photo.ratingCount} ratings</span>
-      </span>
-    </button>
-  );
-}
+function FanPhotoRatingQueue({ photos, onOpen }: { readonly photos: readonly FanPhoto[]; readonly onOpen: (itemId: string) => void }) {
+  const queue = photos.filter((photo) => photo.owner.id !== demoUser.id && photo.viewerRating === null).slice(0, 4);
 
-function FanPhotoShelf({ title, description, photos, emptyMessage, onOpen }: { readonly title: string; readonly description: string; readonly photos: readonly FanPhoto[]; readonly emptyMessage: string; readonly onOpen: (itemId: string) => void }) {
   return (
-    <section className="fan-photo-shelf" aria-labelledby={`fan-photo-${title.toLowerCase().replaceAll(" ", "-")}`}>
-      <header><div><h3 id={`fan-photo-${title.toLowerCase().replaceAll(" ", "-")}`}>{title}</h3><p>{description}</p></div><span>{photos.length}</span></header>
-      {photos.length ? <div className="fan-photo-shelf__scroller">{photos.map((photo) => <FanPhotoCard key={photo.id} photo={photo} onOpen={() => onOpen(photo.id)} />)}</div> : <p className="fan-photo-shelf__empty">{emptyMessage}</p>}
+    <section className="fan-photo-rating-queue" aria-labelledby="fan-photo-rating-queue-title">
+      <header><div><h3 id="fan-photo-rating-queue-title">Photos to Rate</h3><p>Open a FANfoto to rate it. Rated photos leave your queue and another takes its place.</p></div></header>
+      {queue.length ? (
+        <div className="fan-photo-rating-queue__scroller">
+          {queue.map((photo) => (
+            <article className="fan-photo-rating-card" key={photo.id}>
+              <button className="fan-photo-rating-card__photo" type="button" aria-label={`Open ${photo.title}`} onClick={() => onOpen(photo.id)}><img src={photo.images[0]?.url} alt="" /></button>
+              <div className="fan-photo-rating-card__identity"><strong>{photo.title}</strong><small>@{photo.owner.username}</small></div>
+            </article>
+          ))}
+        </div>
+      ) : <p className="fan-photo-shelf__empty">You have rated every available FANfoto in this category.</p>}
     </section>
   );
 }
 
-function FanPhotoCategoryPage({ category, photos, onOpenItem }: { readonly category: FanPhotoCategory; readonly photos: readonly FanPhoto[]; readonly onOpenItem: (itemId: string) => void }) {
-  const photosToRate = photos.filter((photo) => photo.ratingCount < FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD);
-  const yourPhotos = photos.filter((photo) => photo.owner.id === demoUser.id);
-  const rankings = photos
-    .filter((photo) => photo.ratingCount >= FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD)
-    .sort((first, second) => ratingAverage(second) - ratingAverage(first) || second.ratingCount - first.ratingCount);
-
+function FanPhotoCategoryPage({ photos, teamId, onOpenItem, onOpenRatingItem }: { readonly photos: readonly FanPhoto[]; readonly teamId: TeamId; readonly onOpenItem: (itemId: string) => void; readonly onOpenRatingItem: (itemId: string) => void }) {
   return (
     <div className="fan-photo-category-page">
-      <section className="fan-photo-category-page__intro surface">
-        <span className="eyebrow">{category}</span>
-        <h2>{categoryDescriptions[category]}</h2>
-        <p>FANfotos become ranking-eligible after {FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD} ratings. The demo threshold is kept in one configurable constant.</p>
-      </section>
-      <FanPhotoShelf title="Photos to Rate" description={`Still gathering the first ${FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD} community ratings.`} photos={photosToRate} emptyMessage="Every FANfoto in this category is currently ranking-eligible." onOpen={onOpenItem} />
-      <FanPhotoShelf title="Your Photos" description="Your canonical FANfoto records; Profile can surface these same entries later." photos={yourPhotos} emptyMessage="You have not added a FANfoto in this category yet." onOpen={onOpenItem} />
-      <FanPhotoShelf title="Rankings" description="Ranking-eligible FANfotos ordered by their current average rating." photos={rankings} emptyMessage={`No FANfoto has reached ${FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD} ratings yet.`} onOpen={onOpenItem} />
+      <FanPhotoRatingQueue photos={photos} onOpen={onOpenRatingItem} />
+      <FanPhotoRankings photos={photos} teamId={teamId} eligibilityThreshold={FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD} onOpenItem={onOpenItem} />
     </div>
   );
 }
 
-function FanPhotoViewer({ photo, onClose }: { readonly photo: FanPhoto; readonly onClose: () => void }) {
+function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { readonly photo: FanPhoto; readonly openedFromRatingQueue: boolean; readonly onClose: () => void }) {
   const fanbase = useFanbaseContext();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -159,6 +142,7 @@ function FanPhotoViewer({ photo, onClose }: { readonly photo: FanPhoto; readonly
   const [shareMessage, setShareMessage] = useState("");
   const hasMultipleImages = photo.images.length > 1;
   const currentImage = photo.images[imageIndex] ?? photo.images[0];
+  const flipLocked = openedFromRatingQueue && photo.viewerRating === null;
 
   flippedRef.current = flipped;
   onCloseRef.current = onClose;
@@ -272,8 +256,14 @@ function FanPhotoViewer({ photo, onClose }: { readonly photo: FanPhoto; readonly
       <button ref={closeButtonRef} className="fan-photo-viewer__close" type="button" aria-label="Close FANfoto" onClick={onClose}>×</button>
       <div className="fan-photo-viewer__bottom-actions">
         <button type="button" onClick={() => setShareMessage("Sharing is represented as a local frontend placeholder.")}><span aria-hidden="true">↗</span> Share</button>
-        {!flipped ? <fieldset className="fan-photo-viewer__rating"><legend>Rate this FANfoto</legend>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" aria-label={`Rate ${rating} out of 5`} aria-pressed={photo.viewerRating === rating} onClick={() => fanbase.rateFanPhoto(photo.id, rating)}>★</button>)}</fieldset> : <span />}
-        <button type="button" onClick={() => setFlipped((current) => !current)}><span aria-hidden="true">↻</span> {flipped ? "Photo" : "Flip"}</button>
+        {!flipped ? <FanPhotoRating label="Rate this FANfoto" value={photo.viewerRating} compact onRate={(rating) => fanbase.rateFanPhoto(photo.id, rating)} /> : <span />}
+        <button
+          type="button"
+          disabled={flipLocked}
+          aria-label={flipLocked ? "Rate this FANfoto to unlock details" : flipped ? "Photo" : "Flip"}
+          title={flipLocked ? "Rate this FANfoto to unlock details" : undefined}
+          onClick={() => setFlipped((current) => !current)}
+        ><span aria-hidden="true">{flipLocked ? "🔒" : "↻"}</span> {flipped ? "Photo" : "Flip"}</button>
       </div>
       {shareMessage ? <p className="fan-photo-viewer__status" role="status">{shareMessage}</p> : null}
     </section>,
@@ -281,15 +271,15 @@ function FanPhotoViewer({ photo, onClose }: { readonly photo: FanPhoto; readonly
   );
 }
 
-export function FanPhotosArea({ teamId, itemId, category, onOpenCategory, onOpenItem, onCloseItem }: FanPhotosAreaProps) {
+export function FanPhotosArea({ teamId, itemId, category, onOpenCategory, onOpenItem, onOpenRatingItem, onCloseItem, itemOrigin }: FanPhotosAreaProps) {
   const fanbase = useFanbaseContext();
   const teamPhotos = fanbase.fanPhotos.filter((photo) => photo.teamId === teamId);
   const selectedPhoto = itemId ? teamPhotos.find((photo) => photo.id === itemId) : undefined;
 
   return (
     <>
-      {category ? <FanPhotoCategoryPage category={category} photos={teamPhotos.filter((photo) => photo.category === category)} onOpenItem={onOpenItem} /> : <FanPhotoCategoryHub photos={teamPhotos} onOpenCategory={onOpenCategory} />}
-      {selectedPhoto ? <FanPhotoViewer key={selectedPhoto.id} photo={selectedPhoto} onClose={onCloseItem} /> : null}
+      {category ? <FanPhotoCategoryPage photos={teamPhotos.filter((photo) => photo.category === category)} teamId={teamId} onOpenItem={onOpenItem} onOpenRatingItem={onOpenRatingItem} /> : <FanPhotoCategoryHub photos={teamPhotos} onOpenCategory={onOpenCategory} />}
+      {selectedPhoto ? <FanPhotoViewer key={selectedPhoto.id} photo={selectedPhoto} openedFromRatingQueue={itemOrigin === "rating-queue"} onClose={onCloseItem} /> : null}
     </>
   );
 }

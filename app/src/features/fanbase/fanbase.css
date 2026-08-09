@@ -1091,7 +1091,7 @@
 }
 
 .fan-photo-category-hub__intro {
-  max-width: 42rem;
+  max-width: 48rem;
   margin-inline: auto;
   text-align: center;
 }
@@ -1105,6 +1105,7 @@
 .fan-photo-category-hub__intro p {
   margin: 0;
   color: var(--color-text-muted);
+  font-size: clamp(var(--font-size-sm), 2vw, var(--font-size-lg));
 }
 
 .fan-photo-category-carousel-shell {
@@ -1113,10 +1114,10 @@
 
 .fan-photo-category-carousel {
   display: flex;
-  gap: clamp(var(--space-3), 2.5vw, var(--space-6));
+  gap: 0;
   overflow-x: auto;
-  padding: var(--space-2) max(10%, calc((100% - min(76%, 46rem)) / 2));
-  scroll-padding-inline: max(10%, calc((100% - min(76%, 46rem)) / 2));
+  padding: var(--space-4) max(14%, calc((100% - min(72%, 46rem)) / 2));
+  scroll-padding-inline: max(14%, calc((100% - min(72%, 46rem)) / 2));
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
@@ -1128,7 +1129,7 @@
 
 .fan-photo-category-card {
   position: relative;
-  flex: 0 0 min(76%, 46rem);
+  flex: 0 0 min(72%, 46rem);
   min-height: clamp(24rem, 52vw, 36rem);
   overflow: hidden;
   padding: 0;
@@ -1140,12 +1141,14 @@
   box-shadow: var(--shadow-raised);
   cursor: pointer;
   opacity: 0.58;
+  margin-inline: -3.5%;
   scroll-snap-align: center;
-  transform: scale(0.94);
+  transform: scale(0.88);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .fan-photo-category-card[aria-current="true"] {
+  z-index: 2;
   opacity: 1;
   transform: scale(1);
 }
@@ -1415,6 +1418,364 @@
   border-radius: var(--radius-lg);
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.fan-photo-rating-queue,
+.fan-photo-rankings {
+  min-width: 0;
+}
+
+.fan-photo-rating-queue > header,
+.fan-photo-rankings__intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.fan-photo-rating-queue h3,
+.fan-photo-rankings h3 {
+  margin: 0;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.fan-photo-rating-queue header p,
+.fan-photo-rankings__intro p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.fan-photo-rating-queue > header > span,
+.fan-photo-rankings__intro > span {
+  display: grid;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  place-items: center;
+  background: var(--color-control);
+  color: var(--color-control-text);
+  font-size: var(--font-size-xs);
+  font-weight: 900;
+}
+
+.fan-photo-rating-queue__scroller {
+  display: grid;
+  grid-auto-columns: clamp(16.5rem, 31%, 22rem);
+  grid-auto-flow: column;
+  gap: var(--space-4);
+  overflow-x: auto;
+  padding: var(--space-1) var(--space-1) var(--space-4);
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: #b8b8b5 transparent;
+}
+
+.fan-photo-rating-card {
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  scroll-snap-align: start;
+}
+
+.fan-photo-rating-card__photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: #dededb;
+  cursor: pointer;
+}
+
+.fan-photo-rating-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+
+.fan-photo-rating-card__photo:hover img {
+  transform: scale(1.025);
+}
+
+.fan-photo-rating-card__identity {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.fan-photo-rating-card__identity strong {
+  font-size: var(--font-size-lg);
+  line-height: 1.15;
+}
+
+.fan-photo-rating-card__identity small {
+  color: var(--color-text-muted);
+}
+
+.fan-photo-star-rating {
+  display: flex;
+  width: fit-content;
+  padding: var(--space-2) var(--space-3) var(--space-4);
+}
+
+.fan-photo-star-rating__star {
+  position: relative;
+  display: block;
+  width: 2.5rem;
+  height: 2.75rem;
+}
+
+.fan-photo-star-rating__half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b8b8b4;
+  cursor: pointer;
+}
+
+.fan-photo-star-rating__half--left {
+  left: 0;
+}
+
+.fan-photo-star-rating__half--right {
+  right: 0;
+}
+
+.fan-photo-star-rating__half > span {
+  position: absolute;
+  top: 50%;
+  width: 2.5rem;
+  font-size: 2rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.fan-photo-star-rating__half--left > span {
+  left: 0;
+  text-align: left;
+}
+
+.fan-photo-star-rating__half--right > span {
+  right: 0;
+  text-align: right;
+}
+
+.fan-photo-star-rating__half[data-filled="true"],
+.fan-photo-star-rating__half:hover,
+.fan-photo-star-rating__half:focus-visible {
+  color: #d89c00;
+}
+
+.fan-photo-ranking-viewport {
+  position: relative;
+  max-height: 34rem;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft), inset -1.1rem 0 1.2rem -1.2rem rgba(0, 0, 0, 0.45);
+  scrollbar-color: #b8b8b5 transparent;
+}
+
+.fan-photo-ranking-table {
+  width: 100%;
+  min-width: 60rem;
+  border-spacing: 0;
+  table-layout: fixed;
+  text-align: left;
+}
+
+.fan-photo-ranking-table th,
+.fan-photo-ranking-table td {
+  width: 6.6rem;
+  padding: 0;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.fan-photo-ranking-table th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 4.25rem;
+  background: #f2f2ef;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+}
+
+.fan-photo-ranking-table th > button,
+.fan-photo-ranking-table td > button {
+  width: 100%;
+  min-height: 100%;
+  padding: var(--space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.fan-photo-ranking-table th > button {
+  display: grid;
+  place-content: center;
+  gap: var(--space-1);
+  font-weight: 900;
+  text-transform: none;
+}
+
+.fan-photo-ranking-table th > button small {
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.fan-photo-ranking-table th[data-active="true"],
+.fan-photo-ranking-table td[data-active="true"] {
+  background: #ecece8;
+  color: var(--color-text);
+}
+
+.fan-photo-ranking-table th > button[aria-pressed="true"] span {
+  text-decoration: underline;
+  text-decoration-thickness: 0.16rem;
+  text-underline-offset: 0.25rem;
+}
+
+.fan-photo-ranking-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.fan-photo-ranking-table tbody tr[data-focused="true"] td {
+  background: #f5f0df;
+}
+
+.fan-photo-ranking-table tbody tr[data-focused="true"] td[data-active="true"] {
+  background: #e9dfbb;
+}
+
+.fan-photo-ranking-table td {
+  height: 5.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fan-photo-ranking-table td > button {
+  font-size: var(--font-size-lg);
+  font-weight: 900;
+}
+
+.fan-photo-ranking-table td > button[aria-current="true"] {
+  color: #6a5000;
+}
+
+.fan-photo-ranking-table__rated {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 4rem !important;
+  min-width: 4rem;
+  font-weight: 900;
+}
+
+th.fan-photo-ranking-table__rated {
+  z-index: 7;
+}
+
+.fan-photo-ranking-table__identity {
+  position: sticky;
+  left: 4rem;
+  z-index: 3;
+  width: 22rem !important;
+  min-width: 22rem;
+  box-shadow: 0.7rem 0 1rem -1rem rgba(0, 0, 0, 0.65);
+  text-align: left !important;
+}
+
+th.fan-photo-ranking-table__identity {
+  z-index: 7;
+  padding-inline: var(--space-3);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.fan-photo-ranking-table td.fan-photo-ranking-table__identity > button {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+}
+
+.fan-photo-ranking-table__identity img {
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: #dededb;
+}
+
+.fan-photo-ranking-table__identity td,
+.fan-photo-ranking-table__identity span {
+  min-width: 0;
+}
+
+.fan-photo-ranking-table__identity button > span {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.fan-photo-ranking-table__identity strong,
+.fan-photo-ranking-table__identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fan-photo-ranking-table__identity strong {
+  font-size: var(--font-size-sm);
+}
+
+.fan-photo-ranking-table__identity small {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.fan-photo-ranking-table__jump {
+  display: flex !important;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: start;
+  width: auto !important;
+  min-height: 2.8rem !important;
+  padding-inline: var(--space-2) !important;
+  border-radius: var(--radius-pill) !important;
+  background: var(--color-control) !important;
+  color: var(--color-control-text) !important;
+}
+
+.fan-photo-ranking-table__jump > span {
+  font-size: 1.25rem;
+}
+
+.fan-photo-ranking-table__jump small {
+  color: inherit !important;
 }
 
 .fan-photo-viewer {
@@ -1702,6 +2063,41 @@
 
 .fan-photo-viewer__bottom-actions > button:last-child {
   justify-self: end;
+}
+
+.fan-photo-viewer__bottom-actions > button:disabled {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 15, 15, 0.38);
+  color: rgba(255, 255, 255, 0.58);
+  cursor: not-allowed;
+}
+
+.fan-photo-viewer__bottom-actions .fan-photo-star-rating {
+  align-self: end;
+  margin: 0;
+  padding: 0 var(--space-2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-pill);
+  background: rgba(15, 15, 15, 0.44);
+  backdrop-filter: blur(0.7rem);
+  pointer-events: auto;
+}
+
+.fan-photo-star-rating--compact .fan-photo-star-rating__star {
+  width: 2rem;
+  height: 2.75rem;
+}
+
+.fan-photo-star-rating--compact .fan-photo-star-rating__half > span {
+  width: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.45rem;
+}
+
+.fan-photo-star-rating--compact .fan-photo-star-rating__half[data-filled="true"] > span,
+.fan-photo-star-rating--compact .fan-photo-star-rating__half:hover > span,
+.fan-photo-star-rating--compact .fan-photo-star-rating__half:focus-visible > span {
+  color: #f0ca52;
 }
 
 .fan-photo-viewer__rating {
@@ -2011,12 +2407,13 @@
   }
 
   .fan-photo-category-carousel {
-    padding-inline: 8%;
-    scroll-padding-inline: 8%;
+    padding-inline: 10%;
+    scroll-padding-inline: 10%;
   }
 
   .fan-photo-category-card {
-    flex-basis: 84%;
+    flex-basis: 86%;
+    margin-inline: -5%;
     min-height: clamp(23rem, 112vw, 31rem);
   }
 
@@ -2027,7 +2424,40 @@
   }
 
   .fan-photo-shelf__scroller {
-    grid-auto-columns: minmax(15rem, 76%);
+    grid-auto-columns: minmax(15rem, 77%);
+  }
+
+  .fan-photo-rating-queue__scroller {
+    grid-auto-columns: minmax(9.5rem, 48%);
+    gap: var(--space-3);
+  }
+
+  .fan-photo-rating-card__identity {
+    padding: var(--space-3);
+  }
+
+  .fan-photo-rating-card__identity strong {
+    font-size: var(--font-size-md);
+  }
+
+  .fan-photo-ranking-table {
+    min-width: 55rem;
+  }
+
+  .fan-photo-ranking-table__identity {
+    width: 14rem !important;
+    min-width: 14rem;
+  }
+
+  .fan-photo-ranking-table td.fan-photo-ranking-table__identity > button {
+    grid-template-columns: 3.3rem minmax(0, 1fr);
+    gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  .fan-photo-ranking-table__identity img {
+    width: 3.3rem;
+    height: 3.3rem;
   }
 
   .fan-photo-viewer__info {
@@ -2094,12 +2524,13 @@
     font-size: var(--font-size-xs);
   }
 
-  .fan-photo-viewer__rating {
+  .fan-photo-viewer__bottom-actions .fan-photo-star-rating {
     padding-inline: var(--space-1);
   }
 
-  .fan-photo-viewer__rating button {
-    width: 1.72rem;
+  .fan-photo-star-rating--compact .fan-photo-star-rating__star,
+  .fan-photo-star-rating--compact .fan-photo-star-rating__half > span {
+    width: 1.55rem;
   }
 
   .fan-photo-viewer__info dl,

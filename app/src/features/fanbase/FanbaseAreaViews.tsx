@@ -15,10 +15,12 @@ import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 type FanbaseAreaViewProps = {
   readonly area: FanbaseAreaId;
   readonly itemId: string | null;
+  readonly itemOrigin: "rating-queue" | null;
   readonly photoCategory: FanPhotoCategory | null;
   readonly teamId: TeamId;
   readonly onOpenPhotoCategory: (category: FanPhotoCategory) => void;
   readonly onOpenItem: (itemId: string) => void;
+  readonly onOpenRatingItem: (itemId: string) => void;
   readonly onCloseItem: () => void;
 };
 
@@ -230,7 +232,7 @@ export function FanbaseAreaView(props: FanbaseAreaViewProps) {
     case "article-comments": return <ArticleCommentsArea {...props} />;
     case "locker-room": return <LockerRoomArea {...props} />;
     case "game-threads": return <GameThreadsArea {...props} />;
-    case "fan-photos": return <FanPhotosArea teamId={props.teamId} itemId={props.itemId} category={props.photoCategory} onOpenCategory={props.onOpenPhotoCategory} onOpenItem={props.onOpenItem} onCloseItem={props.onCloseItem} />;
+    case "fan-photos": return <FanPhotosArea teamId={props.teamId} itemId={props.itemId} itemOrigin={props.itemOrigin} category={props.photoCategory} onOpenCategory={props.onOpenPhotoCategory} onOpenItem={props.onOpenItem} onOpenRatingItem={props.onOpenRatingItem} onCloseItem={props.onCloseItem} />;
     case "events": return <EventsArea {...props} />;
     case "groups": return <GroupsArea {...props} />;
   }

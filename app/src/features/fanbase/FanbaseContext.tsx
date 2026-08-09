@@ -242,7 +242,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
   }, []);
 
   const rateFanPhoto = useCallback((photoId: string, rating: number) => {
-    if (rating < 1 || rating > 5) {
+    if (rating < 0.5 || rating > 5 || !Number.isInteger(rating * 2)) {
       return;
     }
     setFanPhotos((current) => current.map((photo) => {
