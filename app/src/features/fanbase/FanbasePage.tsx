@@ -2,10 +2,10 @@ import { useSearchParams } from "react-router-dom";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseAreaView } from "./FanbaseAreaViews";
 import { FanbaseCreateDialog, type FanbaseCreationType } from "./FanbaseCreateDialog";
-import { getGameThreadStatus, useFanbaseContext } from "./FanbaseContext";
+import { useFanbaseContext } from "./FanbaseContext";
 import { FanbaseHub } from "./FanbaseHub";
 import { FanbaseTeamFilter } from "./FanbaseTeamFilter";
-import type { FanbaseAreaId } from "./types";
+import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 import { useState } from "react";
 import { formatEventDate } from "./fanbaseFormatting";
 import "./fanbase.css";
@@ -23,8 +23,14 @@ function isFanbaseArea(value: string | null): value is FanbaseAreaId {
   return value !== null && fanbaseAreaIds.has(value as FanbaseAreaId);
 }
 
+const fanPhotoCategories = new Set<FanPhotoCategory>(["Game Face", "Fan Cave", "Memorabilia"]);
+
+function isFanPhotoCategory(value: string | null): value is FanPhotoCategory {
+  return value !== null && fanPhotoCategories.has(value as FanPhotoCategory);
+}
+
 const areaTitles: Record<FanbaseAreaId, string> = {
-  "article-comments": "Article Comments",
+  "article-comments": "Article Discussions",
   "locker-room": "Locker Room",
   "game-threads": "Game Threads",
   "fan-photos": "Fan Photos",
@@ -42,7 +48,7 @@ const areaCreationTypes: Record<FanbaseAreaId, FanbaseCreationType | null> = {
 };
 
 const areaActionLabels: Record<FanbaseAreaId, { accessible: string; visible: string }> = {
-  "article-comments": { accessible: "Article Comments are created from News Items", visible: "News only" },
+  "article-comments": { accessible: "Article Discussions are created from News Items", visible: "News only" },
   "locker-room": { accessible: "Create Locker Room thread", visible: "New Thread" },
   "game-threads": { accessible: "Game Threads are created from scheduled games and events", visible: "Scheduled" },
   "fan-photos": { accessible: "Add Fan Photo", visible: "Add Photo" },
@@ -59,6 +65,8 @@ export function FanbasePage() {
   const areaParam = searchParams.get("area");
   const area = isFanbaseArea(areaParam) ? areaParam : null;
   const itemId = searchParams.get("item");
+  const photoCategoryParam = searchParams.get("category");
+  const photoCategory = area === "fan-photos" && isFanPhotoCategory(photoCategoryParam) ? photoCategoryParam : null;
 
   const openArea = (nextArea: FanbaseAreaId) => {
     setSearchParams({ area: nextArea });
@@ -66,10 +74,24 @@ export function FanbasePage() {
 
   const openItem = (nextItemId: string) => {
     if (!area) return;
-    setSearchParams({ area, item: nextItemId });
+    setSearchParams(photoCategory ? { area, category: photoCategory, item: nextItemId } : { area, item: nextItemId });
   };
 
-  const backToFanbase = () => setSearchParams({});
+  const openPhotoCategory = (nextCategory: FanPhotoCategory) => {
+    setSearchParams({ area: "fan-photos", category: nextCategory });
+  };
+
+  const back = () => {
+    if (area && itemId) {
+      setSearchParams(photoCategory ? { area, category: photoCategory } : { area });
+      return;
+    }
+    if (area === "fan-photos" && photoCategory) {
+      setSearchParams({ area });
+      return;
+    }
+    setSearchParams({});
+  };
 
   const chooseTeam = (teamId: typeof selectedTeamId) => {
     selectTeam(teamId);
@@ -77,28 +99,21 @@ export function FanbasePage() {
     setSearchParams(area ? { area } : {});
   };
 
-  const created = (createdArea: FanbaseAreaId, createdItemId: string) => {
+  const created = (createdArea: FanbaseAreaId, createdItemId: string, createdPhotoCategory?: FanPhotoCategory) => {
     setCreateOpen(false);
-    setSearchParams({ area: createdArea, item: createdItemId });
+    setSearchParams(createdPhotoCategory ? { area: createdArea, category: createdPhotoCategory, item: createdItemId } : { area: createdArea, item: createdItemId });
   };
 
   const contextualCreationType = area ? areaCreationTypes[area] : null;
   const subpageContext = (() => {
     if (!area) return `${selectedTeam.name} fan community`;
     if (area === "article-comments") return `${selectedTeam.name} News discussions`;
-    if (area === "locker-room") {
-      const thread = itemId ? fanbase.threads.find((candidate) => candidate.id === itemId) : undefined;
-      return thread ? `${thread.category ?? "Team talk"} · @${thread.creator?.username ?? "fan"}` : `${selectedTeam.name} standalone team talk`;
-    }
-    if (area === "game-threads") {
-      const game = itemId ? fanbase.gameThreads.find((candidate) => candidate.id === itemId) : undefined;
-      return game
-        ? `${getGameThreadStatus(game)} · vs. ${game.opponent} · ${formatEventDate(game.startsAt)}`
-        : `${selectedTeam.name} scheduled, live, and archived games`;
-    }
+    if (area === "locker-room") return `${selectedTeam.name} standalone team talk`;
+    if (area === "game-threads") return itemId ? "Pregame, live, and post-game conversation" : `${selectedTeam.name} scheduled, live, and archived games`;
     if (area === "fan-photos") {
       const photo = itemId ? fanbase.fanPhotos.find((candidate) => candidate.id === itemId) : undefined;
-      return photo ? `${photo.category} · @${photo.owner.username}` : `${selectedTeam.name} Game Face, Fan Cave, and Memorabilia`;
+      if (photo) return `${photo.category} · @${photo.owner.username}`;
+      return photoCategory ? `${selectedTeam.name} · ${photoCategory}` : `${selectedTeam.name} Game Face, Fan Cave, and Memorabilia`;
     }
     if (area === "events") {
       const event = itemId ? fanbase.events.find((candidate) => candidate.id === itemId) : undefined;
@@ -108,11 +123,13 @@ export function FanbasePage() {
     return group ? `${group.visibility} · ${group.memberCount} members` : `${selectedTeam.name} joined and discoverable groups`;
   })();
 
+  const backTarget = itemId ? (photoCategory ?? (area ? areaTitles[area] : "FANbase")) : photoCategory ? "Fan Photos" : "FANbase";
+
   return (
     <div className="fanbase-page">
       <header className={area ? "fanbase-topbar fanbase-topbar--subpage" : "fanbase-topbar"}>
         {area ? (
-          <button className="fanbase-back-trigger" type="button" aria-label="Back to FANbase" onClick={backToFanbase}><span aria-hidden="true">←</span><span className="fanbase-back-trigger__full">Back to FANbase</span><span className="fanbase-back-trigger__short">Back</span></button>
+          <button className="fanbase-back-trigger" type="button" aria-label={`Back to ${backTarget}`} onClick={back}><span aria-hidden="true">←</span><span className="fanbase-back-trigger__full">Back to {backTarget}</span><span className="fanbase-back-trigger__short">Back</span></button>
         ) : (
           <button className="fanbase-team-trigger" type="button" aria-label="Choose FANbase team" aria-expanded={teamFilterOpen} onClick={() => setTeamFilterOpen(true)}>
             <span aria-hidden="true">☰</span><img src={selectedTeam.logoUrl} alt="" /><span>{selectedTeam.shortName}</span>
@@ -140,7 +157,7 @@ export function FanbasePage() {
       </header>
 
       {area ? (
-        <FanbaseAreaView area={area} itemId={itemId} teamId={selectedTeamId} onOpenItem={openItem} />
+        <FanbaseAreaView area={area} itemId={itemId} photoCategory={photoCategory} teamId={selectedTeamId} onOpenPhotoCategory={openPhotoCategory} onOpenItem={openItem} onCloseItem={back} />
       ) : (
         <FanbaseHub teamId={selectedTeamId} onOpenArea={openArea} />
       )}

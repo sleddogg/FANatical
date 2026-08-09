@@ -1,6 +1,4 @@
-import celticsLogo from "../../assets/teams/celtics.png";
-import patriotsLogo from "../../assets/teams/patriots.png";
-import redSoxLogo from "../../assets/teams/redsox.png";
+import { fanPhotoImages } from "./fanPhotoAssets";
 import type {
   CommunityComment,
   CommunityUser,
@@ -155,8 +153,15 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     title: "Patriots vs. Jets",
     category: "Game Thread",
     createdAt: relativeDate(-2),
-    priorCommentCount: 428,
-    comments: [comment("game-pats-comment-1", users.road, "The pressure package changed the whole drive.", 0.1, { Fire: 18 })],
+    priorCommentCount: 423,
+    comments: [
+      comment("game-pats-comment-1", users.road, "The pressure package changed the whole drive.", 0.1, { Fire: 18 }),
+      comment("game-pats-comment-2", users.coach, "Watch the safety rotate late—the quarterback has to reset his read after the snap.", 0.16, { Like: 12, "Mind Blown": 4 }),
+      comment("game-pats-comment-3", users.maya, "That third-down conversion felt huge. The crowd finally sounds settled in.", 0.23, { Love: 7, Fire: 5 }),
+      comment("game-pats-comment-4", users.road, "Exactly. The motion created the leverage before the ball was even snapped.", 0.2, { Like: 5 }, "game-pats-comment-2"),
+      comment("game-pats-comment-5", users.green, "Special teams field position is quietly deciding this quarter.", 0.31, { Like: 9 }),
+      comment("game-pats-comment-6", users.fenway, "Need one composed drive here—no need to chase the big play on first down.", 0.38, { Like: 6, Fire: 2 }),
+    ],
     reactions: { Like: 64, Love: 21, Fire: 87, "Mind Blown": 13 },
     viewerReaction: null,
     reported: false,
@@ -168,8 +173,12 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     title: "Patriots at Bills",
     category: "Game Thread",
     createdAt: relativeDate(-1),
-    priorCommentCount: 23,
-    comments: [],
+    priorCommentCount: 20,
+    comments: [
+      comment("game-pats-next-comment-1", users.coach, "The weather could make field position and protection calls the whole story.", 0.6, { Like: 8 }),
+      comment("game-pats-next-comment-2", users.road, "Anyone else heading to the road meetup before kickoff?", 0.4, { Love: 4 }),
+      comment("game-pats-next-comment-3", users.maya, "I want an aggressive opening script before the noise becomes a factor.", 0.2, { Fire: 6 }),
+    ],
     reactions: { Like: 12, Love: 4, Fire: 9, "Mind Blown": 1 },
     viewerReaction: null,
     reported: false,
@@ -181,8 +190,13 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     title: "Patriots vs. Bills",
     category: "Game Thread",
     createdAt: relativeDate(-18),
-    priorCommentCount: 612,
-    comments: [],
+    priorCommentCount: 608,
+    comments: [
+      comment("game-pats-recent-comment-1", users.maya, "After a rewatch, the final drive was much more disciplined than it felt live.", 12.2, { Like: 14 }),
+      comment("game-pats-recent-comment-2", users.coach, "The adjustment at halftime opened the middle without abandoning the run.", 12.6, { "Mind Blown": 5, Fire: 7 }),
+      comment("game-pats-recent-comment-3", users.road, "Still thinking about that sideline catch. Complete control all the way down.", 13, { Love: 11 }),
+      comment("game-pats-recent-comment-4", users.green, "This is the kind of win that looks better when the details settle.", 13.3, { Like: 9 }),
+    ],
     reactions: { Like: 83, Love: 19, Fire: 102, "Mind Blown": 24 },
     viewerReaction: null,
     reported: false,
@@ -194,8 +208,12 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     title: "Patriots vs. Dolphins",
     category: "Game Thread",
     createdAt: relativeDate(-72),
-    priorCommentCount: 774,
-    comments: [],
+    priorCommentCount: 771,
+    comments: [
+      comment("game-pats-archive-comment-1", users.road, "The archived thread still captures how wild that fourth quarter felt.", 70, { Love: 8 }),
+      comment("game-pats-archive-comment-2", users.coach, "The final defensive series remains the cleanest situational work of the game.", 70.4, { Like: 12 }),
+      comment("game-pats-archive-comment-3", users.maya, "A stressful one, but a great conversation to revisit.", 71, { Fire: 4 }),
+    ],
     reactions: { Like: 92, Love: 26, Fire: 118, "Mind Blown": 31 },
     viewerReaction: null,
     reported: false,
@@ -302,106 +320,72 @@ export const initialGameThreads = [
   { id: "game-celtics-knicks", threadId: "game-celtics-knicks-thread", teamId: "boston-celtics", opponent: "New York Knicks", venue: "TD Garden", startsAt: relativeDate(-4), endsAt: relativeDate(-1) },
 ] as const;
 
+type FanPhotoSeed = Readonly<{
+  id: string;
+  teamId: FanPhoto["teamId"];
+  owner: CommunityUser;
+  category: FanPhoto["category"];
+  title: string;
+  details: string;
+  images: FanPhoto["images"];
+  hoursAgo: number;
+  ratingTotal: number;
+  ratingCount: number;
+  reactions?: Partial<ReactionSummary>;
+  comments?: readonly CommunityComment[];
+  rankingBadge?: FanPhoto["rankingBadge"];
+}>;
+
+function fanPhoto(seed: FanPhotoSeed): FanPhoto {
+  return {
+    id: seed.id,
+    teamId: seed.teamId,
+    owner: seed.owner,
+    category: seed.category,
+    title: seed.title,
+    details: seed.details,
+    images: seed.images,
+    createdAt: relativeDate(-seed.hoursAgo),
+    ratingTotal: seed.ratingTotal,
+    ratingCount: seed.ratingCount,
+    viewerRating: null,
+    reactions: { ...emptyReactions(), ...seed.reactions },
+    viewerReaction: null,
+    comments: seed.comments ?? [],
+    ...(seed.rankingBadge ? { rankingBadge: seed.rankingBadge } : {}),
+    reported: false,
+  };
+}
+
 export const initialFanPhotos: readonly FanPhoto[] = [
-  {
-    id: "photo-pats-game-face",
-    teamId: "new-england-patriots",
-    owner: users.maya,
-    category: "Game Face",
-    title: "Ready before sunrise",
-    details: "The face paint held up through the whole tailgate.",
-    imageUrl: patriotsLogo,
-    imageAlt: "Patriots fan photo mock using the team logo",
-    accent: "#0b2748",
-    createdAt: relativeDate(-20),
-    ratingTotal: 226,
-    ratingCount: 51,
-    viewerRating: null,
-    reactions: { Like: 32, Love: 18, Fire: 24, "Mind Blown": 4 },
-    viewerReaction: null,
-    comments: [comment("photo-pats-comment", users.road, "That is game-day commitment.", 16, { Fire: 5 })],
-    rankingBadge: "Top 10",
-    reported: false,
-  },
-  {
-    id: "photo-pats-fan-cave",
-    teamId: "new-england-patriots",
-    owner: users.coach,
-    category: "Fan Cave",
-    title: "Sunday film room",
-    details: "Three screens, one old stadium seat, and years of programs on the wall.",
-    imageUrl: patriotsLogo,
-    imageAlt: "Patriots fan cave mock using the team logo",
-    accent: "#c7c9cc",
-    createdAt: relativeDate(-44),
-    ratingTotal: 184,
-    ratingCount: 43,
-    viewerRating: null,
-    reactions: { Like: 27, Love: 13, Fire: 15, "Mind Blown": 7 },
-    viewerReaction: null,
-    comments: [],
-    rankingBadge: "Top 50",
-    reported: false,
-  },
-  {
-    id: "photo-pats-memorabilia",
-    teamId: "new-england-patriots",
-    owner: users.road,
-    category: "Memorabilia",
-    title: "A ticket stub with a story",
-    details: "Kept this from my first game with my dad.",
-    imageUrl: patriotsLogo,
-    imageAlt: "Patriots memorabilia mock using the team logo",
-    accent: "#bb1f2e",
-    createdAt: relativeDate(-68),
-    ratingTotal: 197,
-    ratingCount: 46,
-    viewerRating: null,
-    reactions: { Like: 29, Love: 21, Fire: 8, "Mind Blown": 3 },
-    viewerReaction: null,
-    comments: [],
-    reported: false,
-  },
-  {
-    id: "photo-sox-fan-cave",
-    teamId: "boston-red-sox",
-    owner: users.fenway,
-    category: "Fan Cave",
-    title: "The Fenway corner",
-    details: "Scorecards, caps, and a radio that still calls every game.",
-    imageUrl: redSoxLogo,
-    imageAlt: "Red Sox fan cave mock using the team logo",
-    accent: "#bd3039",
-    createdAt: relativeDate(-31),
-    ratingTotal: 211,
-    ratingCount: 48,
-    viewerRating: null,
-    reactions: { Like: 38, Love: 25, Fire: 11, "Mind Blown": 4 },
-    viewerReaction: null,
-    comments: [],
-    rankingBadge: "Top 10",
-    reported: false,
-  },
-  {
-    id: "photo-celtics-game-face",
-    teamId: "boston-celtics",
-    owner: users.green,
-    category: "Game Face",
-    title: "Green from head to toe",
-    details: "Playoff-night fit from the lucky scarf to the sneakers.",
-    imageUrl: celticsLogo,
-    imageAlt: "Celtics game face mock using the team logo",
-    accent: "#007a33",
-    createdAt: relativeDate(-26),
-    ratingTotal: 248,
-    ratingCount: 55,
-    viewerRating: null,
-    reactions: { Like: 44, Love: 31, Fire: 28, "Mind Blown": 6 },
-    viewerReaction: null,
-    comments: [],
-    rankingBadge: "Legendary",
-    reported: false,
-  },
+  fanPhoto({ id: "photo-pats-game-face", teamId: "new-england-patriots", owner: users.maya, category: "Game Face", title: "Ready before sunrise", details: "The full game-day look was ready before the first tailgate grill fired up.", images: [fanPhotoImages.gameFaceAsu], hoursAgo: 20, ratingTotal: 226, ratingCount: 51, reactions: { Like: 32, Love: 18, Fire: 24, "Mind Blown": 4 }, comments: [comment("photo-pats-comment", users.road, "That is game-day commitment.", 16, { Fire: 5 })], rankingBadge: "Top 10" }),
+  fanPhoto({ id: "photo-pats-game-face-stands", teamId: "new-england-patriots", owner: demoUser, category: "Game Face", title: "All in from the stands", details: "A favorite crowd shot from a rivalry weekend that turned into an instant tradition.", images: [fanPhotoImages.gameFaceStands], hoursAgo: 8, ratingTotal: 169, ratingCount: 39, reactions: { Like: 21, Love: 12, Fire: 17 } }),
+  fanPhoto({ id: "photo-pats-game-face-bucs", teamId: "new-england-patriots", owner: users.coach, category: "Game Face", title: "Built for kickoff", details: "The outfit takes longer to assemble than the drive to the stadium.", images: [fanPhotoImages.gameFaceBucs], hoursAgo: 30, ratingTotal: 286, ratingCount: 64, reactions: { Like: 41, Love: 19, Fire: 35, "Mind Blown": 8 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-pats-game-face-pair", teamId: "new-england-patriots", owner: users.road, category: "Game Face", title: "Double coverage", details: "Two longtime seat neighbors, one coordinated game-day plan.", images: [fanPhotoImages.gameFaceEaglesPair], hoursAgo: 54, ratingTotal: 190, ratingCount: 44, reactions: { Like: 24, Love: 20, Fire: 14 } }),
+  fanPhoto({ id: "photo-pats-game-face-solo", teamId: "new-england-patriots", owner: demoUser, category: "Game Face", title: "The lucky game-day fit", details: "Every layer has a story, and none of it gets washed during a winning streak.", images: [fanPhotoImages.gameFaceEagles], hoursAgo: 72, ratingTotal: 247, ratingCount: 56, reactions: { Like: 30, Love: 26, Fire: 22 }, rankingBadge: "Top 100" }),
+  fanPhoto({ id: "photo-sox-game-face", teamId: "boston-red-sox", owner: users.fenway, category: "Game Face", title: "Road-game character", details: "A full crowd-ready look built one season at a time.", images: [fanPhotoImages.gameFaceRaiders], hoursAgo: 41, ratingTotal: 231, ratingCount: 52, reactions: { Like: 37, Fire: 29 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-celtics-game-face", teamId: "boston-celtics", owner: users.green, category: "Game Face", title: "Game Face from head to toe", details: "Playoff-night colors from the lucky scarf to the sneakers.", images: [fanPhotoImages.gameFaceSeahawks], hoursAgo: 26, ratingTotal: 248, ratingCount: 55, reactions: { Like: 44, Love: 31, Fire: 28, "Mind Blown": 6 }, rankingBadge: "Top 10" }),
+  fanPhoto({ id: "photo-pats-game-face-vikings", teamId: "new-england-patriots", owner: users.maya, category: "Game Face", title: "Sunday alter ego", details: "The character only appears on game day—and never misses kickoff.", images: [fanPhotoImages.gameFaceVikings], hoursAgo: 91, ratingTotal: 151, ratingCount: 35, reactions: { Like: 18, Love: 9, Fire: 16 } }),
+
+  fanPhoto({ id: "photo-pats-fan-cave", teamId: "new-england-patriots", owner: demoUser, category: "Fan Cave", title: "Sunday film room", details: "Multiple screens, old stadium seats, and years of carefully lit memorabilia.", images: [fanPhotoImages.fanCaveFootball], hoursAgo: 44, ratingTotal: 269, ratingCount: 61, reactions: { Like: 38, Love: 22, Fire: 19, "Mind Blown": 13 }, rankingBadge: "Top 10" }),
+  fanPhoto({ id: "photo-pats-fan-cave-collection", teamId: "new-england-patriots", owner: users.coach, category: "Fan Cave", title: "Wall-to-wall football history", details: "A basement project that became a living archive of memorable seasons.", images: [fanPhotoImages.fanCaveGiants], hoursAgo: 63, ratingTotal: 176, ratingCount: 42, reactions: { Like: 28, Love: 16, "Mind Blown": 9 } }),
+  fanPhoto({ id: "photo-pats-fan-cave-hockey", teamId: "new-england-patriots", owner: users.road, category: "Fan Cave", title: "The blue-line room", details: "Framed keepsakes and a front-row seat for every broadcast.", images: [fanPhotoImages.fanCaveOilers], hoursAgo: 77, ratingTotal: 244, ratingCount: 56, reactions: { Like: 31, Love: 20, Fire: 12 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-sox-fan-cave", teamId: "boston-red-sox", owner: users.fenway, category: "Fan Cave", title: "The hometown corner", details: "Scorecards, caps, and a radio that still calls every game.", images: [fanPhotoImages.fanCavePackers], hoursAgo: 31, ratingTotal: 211, ratingCount: 48, reactions: { Like: 38, Love: 25, Fire: 11, "Mind Blown": 4 } }),
+  fanPhoto({ id: "photo-pats-fan-cave-pool", teamId: "new-england-patriots", owner: users.maya, category: "Fan Cave", title: "Halftime at the pool table", details: "Part watch room, part friendly competition, always ready for a crowd.", images: [fanPhotoImages.fanCavePool], hoursAgo: 18, ratingTotal: 140, ratingCount: 33, reactions: { Like: 17, Love: 12, Fire: 8 } }),
+  fanPhoto({ id: "photo-celtics-fan-cave", teamId: "boston-celtics", owner: users.green, category: "Fan Cave", title: "A room for every era", details: "The collection grew until the room became part museum and part watch party.", images: [fanPhotoImages.fanCaveCommanders], hoursAgo: 58, ratingTotal: 225, ratingCount: 51, reactions: { Like: 29, Love: 18, "Mind Blown": 11 }, rankingBadge: "Top 100" }),
+  fanPhoto({ id: "photo-pats-fan-cave-jerseys", teamId: "new-england-patriots", owner: demoUser, category: "Fan Cave", title: "Jerseys tell the story", details: "Every wall marks a different favorite season and a different game-day memory.", images: [fanPhotoImages.fanCaveToronto], hoursAgo: 102, ratingTotal: 193, ratingCount: 45, reactions: { Like: 23, Love: 21, Fire: 7 } }),
+
+  fanPhoto({ id: "photo-pats-mask", teamId: "new-england-patriots", owner: demoUser, category: "Memorabilia", title: "Four views of a handmade mask", details: "A custom-painted display piece photographed from every side. All four images belong to this one FANfoto entry.", images: [fanPhotoImages.memorabiliaMaskFront, fanPhotoImages.memorabiliaMaskSide, fanPhotoImages.memorabiliaMaskBack, fanPhotoImages.memorabiliaMaskDetail], hoursAgo: 11, ratingTotal: 278, ratingCount: 62, reactions: { Like: 36, Love: 25, Fire: 31, "Mind Blown": 17 }, comments: [comment("photo-mask-comment", users.coach, "The detail work around the sides is incredible.", 7, { "Mind Blown": 6 })], rankingBadge: "Top 10" }),
+  fanPhoto({ id: "photo-pats-opening-ticket", teamId: "new-england-patriots", owner: users.road, category: "Memorabilia", title: "Opening-night metal ticket", details: "A weighty keepsake that brings back the energy of a building's first regular-season game.", images: [fanPhotoImages.memorabiliaOpeningNight], hoursAgo: 68, ratingTotal: 197, ratingCount: 46, reactions: { Like: 29, Love: 21, Fire: 8, "Mind Blown": 3 } }),
+  fanPhoto({ id: "photo-pats-goalie-mask", teamId: "new-england-patriots", owner: users.maya, category: "Memorabilia", title: "Signed miniature mask", details: "A small shelf piece with a signature that still looks fresh.", images: [fanPhotoImages.memorabiliaGoalieMask], hoursAgo: 83, ratingTotal: 216, ratingCount: 50, reactions: { Like: 24, Love: 16, Fire: 9 }, rankingBadge: "Top 100" }),
+  fanPhoto({ id: "photo-pats-golf-bag", teamId: "new-england-patriots", owner: demoUser, category: "Memorabilia", title: "Miniature golf bag collectible", details: "An unusual team crossover that always gets a second look on the display shelf.", images: [fanPhotoImages.memorabiliaGolfBag], hoursAgo: 36, ratingTotal: 123, ratingCount: 29, reactions: { Like: 16, Love: 8, "Mind Blown": 5 } }),
+  fanPhoto({ id: "photo-sox-farewell-set", teamId: "boston-red-sox", owner: users.fenway, category: "Memorabilia", title: "Farewell-night archive", details: "Ticket, attendance certificate, and commemorative piece kept together as one story.", images: [fanPhotoImages.memorabiliaFarewell], hoursAgo: 112, ratingTotal: 262, ratingCount: 59, reactions: { Like: 30, Love: 33, Fire: 8 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-pats-jersey-history", teamId: "new-england-patriots", owner: users.coach, category: "Memorabilia", title: "A history told in jerseys", details: "Framed artwork that tracks the team's look across decades.", images: [fanPhotoImages.memorabiliaJerseyHistory], hoursAgo: 125, ratingTotal: 171, ratingCount: 40, reactions: { Like: 18, Love: 14, "Mind Blown": 7 } }),
+  fanPhoto({ id: "photo-celtics-banner-night", teamId: "boston-celtics", owner: users.green, category: "Memorabilia", title: "Banner-night display", details: "A framed record of championship seasons and the nights they were celebrated.", images: [fanPhotoImages.memorabiliaBannerNight], hoursAgo: 141, ratingTotal: 301, ratingCount: 67, reactions: { Like: 42, Love: 31, Fire: 20, "Mind Blown": 15 }, rankingBadge: "Top 10" }),
+  fanPhoto({ id: "photo-pats-framed-stars", teamId: "new-england-patriots", owner: users.road, category: "Memorabilia", title: "Two generations in one frame", details: "A carefully assembled tribute to the stars who defined different eras.", images: [fanPhotoImages.memorabiliaFramedStars], hoursAgo: 97, ratingTotal: 235, ratingCount: 53, reactions: { Like: 29, Love: 27, Fire: 11 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-pats-season-cards", teamId: "new-england-patriots", owner: demoUser, category: "Memorabilia", title: "A decade of season cards", details: "Kept in one place, these cards make the passage of seasons feel tangible.", images: [fanPhotoImages.memorabiliaSeasonCards], hoursAgo: 49, ratingTotal: 156, ratingCount: 37, reactions: { Like: 19, Love: 17, Fire: 4 } }),
+  fanPhoto({ id: "photo-pats-gretzky-card", teamId: "new-england-patriots", owner: users.maya, category: "Memorabilia", title: "The card at the center of the collection", details: "Protected from day one and still the first piece visitors ask to see.", images: [fanPhotoImages.memorabiliaGretzkyCard], hoursAgo: 155, ratingTotal: 284, ratingCount: 63, reactions: { Like: 37, Love: 24, Fire: 16, "Mind Blown": 12 }, rankingBadge: "Top 50" }),
+  fanPhoto({ id: "photo-celtics-championship-banners", teamId: "boston-celtics", owner: demoUser, category: "Memorabilia", title: "Championship banners at home", details: "A compact framed collection honoring every title year.", images: [fanPhotoImages.memorabiliaChampionshipBanners], hoursAgo: 88, ratingTotal: 183, ratingCount: 43, reactions: { Like: 20, Love: 22, Fire: 9 } }),
 ];
 
 export const initialEvents: readonly FanEvent[] = [

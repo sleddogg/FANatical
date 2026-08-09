@@ -58,6 +58,12 @@ export type GameThread = Readonly<{
   endsAt: string;
 }>;
 
+export type FanPhotoImage = Readonly<{
+  id: string;
+  url: string;
+  alt: string;
+}>;
+
 export type FanPhoto = Readonly<{
   id: string;
   teamId: TeamId;
@@ -65,9 +71,7 @@ export type FanPhoto = Readonly<{
   category: FanPhotoCategory;
   title: string;
   details: string;
-  imageUrl: string;
-  imageAlt: string;
-  accent: string;
+  images: readonly FanPhotoImage[];
   createdAt: string;
   ratingTotal: number;
   ratingCount: number;

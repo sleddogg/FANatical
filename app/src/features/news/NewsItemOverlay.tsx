@@ -8,7 +8,9 @@ type NewsItemOverlayProps = {
   readonly source: NewsSource;
   readonly discussionCount: number;
   readonly reacted: boolean;
+  readonly contextActionLabel: "Discussion" | "Back to Discussion";
   readonly onClose: () => void;
+  readonly onContextAction: () => void;
   readonly onReaction: () => void;
   readonly onDiscussion: () => void;
   readonly onShare: () => void;
@@ -20,7 +22,9 @@ export function NewsItemOverlay({
   source,
   discussionCount,
   reacted,
+  contextActionLabel,
   onClose,
+  onContextAction,
   onReaction,
   onDiscussion,
   onShare,
@@ -53,9 +57,14 @@ export function NewsItemOverlay({
           <span className="news-source-avatar" aria-hidden="true">{source.initials}</span>
           <span><strong>{source.name}</strong><small>{item.contentType}</small></span>
         </div>
-        <button ref={closeButtonRef} className="news-item-overlay__close" type="button" aria-label="Close News item" onClick={onClose}>
-          ×
-        </button>
+        <div className="news-item-overlay__controls">
+          <button className="news-item-overlay__discussion" type="button" onClick={onContextAction}>
+            <span aria-hidden="true">◯</span><span>{contextActionLabel}</span>
+          </button>
+          <button ref={closeButtonRef} className="news-item-overlay__close" type="button" aria-label="Close News item" onClick={onClose}>
+            ×
+          </button>
+        </div>
       </header>
 
       <div className="news-item-overlay__scroll">

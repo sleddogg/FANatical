@@ -6,7 +6,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { findFollowedTeam } from "../../data/followedTeams";
+import { fanPhotoCategoryCoverImages } from "./fanPhotoAssets";
 import {
   demoUser,
   emptyReactions,
@@ -220,12 +220,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
 
   const createFanPhoto = useCallback((input: CreateFanPhotoInput) => {
     const id = createLocalId("photo");
-    const team = findFollowedTeam(input.teamId);
-    const accentByTeam: Record<DiscussionThread["teamId"], string> = {
-      "new-england-patriots": "#0b2748",
-      "boston-red-sox": "#bd3039",
-      "boston-celtics": "#007a33",
-    };
+    const mockImage = fanPhotoCategoryCoverImages[input.category];
     setFanPhotos((current) => [{
       id,
       teamId: input.teamId,
@@ -233,9 +228,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
       category: input.category,
       title: input.title.trim(),
       details: input.details.trim(),
-      imageUrl: team?.logoUrl ?? "",
-      imageAlt: `${team?.name ?? "Team"} fan photo mock`,
-      accent: accentByTeam[input.teamId],
+      images: [{ ...mockImage, id: `${id}-image` }],
       createdAt: new Date().toISOString(),
       ratingTotal: 0,
       ratingCount: 0,

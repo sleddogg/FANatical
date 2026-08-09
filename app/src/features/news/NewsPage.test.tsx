@@ -89,6 +89,7 @@ describe("News frontend", () => {
 
     await user.click(screen.getByRole("button", { name: "Open Patriots turn up the tempo as the offense enters its final camp phase" }));
     expect(screen.getByRole("dialog", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Discussion" })).toBeInTheDocument();
     expect(router.state.location.search).toBe("?item=patriots-camp-tempo");
     expect(screen.getByText(/New England moved through its sharpest practice/i)).toBeInTheDocument();
 
@@ -97,6 +98,20 @@ describe("News frontend", () => {
       expect(screen.queryByRole("dialog", { name: /Patriots turn up the tempo/i })).not.toBeInTheDocument();
     });
     expect(screen.getByText("Latest from New England Patriots")).toBeInTheDocument();
+  });
+
+  it("opens the connected Article Discussion from the News Item top bar", async () => {
+    const user = userEvent.setup();
+    const { router } = renderNews();
+
+    await user.click(screen.getByRole("button", { name: "Open Patriots turn up the tempo as the offense enters its final camp phase" }));
+    await user.click(screen.getByRole("button", { name: "Discussion" }));
+    expect(screen.getByRole("heading", { name: "Article Discussions" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
+
+    await router.navigate(-1);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Discussion" })).toBeInTheDocument());
+    expect(screen.getByRole("dialog", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
   });
 
   it("represents external source-controlled items without leaving the app", async () => {

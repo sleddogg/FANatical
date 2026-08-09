@@ -17,7 +17,7 @@ type FanbaseCreateDialogProps = {
   readonly onCreatePhoto: (input: CreateFanPhotoInput) => string;
   readonly onCreateEvent: (input: CreateEventInput) => string;
   readonly onCreateGroup: (input: CreateGroupInput) => string;
-  readonly onCreated: (area: FanbaseAreaId, itemId: string) => void;
+  readonly onCreated: (area: FanbaseAreaId, itemId: string, photoCategory?: CreateFanPhotoInput["category"]) => void;
   readonly onClose: () => void;
 };
 
@@ -76,13 +76,14 @@ export function FanbaseCreateDialog({
       });
       onCreated("locker-room", id);
     } else if (creationType === "photo") {
+      const category = readFormValue(formData, "category") as CreateFanPhotoInput["category"];
       const id = onCreatePhoto({
         teamId: team.id,
         title: readFormValue(formData, "title"),
-        category: readFormValue(formData, "category") as CreateFanPhotoInput["category"],
+        category,
         details: readFormValue(formData, "details"),
       });
-      onCreated("fan-photos", id);
+      onCreated("fan-photos", id, category);
     } else if (creationType === "event") {
       const id = onCreateEvent({
         teamId: team.id,

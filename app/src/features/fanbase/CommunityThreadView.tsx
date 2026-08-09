@@ -11,6 +11,7 @@ type CommunityThreadViewProps = {
   readonly body?: string;
   readonly emptyMessage?: string;
   readonly locked?: boolean;
+  readonly compactTopicMode?: boolean;
   readonly onSubmitComment: (body: string, parentId: string | null) => void;
   readonly onReactToThread: (reaction: ReactionType) => void;
   readonly onReactToComment: (commentId: string, reaction: ReactionType) => void;
@@ -25,6 +26,7 @@ export function CommunityThreadView({
   body,
   emptyMessage = "Be the first fan to start this discussion.",
   locked = false,
+  compactTopicMode = false,
   onSubmitComment,
   onReactToThread,
   onReactToComment,
@@ -45,21 +47,38 @@ export function CommunityThreadView({
     setReplyTarget(null);
   };
 
+  const composer = locked ? (
+    <div className="community-thread__locked" role="status"><strong>This Game Thread is archived.</strong><span>The 24-hour post-game window has ended. It remains available to read.</span></div>
+  ) : (
+    <form className="community-composer" onSubmit={submitComment}>
+      <div className="community-avatar" aria-hidden="true">NF</div>
+      <label>
+        <span>{replyTarget ? `Replying to @${replyTarget.username}` : "Add to the conversation"}</span>
+        <textarea value={commentBody} onChange={(event) => setCommentBody(event.target.value)} rows={3} required maxLength={1000} placeholder="Share your take…" />
+      </label>
+      {replyTarget ? <button className="fanbase-text-button" type="button" onClick={() => setReplyTarget(null)}>Cancel reply</button> : null}
+      <button className="fanbase-primary-button" type="submit">Post comment</button>
+    </form>
+  );
+
   return (
-    <div className="community-thread">
-      <article className="community-thread__lead surface">
-        <span className="eyebrow">{context}</span>
-        <h2>{title}</h2>
-        {body ? <p>{body}</p> : null}
-        <div className="community-thread__meta">
-          <span>{commentCount} {commentCount === 1 ? "comment" : "comments"}</span>
-          {thread?.createdAt ? <span>Active {formatFanbaseTime(thread.createdAt)}</span> : <span>New discussion</span>}
-          <button type="button" onClick={onReportThread}>{thread?.reported ? "Reported" : "Report"}</button>
-        </div>
-        {thread ? <ReactionPicker reactions={thread.reactions} viewerReaction={thread.viewerReaction} onReact={onReactToThread} /> : null}
-      </article>
+    <div className={compactTopicMode ? "community-thread community-thread--compact-topic" : "community-thread"}>
+      {!compactTopicMode ? (
+        <article className="community-thread__lead surface">
+          <span className="eyebrow">{context}</span>
+          <h2>{title}</h2>
+          {body ? <p>{body}</p> : null}
+          <div className="community-thread__meta">
+            <span>{commentCount} {commentCount === 1 ? "comment" : "comments"}</span>
+            {thread?.createdAt ? <span>Active {formatFanbaseTime(thread.createdAt)}</span> : <span>New discussion</span>}
+            <button type="button" onClick={onReportThread}>{thread?.reported ? "Reported" : "Report"}</button>
+          </div>
+          {thread ? <ReactionPicker reactions={thread.reactions} viewerReaction={thread.viewerReaction} onReact={onReactToThread} /> : null}
+        </article>
+      ) : null}
 
       <section className="community-comments" aria-labelledby="community-comments-title">
+        {compactTopicMode ? composer : null}
         <div className="community-comments__heading">
           <h3 id="community-comments-title">Conversation</h3>
           <span>{thread?.comments.length ?? 0} recent shown</span>
@@ -82,19 +101,7 @@ export function CommunityThreadView({
           <div className="community-comments__empty"><span aria-hidden="true">◌</span><p>{emptyMessage}</p></div>
         )}
 
-        {locked ? (
-          <div className="community-thread__locked" role="status"><strong>This Game Thread is archived.</strong><span>The 24-hour post-game window has ended. It remains available to read.</span></div>
-        ) : (
-          <form className="community-composer" onSubmit={submitComment}>
-            <div className="community-avatar" aria-hidden="true">NF</div>
-            <label>
-              <span>{replyTarget ? `Replying to @${replyTarget.username}` : "Add to the conversation"}</span>
-              <textarea value={commentBody} onChange={(event) => setCommentBody(event.target.value)} rows={3} required maxLength={1000} placeholder="Share your take…" />
-            </label>
-            {replyTarget ? <button className="fanbase-text-button" type="button" onClick={() => setReplyTarget(null)}>Cancel reply</button> : null}
-            <button className="fanbase-primary-button" type="submit">Post comment</button>
-          </form>
-        )}
+        {!compactTopicMode ? composer : null}
       </section>
     </div>
   );

@@ -24,7 +24,10 @@ import type {
 } from "./types";
 import "./news.css";
 
-type OverlayLocationState = Readonly<{ newsItemOverlay?: boolean }>;
+type OverlayLocationState = Readonly<{
+  newsItemOverlay?: boolean;
+  articleDiscussionPath?: string;
+}>;
 
 export function NewsPage() {
   const { followedTeams, selectedTeamId, selectTeam } = useTeamContext();
@@ -53,6 +56,8 @@ export function NewsPage() {
   const selectedItemId = searchParams.get("item");
   const selectedItem = mockNewsItems.find((item) => item.id === selectedItemId);
   const selectedItemSource = selectedItem ? getSourceForItem(selectedItem, mockSourceCatalog) : undefined;
+  const overlayLocationState = location.state as OverlayLocationState | null;
+  const articleDiscussionPath = overlayLocationState?.articleDiscussionPath;
 
   const applyFilter = (context: NewsFeedContext) => {
     if (context.kind === "team") {
@@ -79,6 +84,10 @@ export function NewsPage() {
     nextSearchParams.delete("item");
     setSearchParams(nextSearchParams, { replace: true });
   }, [location.state, navigate, searchParams, setSearchParams]);
+
+  const openArticleDiscussion = (itemId: string) => {
+    navigate(`/fanbase?area=article-comments&item=${itemId}`);
+  };
 
   const toggleReaction = (itemId: string) => {
     setReactedItemIds((current) => {
@@ -167,7 +176,7 @@ export function NewsPage() {
                 reacted={reactedItemIds.has(item.id)}
                 onOpen={() => openItem(item.id)}
                 onReaction={() => toggleReaction(item.id)}
-                onDiscussion={() => navigate(`/fanbase?area=article-comments&item=${item.id}`)}
+                onDiscussion={() => openArticleDiscussion(item.id)}
                 onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
               />
             );
@@ -208,9 +217,11 @@ export function NewsPage() {
           source={selectedItemSource}
           discussionCount={getArticleCommentCount(selectedItem.id)}
           reacted={reactedItemIds.has(selectedItem.id)}
+          contextActionLabel={articleDiscussionPath ? "Back to Discussion" : "Discussion"}
           onClose={closeItem}
+          onContextAction={() => articleDiscussionPath ? navigate(-1) : openArticleDiscussion(selectedItem.id)}
           onReaction={() => toggleReaction(selectedItem.id)}
-          onDiscussion={() => navigate(`/fanbase?area=article-comments&item=${selectedItem.id}`)}
+          onDiscussion={() => articleDiscussionPath ? navigate(articleDiscussionPath) : openArticleDiscussion(selectedItem.id)}
           onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
           onExternalContinue={() => showNotice("External destinations are not connected in this mock frontend.")}
         />

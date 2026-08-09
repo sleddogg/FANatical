@@ -1,19 +1,25 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import type { ReactNode } from "react";
 import type { TeamId } from "../../domain/team";
+import { findFollowedTeam } from "../../data/followedTeams";
 import { mockNewsItems, mockSourceCatalog } from "../news/mockNewsData";
 import { getSourceForItem } from "../news/newsFiltering";
 import { CommunityThreadView } from "./CommunityThreadView";
+import { ArticleDiscussionCard } from "./ArticleDiscussionCard";
+import { FanPhotosArea } from "./FanPhotosArea";
+import { LockerRoomTopicCard } from "./LockerRoomTopicCard";
+import { formatGameStatusLabel, GameThreadContextCard } from "./GameThreadContextCard";
 import { getGameThreadStatus, getThreadCommentCount, useFanbaseContext } from "./FanbaseContext";
-import { formatEventDate, formatFanbaseTime, formatRating, totalReactions } from "./fanbaseFormatting";
-import { ReactionPicker } from "./ReactionPicker";
+import { formatEventDate, formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
 import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 
 type FanbaseAreaViewProps = {
   readonly area: FanbaseAreaId;
   readonly itemId: string | null;
+  readonly photoCategory: FanPhotoCategory | null;
   readonly teamId: TeamId;
+  readonly onOpenPhotoCategory: (category: FanPhotoCategory) => void;
   readonly onOpenItem: (itemId: string) => void;
+  readonly onCloseItem: () => void;
 };
 
 function EmptyArea({ children }: { children: ReactNode }) {
@@ -31,19 +37,24 @@ function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaVie
     const source = getSourceForItem(selectedNewsItem, mockSourceCatalog);
     const thread = fanbase.getArticleThread(selectedNewsItem.id);
     const discussionTeamId = thread?.teamId ?? teamId;
+    const discussionPath = `/fanbase?area=article-comments&item=${selectedNewsItem.id}`;
     return (
       <>
-        <div className="article-context-card">
-          <span className="news-source-avatar" aria-hidden="true">{source?.initials ?? "N"}</span>
-          <div><small>{source?.name ?? "FANatical News"} · {selectedNewsItem.contentType}</small><strong>{selectedNewsItem.headline}</strong></div>
-          <Link to={`/news?item=${selectedNewsItem.id}`}>View News Item ↗</Link>
-        </div>
+        <ArticleDiscussionCard
+          item={selectedNewsItem}
+          source={source}
+          thread={thread}
+          discussionPath={discussionPath}
+          onReact={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)}
+          onReport={() => thread && fanbase.reportThread(thread.id)}
+        />
         <CommunityThreadView
           thread={thread}
           title={selectedNewsItem.headline}
           context={`${source?.name ?? "News"} discussion`}
           body={selectedNewsItem.summary}
-          emptyMessage="No one has started this Article Comments thread yet. Your first comment will create it."
+          emptyMessage="No one has started this Article Discussion yet. Your first comment will create it."
+          compactTopicMode
           onSubmitComment={(body, parentId) => {
             if (thread) {
               fanbase.addComment(thread.id, body, parentId);
@@ -76,7 +87,7 @@ function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaVie
               <span aria-hidden="true">›</span>
             </button>
           );
-        }) : <EmptyArea>No Article Comments threads have started for this team yet.</EmptyArea>}
+        }) : <EmptyArea>No Article Discussions have started for this team yet.</EmptyArea>}
       </div>
     </>
   );
@@ -90,11 +101,17 @@ function LockerRoomArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProp
   if (selectedThread) {
     return (
       <>
+        <LockerRoomTopicCard
+          thread={selectedThread}
+          onReact={(reaction) => fanbase.reactToThread(selectedThread.id, reaction)}
+          onReport={() => fanbase.reportThread(selectedThread.id)}
+        />
         <CommunityThreadView
           thread={selectedThread}
           title={selectedThread.title ?? "Locker Room thread"}
           context={`${selectedThread.category ?? "Team Talk"} · @${selectedThread.creator?.username ?? "fan"}`}
           body={selectedThread.body ?? ""}
+          compactTopicMode
           onSubmitComment={(body, parentId) => fanbase.addComment(selectedThread.id, body, parentId)}
           onReactToThread={(reaction) => fanbase.reactToThread(selectedThread.id, reaction)}
           onReactToComment={(commentId, reaction) => fanbase.reactToComment(selectedThread.id, commentId, reaction)}
@@ -122,6 +139,7 @@ function LockerRoomArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProp
 
 function GameThreadsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "area">) {
   const fanbase = useFanbaseContext();
+  const teamName = findFollowedTeam(teamId)?.name ?? "Your team";
   const games = fanbase.gameThreads.filter((game) => game.teamId === teamId);
   const selectedGame = itemId ? games.find((game) => game.id === itemId) : undefined;
   const selectedThread = selectedGame ? fanbase.threads.find((thread) => thread.id === selectedGame.threadId) : undefined;
@@ -130,15 +148,14 @@ function GameThreadsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewPro
     const status = getGameThreadStatus(selectedGame);
     return (
       <>
-        <div className={`game-scoreboard game-scoreboard--${status.toLowerCase().replace("-", "")}`}>
-          <span>{status}</span><strong>Selected Team <small>vs.</small> {selectedGame.opponent}</strong><small>{selectedGame.venue}</small>
-        </div>
+        <GameThreadContextCard game={selectedGame} thread={selectedThread} teamName={teamName} status={status} onReport={() => fanbase.reportThread(selectedThread.id)} />
         <CommunityThreadView
           thread={selectedThread}
           title={selectedThread.title ?? `vs. ${selectedGame.opponent}`}
           context={`${status} Game Thread`}
           body={status === "Archived" ? "The 24-hour post-game window has ended. This discussion is now read-only." : "Pregame, live, and post-game conversation stays together here."}
           locked={status === "Archived"}
+          compactTopicMode
           onSubmitComment={(body, parentId) => fanbase.addComment(selectedThread.id, body, parentId)}
           onReactToThread={(reaction) => fanbase.reactToThread(selectedThread.id, reaction)}
           onReactToComment={(commentId, reaction) => fanbase.reactToComment(selectedThread.id, commentId, reaction)}
@@ -158,62 +175,13 @@ function GameThreadsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewPro
           const thread = fanbase.threads.find((candidate) => candidate.id === game.threadId);
           return (
             <button className="fanbase-game-card" key={game.id} type="button" onClick={() => onOpenItem(game.id)}>
-              <span className={`fanbase-status fanbase-status--${status.toLowerCase().replace("-", "")}`}>{status}</span>
-              <strong>Selected Team <small>vs.</small> {game.opponent}</strong>
+              <span className={`fanbase-status fanbase-status--${status.toLowerCase().replace("-", "")}`}>{formatGameStatusLabel(status)}</span>
+              <strong>{teamName} <small>vs.</small> {game.opponent}</strong>
               <span>{formatEventDate(game.startsAt)} · {game.venue}</span>
               <small>{getThreadCommentCount(thread)} comments {status === "Archived" ? "· Read only" : "· Join conversation"}</small>
             </button>
           );
         })}
-      </div>
-    </>
-  );
-}
-
-function FanPhotosArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "area">) {
-  const fanbase = useFanbaseContext();
-  const [category, setCategory] = useState<FanPhotoCategory | "All">("All");
-  const photos = fanbase.fanPhotos.filter((photo) => photo.teamId === teamId && (category === "All" || photo.category === category));
-  const selectedPhoto = itemId ? fanbase.fanPhotos.find((photo) => photo.id === itemId && photo.teamId === teamId) : undefined;
-  const [commentBody, setCommentBody] = useState("");
-
-  if (selectedPhoto) {
-    const submit = (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!commentBody.trim()) return;
-      fanbase.addFanPhotoComment(selectedPhoto.id, commentBody);
-      setCommentBody("");
-    };
-    return (
-      <>
-        <article className="fan-photo-detail surface">
-          <div className="fan-photo-visual" style={{ "--fan-photo-accent": selectedPhoto.accent } as CSSProperties}>
-            {selectedPhoto.rankingBadge ? <span className="fan-photo-badge">{selectedPhoto.rankingBadge}</span> : null}
-            <img src={selectedPhoto.imageUrl} alt={selectedPhoto.imageAlt} />
-          </div>
-          <div className="fan-photo-detail__copy">
-            <span className="eyebrow">{selectedPhoto.category}</span><h2>{selectedPhoto.title}</h2><p>{selectedPhoto.details}</p>
-            <div className="fan-photo-rating"><strong>{formatRating(selectedPhoto.ratingTotal, selectedPhoto.ratingCount)}</strong><span>average from {selectedPhoto.ratingCount} ratings</span></div>
-            <fieldset className="fan-photo-rating-control"><legend>Your rating</legend>{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" aria-label={`Rate ${rating} out of 5`} aria-pressed={selectedPhoto.viewerRating === rating} onClick={() => fanbase.rateFanPhoto(selectedPhoto.id, rating)}>★</button>)}</fieldset>
-            <ReactionPicker reactions={selectedPhoto.reactions} viewerReaction={selectedPhoto.viewerReaction} onReact={(reaction) => fanbase.reactToFanPhoto(selectedPhoto.id, reaction)} />
-            <button className="fanbase-report-button" type="button" onClick={() => fanbase.reportFanPhoto(selectedPhoto.id)}>{selectedPhoto.reported ? "Reported" : "Report photo"}</button>
-          </div>
-        </article>
-        <section className="photo-comments surface"><h3>Photo comments</h3>{selectedPhoto.comments.map((comment) => <article key={comment.id}><span className="community-avatar">{comment.author.initials}</span><div><strong>@{comment.author.username}</strong><p>{comment.body}</p></div></article>)}<form onSubmit={submit}><label><span>Add a comment</span><textarea required rows={2} value={commentBody} onChange={(event) => setCommentBody(event.target.value)} /></label><button className="fanbase-primary-button" type="submit">Post</button></form></section>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div className="fanbase-chip-row" aria-label="Photo categories">{(["All", "Game Face", "Fan Cave", "Memorabilia"] as const).map((option) => <button key={option} type="button" aria-pressed={category === option} onClick={() => setCategory(option)}>{option}</button>)}</div>
-      <div className="fan-photo-grid">
-        {photos.map((photo) => (
-          <button className="fan-photo-card" key={photo.id} type="button" onClick={() => onOpenItem(photo.id)}>
-            <span className="fan-photo-visual" style={{ "--fan-photo-accent": photo.accent } as CSSProperties}>{photo.rankingBadge ? <span className="fan-photo-badge">{photo.rankingBadge}</span> : null}<img src={photo.imageUrl} alt="" /></span>
-            <span className="fan-photo-card__copy"><small>{photo.category} · @{photo.owner.username}</small><strong>{photo.title}</strong><span>★ {formatRating(photo.ratingTotal, photo.ratingCount)} · {totalReactions(photo.reactions)} reactions · {photo.comments.length} comments</span></span>
-          </button>
-        ))}
       </div>
     </>
   );
@@ -262,7 +230,7 @@ export function FanbaseAreaView(props: FanbaseAreaViewProps) {
     case "article-comments": return <ArticleCommentsArea {...props} />;
     case "locker-room": return <LockerRoomArea {...props} />;
     case "game-threads": return <GameThreadsArea {...props} />;
-    case "fan-photos": return <FanPhotosArea {...props} />;
+    case "fan-photos": return <FanPhotosArea teamId={props.teamId} itemId={props.itemId} category={props.photoCategory} onOpenCategory={props.onOpenPhotoCategory} onOpenItem={props.onOpenItem} onCloseItem={props.onCloseItem} />;
     case "events": return <EventsArea {...props} />;
     case "groups": return <GroupsArea {...props} />;
   }

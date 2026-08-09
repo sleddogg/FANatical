@@ -9,7 +9,7 @@ type FanbaseHubProps = {
 };
 
 const areaDefinitions = [
-  { id: "article-comments", title: "Article Comments", icon: "◌", description: "Continue the conversation around News Items in one connected thread." },
+  { id: "article-comments", title: "Article Discussions", icon: "◌", description: "Continue the conversation around News Items in one connected discussion." },
   { id: "locker-room", title: "Locker Room", icon: "▤", description: "Start standalone team talk about tactics, rosters, trades, and more." },
   { id: "game-threads", title: "Game Threads", icon: "▣", description: "Join scheduled, live, post-game, and archived game conversations." },
   { id: "fan-photos", title: "Fan Photos", icon: "▧", description: "Rate and react to Game Face, Fan Cave, and Memorabilia posts." },

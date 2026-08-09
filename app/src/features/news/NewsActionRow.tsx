@@ -28,7 +28,7 @@ export function NewsActionRow({
         <span aria-hidden="true">{reacted ? "♥" : "♡"}</span>
         <small>{formatCount(reactionCount)}</small>
       </button>
-      <button type="button" aria-label="Open FANbase discussion" onClick={onDiscussion}>
+      <button type="button" aria-label="Open FANbase Article Discussion" onClick={onDiscussion}>
         <span aria-hidden="true">◯</span>
         <small>{formatCount(discussionCount)}</small>
       </button>
