@@ -36,21 +36,41 @@ type FanPhotosAreaProps = {
   readonly itemOrigin: "rating-queue" | null;
 };
 
-function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: readonly FanPhoto[]; readonly onOpenCategory: (category: FanPhotoCategory) => void }) {
+export function FanPhotoCategoryHub({
+  photos,
+  onOpenCategory,
+  initialCategory = "Fan Cave",
+  introduction = "Swipe or select a category to browse, rate, and celebrate how fans show up.",
+  centerInitialCategory = false,
+  minimal = false,
+}: {
+  readonly photos: readonly FanPhoto[];
+  readonly onOpenCategory: (category: FanPhotoCategory) => void;
+  readonly initialCategory?: FanPhotoCategory;
+  readonly introduction?: string;
+  readonly centerInitialCategory?: boolean;
+  readonly minimal?: boolean;
+}) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(1);
+  const categoryIndex = categories.indexOf(initialCategory);
+  const displayedCategories: readonly FanPhotoCategory[] = centerInitialCategory
+    ? [categories[(categoryIndex + categories.length - 1) % categories.length]!, initialCategory, categories[(categoryIndex + 1) % categories.length]!]
+    : categories;
+  const initialIndex = centerInitialCategory ? 1 : categoryIndex;
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   const moveTo = (nextIndex: number) => {
-    const clampedIndex = Math.max(0, Math.min(categories.length - 1, nextIndex));
+    const clampedIndex = Math.max(0, Math.min(displayedCategories.length - 1, nextIndex));
     const card = scrollerRef.current?.querySelector<HTMLElement>(`[data-category-index="${clampedIndex}"]`);
     card?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "center" });
     setActiveIndex(clampedIndex);
   };
 
   useEffect(() => {
-    const initialCard = scrollerRef.current?.querySelector<HTMLElement>("[data-category-index=\"1\"]");
+    const initialCard = scrollerRef.current?.querySelector<HTMLElement>(`[data-category-index="${initialIndex}"]`);
     initialCard?.scrollIntoView?.({ block: "nearest", inline: "center" });
-  }, []);
+    setActiveIndex(initialIndex);
+  }, [initialIndex]);
 
   const updateActiveCard = () => {
     const scroller = scrollerRef.current;
@@ -67,13 +87,11 @@ function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: read
 
   return (
     <section className="fan-photo-category-hub" aria-label="Fan Photo categories">
-      <div className="fan-photo-category-hub__intro">
-        <p>Swipe or select a category to browse, rate, and celebrate how fans show up.</p>
-      </div>
+      {introduction ? <div className="fan-photo-category-hub__intro"><p>{introduction}</p></div> : null}
       <div className="fan-photo-category-carousel-shell">
         <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--previous" type="button" aria-label="Previous Fan Photo category" disabled={activeIndex === 0} onClick={() => moveTo(activeIndex - 1)}>‹</button>
         <div ref={scrollerRef} className="fan-photo-category-carousel" onScroll={updateActiveCard}>
-          {categories.map((category, index) => {
+          {displayedCategories.map((category, index) => {
             const cover = photos.find((photo) => photo.category === category)?.images[0];
             return (
               <button
@@ -87,15 +105,15 @@ function FanPhotoCategoryHub({ photos, onOpenCategory }: { readonly photos: read
               >
                 {cover ? <img src={cover.url} alt="" /> : <span className="fan-photo-category-card__empty" aria-hidden="true">▧</span>}
                 <span className="fan-photo-category-card__shade" />
-                <span className="fan-photo-category-card__copy"><small>{photos.filter((photo) => photo.category === category).length} FANfotos</small><strong>{category}</strong><span>{categoryDescriptions[category]}</span><b>Explore <span aria-hidden="true">→</span></b></span>
+                <span className="fan-photo-category-card__copy">{minimal ? null : <small>{photos.filter((photo) => photo.category === category).length} FANfotos</small>}<strong>{category}</strong>{minimal ? null : <><span>{categoryDescriptions[category]}</span><b>Explore <span aria-hidden="true">→</span></b></>}</span>
               </button>
             );
           })}
         </div>
-        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--next" type="button" aria-label="Next Fan Photo category" disabled={activeIndex === categories.length - 1} onClick={() => moveTo(activeIndex + 1)}>›</button>
+        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--next" type="button" aria-label="Next Fan Photo category" disabled={activeIndex === displayedCategories.length - 1} onClick={() => moveTo(activeIndex + 1)}>›</button>
       </div>
-      <div className="fan-photo-carousel-dots" aria-label={`Showing ${categories[activeIndex]} category`}>
-        {categories.map((category, index) => <button key={category} type="button" aria-label={`Show ${category}`} aria-pressed={activeIndex === index} onClick={() => moveTo(index)} />)}
+      <div className="fan-photo-carousel-dots" aria-label={`Showing ${displayedCategories[activeIndex]} category`}>
+        {displayedCategories.map((category, index) => <button key={category} type="button" aria-label={`Show ${category}`} aria-pressed={activeIndex === index} onClick={() => moveTo(index)} />)}
       </div>
     </section>
   );
@@ -130,7 +148,7 @@ function FanPhotoCategoryPage({ photos, teamId, onOpenItem, onOpenRatingItem }: 
   );
 }
 
-function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { readonly photo: FanPhoto; readonly openedFromRatingQueue: boolean; readonly onClose: () => void }) {
+export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { readonly photo: FanPhoto; readonly openedFromRatingQueue: boolean; readonly onClose: () => void }) {
   const fanbase = useFanbaseContext();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);

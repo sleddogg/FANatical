@@ -8,6 +8,7 @@ import { PlaceholderPage } from "../pages/PlaceholderPage";
 import { NewsPage } from "../features/news/NewsPage";
 import { FanbasePage } from "../features/fanbase/FanbasePage";
 import { QuizPage } from "../features/quiz/QuizPage";
+import { ProfilePage } from "../features/profile/ProfilePage";
 import { featureNavigation } from "./navigation";
 
 export const appRoutes: RouteObject[] = [
@@ -40,12 +41,7 @@ export const appRoutes: RouteObject[] = [
           })),
           {
             path: "profile",
-            element: (
-              <PlaceholderPage
-                title="Profile"
-                description="Fan identity and profile controls will live here."
-              />
-            ),
+            element: <ProfilePage />,
           },
         ],
       },

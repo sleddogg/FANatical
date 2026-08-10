@@ -14,6 +14,7 @@ export type FanbaseCreationType = "locker" | "photo" | "event" | "group";
 type FanbaseCreateDialogProps = {
   readonly team: FollowedTeam;
   readonly initialCreationType?: FanbaseCreationType;
+  readonly initialPhotoCategory?: CreateFanPhotoInput["category"];
   readonly onCreateLocker: (input: CreateLockerRoomInput) => string;
   readonly onCreatePhoto: (input: CreateFanPhotoInput) => string;
   readonly onCreateEvent: (input: CreateEventInput) => string;
@@ -73,6 +74,7 @@ function ConnectionInvitePicker({ selectedIds, onToggle }: { readonly selectedId
 export function FanbaseCreateDialog({
   team,
   initialCreationType,
+  initialPhotoCategory,
   onCreateLocker,
   onCreatePhoto,
   onCreateEvent,
@@ -186,7 +188,7 @@ export function FanbaseCreateDialog({
               <>
                 <div className="fanbase-create__mock-upload"><img src={team.logoUrl} alt="" /><span>Mock artwork for this local-only photo flow</span><small>Real uploads and image processing are intentionally deferred.</small></div>
                 <label>Photo title<input name="title" required maxLength={80} /></label>
-                <label>Category<select name="category" defaultValue="Game Face"><option>Game Face</option><option>Fan Cave</option><option>Memorabilia</option></select></label>
+                <label>Category<select name="category" defaultValue={initialPhotoCategory ?? "Game Face"}><option>Game Face</option><option>Fan Cave</option><option>Memorabilia</option></select></label>
                 <label>Details<textarea name="details" required rows={4} maxLength={600} /></label>
               </>
             ) : null}

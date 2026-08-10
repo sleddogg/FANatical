@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { StatDashboard } from "../../components/StatDashboard";
 import { ActiveQuiz } from "./ActiveQuiz";
 import { CreateQuizFlow } from "./CreateQuizFlow";
 import { MOCK_RETAKE_COOLDOWN_DAYS, mockQuizAttempts, mockQuizCatalog, mockQuizStats, quizLeagues } from "./mockQuizData";
@@ -37,18 +38,11 @@ function daysSince(value: string) {
 
 function QuizStatsDashboard() {
   return (
-    <section className="quiz-stats" aria-label="Quiz dashboard">
-      <div className="quiz-stats__primary">
-        <article className="quiz-stat quiz-stat--large"><span><i aria-hidden="true">🔥</i> Streak</span><strong>{mockQuizStats.streak}</strong></article>
-        <article className="quiz-stat quiz-stat--large"><span><i aria-hidden="true">▣</i> Today</span><strong>{mockQuizStats.today}</strong></article>
-      </div>
-      <div className="quiz-stats__secondary">
-        <article className="quiz-stat quiz-stat--small"><strong>{mockQuizStats.fanScore}</strong><span><i aria-hidden="true">★</i> Fan Score</span></article>
-        <article className="quiz-stat quiz-stat--small"><strong>{mockQuizStats.fanCoins}</strong><span><i aria-hidden="true">●</i> Fan Coins</span></article>
-        <article className="quiz-stat quiz-stat--small"><strong>{mockQuizStats.completed}</strong><span><i aria-hidden="true">◉</i> Completed</span></article>
-        <article className="quiz-stat quiz-stat--small"><strong>{mockQuizStats.averageScore}</strong><span><i aria-hidden="true">▥</i> Average Score</span></article>
-      </div>
-    </section>
+    <StatDashboard
+      label="Quiz dashboard"
+      primary={[{ label: "Streak", value: mockQuizStats.streak, icon: "🔥" }, { label: "Today", value: mockQuizStats.today, icon: "▣" }]}
+      secondary={[{ label: "Fan Score", value: mockQuizStats.fanScore, icon: "★" }, { label: "Fan Coins", value: mockQuizStats.fanCoins, icon: "●" }, { label: "Completed", value: mockQuizStats.completed, icon: "◉" }, { label: "Average Score", value: mockQuizStats.averageScore, icon: "▥" }]}
+    />
   );
 }
 

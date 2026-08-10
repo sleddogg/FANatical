@@ -30,7 +30,7 @@ describe("FANatical application shell", () => {
     ["/quiz", "Quiz"],
     ["/fanbase", "FANbase"],
     ["/cheer", "Cheer"],
-    ["/profile", "Profile"],
+    ["/profile", "NorthStarFan"],
   ])("resolves %s", (route, heading) => {
     renderRoute(route);
 
