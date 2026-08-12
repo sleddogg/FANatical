@@ -31,8 +31,8 @@ export const initialCheerLibrary: readonly CheerRecord[] = [{
       { id: "d-fence-clap-2", eventId: "d-fence-clap-2", startUnit: 12, units: 4, duration: "Quarter", timingType: "Note", continuesFromPrevious: false, continuesToNext: false, action: "Clap", audience: "All" },
     ],
     lyricSegments: [
-      { id: "d-fence-d", eventId: "d-fence-d", startUnit: 0, units: 4, duration: "Quarter", timingType: "Note", continuesFromPrevious: false, continuesToNext: false, lyric: "D", audience: "West" },
-      { id: "d-fence-fence", eventId: "d-fence-fence", startUnit: 4, units: 4, duration: "Quarter", timingType: "Note", continuesFromPrevious: false, continuesToNext: false, lyric: "FENCE", audience: "East" },
+      { id: "d-fence-d", eventId: "d-fence-d", startUnit: 0, units: 4, duration: "Quarter", timingType: "Note", continuesFromPrevious: false, continuesToNext: false, lyric: "D", audience: "End A" },
+      { id: "d-fence-fence", eventId: "d-fence-fence", startUnit: 4, units: 4, duration: "Quarter", timingType: "Note", continuesFromPrevious: false, continuesToNext: false, lyric: "FENCE", audience: "End B" },
       { id: "d-fence-patriots-a", eventId: "d-fence-patriots", startUnit: 12, units: 4, duration: "Half", timingType: "Note", continuesFromPrevious: false, continuesToNext: true, lyric: "Patriots", audience: "All" },
     ],
     restSegments: [],

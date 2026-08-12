@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { canPlaceRest, canPlaceSegment, distributeLyricLine, durationUnits, estimateSyllables, lyricLines, MEASURE_CAPACITY_UNITS, measureUsedUnits, segmentPositions, trackEndUnit, type CheerTrack } from "./cheerUtils";
 import type { CheerAction, CheerActionSegment, CheerDraft, CheerDuration, CheerLyricSegment, CheerMeasure, CheerRestSegment, CheerSport, CheerTimingType, CrowdAssignment } from "./types";
-import { cheerActionIcon, cheerAudienceImage, cheerDurationSymbol, cheerSportAudienceLegend } from "./cheerPresentation";
+import { cheerActionIcon, cheerDurationSymbol } from "./cheerPresentation";
+import { cheerAudienceImage, cheerAudienceOptions, cheerRoutingReferences, cheerSportAudienceLegend } from "./cheerRouting";
 import { CheerRecording } from "./CheerRecording";
 
 const durationOptions = [
@@ -20,7 +21,6 @@ const actionOptions = [
   { value: "None", icon: "—" },
 ] as const satisfies readonly { readonly value: CheerAction; readonly icon: string }[];
 
-const baseAudiences = ["All", "East", "West", "North", "South", "Upper", "Lower"] as const satisfies readonly CrowdAssignment[];
 const teachingDismissalKey = "fanatical.cheer.d-fence-how-to-dismissed";
 let builderSequence = 0;
 
@@ -62,20 +62,14 @@ function beatPositionLabel(unit: number) {
   return `beat ${beat} and three quarters`;
 }
 
-function audienceOptions(sport: CheerSport): readonly CrowdAssignment[] {
-  if (sport === "Basketball") return [...baseAudiences, "Backboard Left", "Backboard Right"];
-  if (sport === "Football") return [...baseAudiences, "Uprights Left", "Uprights Right"];
-  return baseAudiences;
-}
-
-function AudienceVisual({ audience }: { readonly audience: CrowdAssignment }) {
-  const image = cheerAudienceImage(audience);
+function AudienceVisual({ audience, sport }: { readonly audience: CrowdAssignment; readonly sport: CheerSport }) {
+  const image = cheerAudienceImage(audience, sport);
   if (image) return <span className="cheer-audience-visual cheer-audience-visual--image"><img src={image} alt="" /></span>;
   return <span className="cheer-audience-visual" data-audience={audience}><i>{audience}</i></span>;
 }
 
-function PlacedAudience({ audience }: { readonly audience: CrowdAssignment }) {
-  const image = cheerAudienceImage(audience);
+function PlacedAudience({ audience, sport }: { readonly audience: CrowdAssignment; readonly sport: CheerSport }) {
+  const image = cheerAudienceImage(audience, sport);
   return image ? <img className="cheer-placed-audience-image" src={image} alt="" /> : <>{audience}</>;
 }
 
@@ -106,8 +100,12 @@ function DfenceHowTo({ onClose }: { readonly onClose: (dontShowAgain: boolean) =
           <span>ACTION</span>{cells(["", "", "👏", "👏"])}
           <span>TIMING / PACING</span>{cells(["1", "2", "3", "4"])}
           <span>LYRICS</span>{cells(["D", "FENCE", "", ""])}
-          <span>WHO · Lyrics</span>{cells(["West", "East", "", ""])}
+          <span>WHO · Lyrics</span>{cells(["End A", "End B", "", ""])}
         </div>
+        <section className="cheer-how-to__routing" aria-labelledby="cheer-routing-reference-title">
+          <header><span className="eyebrow">WHO routing</span><h3 id="cheer-routing-reference-title">Route each cue to the right part of the crowd</h3><p>The Cheer’s saved Sport determines which working routing graphics appear in its WHO selector.</p></header>
+          <div>{cheerRoutingReferences.map((reference) => <figure key={reference.title}><img src={reference.image} alt={reference.title} /><figcaption><strong>{reference.title}</strong><span>{reference.description}</span></figcaption></figure>)}</div>
+        </section>
         <div className="cheer-how-to__audience-legend" aria-label="Sport-specific WHO symbols">
           {cheerSportAudienceLegend.map((item) => <article key={item.title}><img src={item.image} alt="" /><div><strong>{item.title}</strong><small>{item.context}</small></div></article>)}
         </div>
@@ -145,9 +143,10 @@ function PlacementCells({ measure, track, copyBuffer, onPlace }: { readonly meas
   })}</>;
 }
 
-function MeasureTimeline({ measure, measureIndex, selected, copyBuffer, onSelect, onPlace, onUpdateLyric }: {
+function MeasureTimeline({ measure, measureIndex, sport, selected, copyBuffer, onSelect, onPlace, onUpdateLyric }: {
   readonly measure: CheerMeasure;
   readonly measureIndex: number;
+  readonly sport: CheerSport;
   readonly selected: BuilderSelection | null;
   readonly copyBuffer: CopyBuffer | null;
   readonly onSelect: (selection: BuilderSelection) => void;
@@ -162,7 +161,7 @@ function MeasureTimeline({ measure, measureIndex, selected, copyBuffer, onSelect
   return (
     <div className="cheer-measure__scroll" tabIndex={0} aria-label={`Measure ${measureIndex + 1} choreography timeline`}>
       <div className="cheer-measure__lanes">
-        <Lane label="WHO · Action" className="cheer-lane--who">{positionedActions.map(({ segment, startUnit, units }) => <button key={segment.id} type="button" data-default={segment.audience === "All" ? "true" : undefined} data-selected={isSelected("action", segment.eventId, "audience") ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "action", eventId: segment.eventId, control: "audience" })} aria-label={`Action audience ${segment.audience}`}><PlacedAudience audience={segment.audience} /></button>)}</Lane>
+        <Lane label="WHO · Action" className="cheer-lane--who">{positionedActions.map(({ segment, startUnit, units }) => <button key={segment.id} type="button" data-default={segment.audience === "All" ? "true" : undefined} data-selected={isSelected("action", segment.eventId, "audience") ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "action", eventId: segment.eventId, control: "audience" })} aria-label={`Action audience ${segment.audience}`}><PlacedAudience audience={segment.audience} sport={sport} /></button>)}</Lane>
         <Lane label="ACTION" className="cheer-lane--action"><PlacementCells measure={measure} track="action" copyBuffer={copyBuffer} onPlace={(unit) => onPlace("action", unit)} />{positionedActions.map(({ segment, startUnit, units }) => <button className="cheer-lane-event" key={segment.id} type="button" data-selected={isSelected("action", segment.eventId, "action") ? "true" : undefined} data-continuation={segment.continuesFromPrevious ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "action", eventId: segment.eventId, control: "action" })} aria-label={`Action ${segment.action} at ${beatPositionLabel(startUnit)}`}>{segment.continuesFromPrevious ? "↪" : cheerActionIcon(segment.action)}</button>)}</Lane>
         <Lane label="TIMING / PACING" className="cheer-lane--timing">
           <div className="cheer-timing-spine" aria-hidden="true">{[1, 2, 3, 4].map((beat) => <span key={beat}>{beat}</span>)}</div>
@@ -170,7 +169,7 @@ function MeasureTimeline({ measure, measureIndex, selected, copyBuffer, onSelect
           <div className="cheer-timing-track cheer-timing-track--lyrics">{positionedLyrics.map(({ segment, startUnit, units }) => <button key={segment.id} type="button" data-selected={isSelected("lyrics", segment.eventId, "timing") ? "true" : undefined} data-continuation={segment.continuesFromPrevious ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "lyrics", eventId: segment.eventId, control: "timing" })} aria-label={`Lyrics Note timing ${segment.duration} at ${beatPositionLabel(startUnit)}`}>{segment.continuesFromPrevious ? "↪" : cheerDurationSymbol(segment.duration, "Note")}</button>)}</div>
         </Lane>
         <Lane label="LYRICS" className="cheer-lane--lyrics"><PlacementCells measure={measure} track="lyrics" copyBuffer={copyBuffer} onPlace={(unit) => onPlace("lyrics", unit)} />{positionedLyrics.map(({ segment, startUnit, units }) => segment.continuesFromPrevious ? <button key={segment.id} type="button" className="cheer-lane__rest cheer-lane-event" data-continuation="true" style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "lyrics", eventId: segment.eventId, control: "lyrics" })} aria-label={`Continued lyrics at ${beatPositionLabel(startUnit)}`}>↪</button> : <input className="cheer-lane-event" key={segment.id} dir="auto" style={laneStyle(startUnit, units)} aria-label={`Lyrics at ${beatPositionLabel(startUnit)}`} data-selected={isSelected("lyrics", segment.eventId, "lyrics") ? "true" : undefined} value={segment.lyric} placeholder="Words" onFocus={() => onSelect({ track: "lyrics", eventId: segment.eventId, control: "lyrics" })} onChange={(event) => onUpdateLyric(segment.eventId, event.target.value)} />)}</Lane>
-        <Lane label="WHO · Lyrics" className="cheer-lane--who">{positionedLyrics.map(({ segment, startUnit, units }) => <button key={segment.id} type="button" data-default={segment.audience === "All" ? "true" : undefined} data-selected={isSelected("lyrics", segment.eventId, "audience") ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "lyrics", eventId: segment.eventId, control: "audience" })} aria-label={`Lyric audience ${segment.audience}`}><PlacedAudience audience={segment.audience} /></button>)}</Lane>
+        <Lane label="WHO · Lyrics" className="cheer-lane--who">{positionedLyrics.map(({ segment, startUnit, units }) => <button key={segment.id} type="button" data-default={segment.audience === "All" ? "true" : undefined} data-selected={isSelected("lyrics", segment.eventId, "audience") ? "true" : undefined} style={laneStyle(startUnit, units)} onClick={() => onSelect({ track: "lyrics", eventId: segment.eventId, control: "audience" })} aria-label={`Lyric audience ${segment.audience}`}><PlacedAudience audience={segment.audience} sport={sport} /></button>)}</Lane>
       </div>
     </div>
   );
@@ -199,7 +198,7 @@ export function CheerBuilder({ draft, onChange, onFinish }: { readonly draft: Ch
   }, [draft.measures, selection]);
   const selectedAction = selection?.track === "action" ? (selectedSegment as CheerActionSegment | null)?.action ?? null : null;
   const selectedTimingType: CheerTimingType = selection?.track === "rest" ? "Rest" : "Note";
-  const availableAudiences = audienceOptions(draft.sport);
+  const availableAudiences = cheerAudienceOptions(draft.sport);
 
   const addMeasure = () => {
     const measure = emptyMeasure();
@@ -528,7 +527,7 @@ export function CheerBuilder({ draft, onChange, onFinish }: { readonly draft: Ch
             <article className="cheer-measure" key={measure.id} data-active={activeMeasureId === measure.id ? "true" : undefined}>
               <header><div><span>Measure {measureIndex + 1}</span><strong>Action {actionUsed / 4}/4 · Lyrics {lyricUsed / 4}/4</strong></div><button className="cheer-delete-measure" type="button" disabled={draft.measures.length === 1} onClick={() => setConfirmDeleteId(measure.id)}>Delete Measure</button></header>
               {measureWarnings[measure.id] ? <p className="cheer-measure__warning" role="alert">{measureWarnings[measure.id]}</p> : null}
-              <MeasureTimeline measure={measure} measureIndex={measureIndex} selected={selection} copyBuffer={copyBuffer} onPlace={(track, startUnit) => placeSegment(measure.id, track, startUnit)} onSelect={(next) => { setSelection(next); setActiveMeasureId(measure.id); setMeasureWarnings({}); if (!copyBuffer) setMessage(""); }} onUpdateLyric={(eventId, lyric) => updateEvent("lyrics", eventId, { lyric } as Partial<CheerActionSegment & CheerLyricSegment>)} />
+              <MeasureTimeline measure={measure} measureIndex={measureIndex} sport={draft.sport} selected={selection} copyBuffer={copyBuffer} onPlace={(track, startUnit) => placeSegment(measure.id, track, startUnit)} onSelect={(next) => { setSelection(next); setActiveMeasureId(measure.id); setMeasureWarnings({}); if (!copyBuffer) setMessage(""); }} onUpdateLyric={(eventId, lyric) => updateEvent("lyrics", eventId, { lyric } as Partial<CheerActionSegment & CheerLyricSegment>)} />
             </article>
           );
         })}
@@ -539,7 +538,7 @@ export function CheerBuilder({ draft, onChange, onFinish }: { readonly draft: Ch
           {!selection ? <p>Select an event, its timing symbol, or its WHO route to edit it.</p> : null}
           {selection?.control === "timing" ? <div className="cheer-timing-controls"><strong>Timing</strong><div className="cheer-note-rest-toggle" aria-label="Timing type">{(["Note", "Rest"] as const).map((timingType) => <button key={timingType} type="button" aria-pressed={selectedTimingType === timingType} onClick={() => updateSelected({ timingType })}>{timingType}</button>)}</div><div className="cheer-duration-options">{durationOptions.map((option) => <button className="cheer-duration-option" key={option.value} type="button" aria-label={`${option.value}, ${option.beats}`} aria-pressed={selectedSegment?.duration === option.value} onClick={() => updateSelected({ duration: option.value })}><b>{cheerDurationSymbol(option.value, selectedTimingType)}</b><span>{option.value}</span><small>{option.beats}</small></button>)}</div></div> : null}
           {selection?.control === "action" ? <div><strong>Action</strong><div>{actionOptions.map((option) => <button className="cheer-action-option" key={option.value} type="button" aria-pressed={selectedAction === option.value} onClick={() => updateSelected({ action: option.value })}><b>{option.icon}</b><span>{option.value}</span></button>)}</div></div> : null}
-          {selection?.control === "audience" ? <div><strong>WHO · Audience</strong><div>{availableAudiences.map((audience) => <button className="cheer-audience-option" key={audience} type="button" aria-label={audience} aria-pressed={selectedSegment?.audience === audience} onClick={() => updateSelected({ audience })}><AudienceVisual audience={audience} /><span>{audience}</span></button>)}</div></div> : null}
+          {selection?.control === "audience" ? <div><strong>WHO · Audience</strong><div>{availableAudiences.map((audience) => <button className="cheer-audience-option" key={audience} type="button" aria-label={audience} aria-pressed={selectedSegment?.audience === audience} onClick={() => updateSelected({ audience })}><AudienceVisual audience={audience} sport={draft.sport} /><span>{audience}</span></button>)}</div></div> : null}
           {selection?.control === "lyrics" ? <p><strong>Lyrics</strong> · Type directly in the selected lyric event or choose a source line below.</p> : null}
           {selection && selection.track !== "rest" ? <button className="cheer-control-tray__copy" type="button" aria-pressed={copyBuffer?.track === selection.track} onClick={copySelected}>Copy {selection.track === "action" ? "Action" : "Lyric"}</button> : null}
           {copyBuffer ? <button className="cheer-control-tray__cancel-copy" type="button" onClick={() => { setCopyBuffer(null); setMessage(""); }}>Cancel Copy</button> : null}

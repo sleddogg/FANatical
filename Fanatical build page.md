@@ -1932,6 +1932,18 @@ Check-in should not require FANatical to manually maintain a database of every p
 
 Major stadiums and arenas can become managed venue records over time.
 
+**Venue Mapping / Seat Resolver — Production Admin Foundation**
+
+The existing Venue Mapping and Seat Resolver are not disposable development tooling. They are the production foundation for managed-venue fan Check-In and Live Cheer routing.
+
+During development, the tool remains available through its temporary `/internal/...` routes and stays outside normal fan-facing navigation.
+
+When FANatical authentication and admin permissions are implemented, preserve and reuse the working Venue Mapper and Seat Resolver as an authenticated admin-only venue-management system. Replacing the temporary `/internal/...` access must not cause the tool, its data model, or its resolver mechanics to be rebuilt or discarded.
+
+Authorized FANatical administrators and venue administrators should be able to create and maintain managed venue records, physical section mappings, Team Seating Profiles, routing rules, row/seat exceptions, and test seat resolution. The permanent physical venue mapping remains shared across team profiles, and the resolver continues to explain which saved rule produced each routing value.
+
+Venue mappings and Seat Resolver data should move from local development persistence into the canonical FANatical backend/database when that foundation is implemented. Fan Check-In and Live Cheer must read from those same canonical venue records rather than creating a separate venue-routing system.
+
 For smaller venues, pubs, and watch parties, users should be able to search/select a location through a map or place lookup provider, or use an event-created location.
 
 Exact provider and implementation will be decided later.
@@ -3987,6 +3999,7 @@ Admin components:
 * photo review queue  
 * quiz approval queue  
 * Cheer moderation/management   
+* venue mapping / Seat Resolver management
 * source catalog / source manager  
 * event manager  
 * notification manager  
@@ -4389,6 +4402,7 @@ Before real public growth, admins need:
 * content hide/remove tools  
 * quiz approval  
 * cheer moderation/managment  
+* authenticated venue mapping / Seat Resolver management
 * source management  
 * photo moderation  
 * basic usage dashboard  
@@ -5156,4 +5170,3 @@ Backend impact:
 Tags / Data impact:
 
 Other Section impact:
-

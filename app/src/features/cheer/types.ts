@@ -5,9 +5,9 @@ export type CheerDuration = "Whole" | "Dotted Half" | "Half" | "Quarter" | "Eigh
 export type CheerTimingType = "Note" | "Rest";
 export type CheerContentTrack = "action" | "lyrics";
 export type CheerAction = "None" | "Clap" | "Stomp" | "Wave";
-export type CrowdAssignment = "All" | "Upper" | "Lower" | "North" | "East" | "West" | "South" | "Backboard Left" | "Backboard Right" | "Uprights Left" | "Uprights Right";
+export type CrowdAssignment = "All" | "Upper" | "Lower" | "Side A" | "Side B" | "End A" | "End B" | "First Base Side" | "Third Base Side" | "Outfield" | "Backboard Left" | "Backboard Right" | "Uprights Left" | "Uprights Right" | "North" | "East" | "West" | "South";
 export type CheerLanguage = "Auto" | "English" | "Other";
-export type CheerSport = "Football" | "Baseball" | "Basketball" | "Hockey" | "Other";
+export type CheerSport = "Football" | "Baseball" | "Basketball" | "Hockey" | "Soccer" | "Other";
 export type CheerPublicationStatus = "Draft" | "Published";
 
 export type CheerActionSegment = Readonly<{

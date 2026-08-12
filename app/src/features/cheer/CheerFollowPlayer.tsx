@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cheerActionIcon, cheerAudienceImage, cheerDurationSymbol } from "./cheerPresentation";
 import { CHEER_PLAYBACK_BPM, MEASURE_CAPACITY_UNITS, segmentPositions } from "./cheerUtils";
-import type { CheerActionSegment, CheerLyricSegment, CheerMeasure, CheerRecord, CheerRestSegment, CrowdAssignment } from "./types";
+import type { CheerActionSegment, CheerLyricSegment, CheerMeasure, CheerRecord, CheerRestSegment, CheerSport, CrowdAssignment } from "./types";
 
 type PlayerPhase = "idle" | "count-in" | "playing" | "paused" | "complete";
 type TimedSegment = CheerActionSegment | CheerLyricSegment | CheerRestSegment;
@@ -14,8 +14,8 @@ function FollowLane({ label, children, playhead }: { readonly label: string; rea
   return <div className="cheer-follow-lane"><strong>{label}</strong><div>{children}{playhead !== null ? <i className="cheer-follow-playhead" aria-hidden="true" style={{ left: `${(playhead / MEASURE_CAPACITY_UNITS) * 100}%` }} /> : null}</div></div>;
 }
 
-function FollowAudience({ audience }: { readonly audience: CrowdAssignment }) {
-  const image = cheerAudienceImage(audience);
+function FollowAudience({ audience, sport }: { readonly audience: CrowdAssignment; readonly sport: CheerSport }) {
+  const image = cheerAudienceImage(audience, sport);
   return image ? <img src={image} alt={audience} /> : <>{audience}</>;
 }
 
@@ -23,7 +23,7 @@ function isActive(segment: TimedSegment, unit: number | null) {
   return unit !== null && unit >= segment.startUnit && unit < segment.startUnit + segment.units;
 }
 
-function FollowMeasure({ measure, index, current, localUnit }: { readonly measure: CheerMeasure; readonly index: number; readonly current: boolean; readonly localUnit: number | null }) {
+function FollowMeasure({ measure, index, sport, current, localUnit }: { readonly measure: CheerMeasure; readonly index: number; readonly sport: CheerSport; readonly current: boolean; readonly localUnit: number | null }) {
   const actions = segmentPositions(measure.actionSegments);
   const lyrics = segmentPositions(measure.lyricSegments);
   const rests = segmentPositions(measure.restSegments);
@@ -33,12 +33,12 @@ function FollowMeasure({ measure, index, current, localUnit }: { readonly measur
       <header><span>{current ? "Current" : "Next"}</span><strong>Measure {index + 1}</strong></header>
       <div className="cheer-follow-measure__scroll">
         <div className="cheer-follow-measure__lanes">
-          <FollowLane label="WHO · Action" playhead={playhead}>{actions.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}><FollowAudience audience={segment.audience} /></span>)}</FollowLane>
+          <FollowLane label="WHO · Action" playhead={playhead}>{actions.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}><FollowAudience audience={segment.audience} sport={sport} /></span>)}</FollowLane>
           <FollowLane label="ACTION" playhead={playhead}>{actions.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : cheerActionIcon(segment.action)}</span>)}</FollowLane>
           <FollowLane label="ACTION TIMING" playhead={playhead}>{actions.map(({ segment, startUnit, units }) => <span key={`${segment.id}-action-timing`} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : cheerDurationSymbol(segment.duration, "Note")}</span>)}{rests.map(({ segment, startUnit, units }) => <span key={`${segment.id}-action-rest`} style={segmentStyle(startUnit, units)} data-rest="true" data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : cheerDurationSymbol(segment.duration, "Rest")}</span>)}</FollowLane>
           <FollowLane label="LYRIC TIMING" playhead={playhead}>{lyrics.map(({ segment, startUnit, units }) => <span key={`${segment.id}-lyric-timing`} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : cheerDurationSymbol(segment.duration, "Note")}</span>)}{rests.map(({ segment, startUnit, units }) => <span key={`${segment.id}-lyric-rest`} style={segmentStyle(startUnit, units)} data-rest="true" data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : cheerDurationSymbol(segment.duration, "Rest")}</span>)}</FollowLane>
           <FollowLane label="LYRICS" playhead={playhead}>{lyrics.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}>{segment.continuesFromPrevious ? "↪" : segment.lyric || "…"}</span>)}</FollowLane>
-          <FollowLane label="WHO · Lyrics" playhead={playhead}>{lyrics.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}><FollowAudience audience={segment.audience} /></span>)}</FollowLane>
+          <FollowLane label="WHO · Lyrics" playhead={playhead}>{lyrics.map(({ segment, startUnit, units }) => <span key={segment.id} style={segmentStyle(startUnit, units)} data-active={current && isActive(segment, localUnit) ? "true" : undefined}><FollowAudience audience={segment.audience} sport={sport} /></span>)}</FollowLane>
         </div>
       </div>
     </article>
@@ -118,8 +118,8 @@ export function CheerFollowPlayer({ cheer }: { readonly cheer: CheerRecord }) {
       {countIn !== null ? <div className="cheer-follow-count-in" role="status" aria-live="assertive"><span>{countIn}</span><small>Get ready</small></div> : null}
       {phase === "complete" ? <p className="cheer-follow-complete" role="status">Cheer complete. Restart when you’re ready to practice again.</p> : null}
       <section className="cheer-follow-stack" aria-label="Follow choreography">
-        {currentMeasure ? <FollowMeasure measure={currentMeasure} index={currentIndex} current localUnit={localUnit} /> : null}
-        {nextMeasure ? <FollowMeasure measure={nextMeasure} index={currentIndex + 1} current={false} localUnit={null} /> : <div className="cheer-follow-end"><span>End of Cheer</span><small>The current measure is the final measure.</small></div>}
+        {currentMeasure ? <FollowMeasure measure={currentMeasure} index={currentIndex} sport={cheer.sport} current localUnit={localUnit} /> : null}
+        {nextMeasure ? <FollowMeasure measure={nextMeasure} index={currentIndex + 1} sport={cheer.sport} current={false} localUnit={null} /> : <div className="cheer-follow-end"><span>End of Cheer</span><small>The current measure is the final measure.</small></div>}
       </section>
     </main>
   );

@@ -62,7 +62,10 @@ describe("Cheer frontend", () => {
 
     const teachingDialog = screen.getByRole("dialog", { name: "One Cheer, five creator lanes" });
     expect(teachingDialog).toHaveTextContent("👏");
-    expect(teachingDialog).toHaveTextContent("West");
+    expect(teachingDialog).toHaveTextContent("End A");
+    expect(within(teachingDialog).getByRole("img", { name: "Side and End routing" })).toBeInTheDocument();
+    expect(within(teachingDialog).getByRole("img", { name: "Upper and Lower routing" })).toBeInTheDocument();
+    expect(within(teachingDialog).getByRole("img", { name: "Baseball routing" })).toBeInTheDocument();
     expect(teachingDialog).toHaveTextContent("Backboard Left");
     expect(teachingDialog).toHaveTextContent("Uprights Right");
     await closeHowTo(user, true);
@@ -80,10 +83,16 @@ describe("Cheer frontend", () => {
     expect(screen.getByRole("button", { name: "Action Note timing Quarter at beat 3" })).toHaveTextContent("♩");
 
     await user.click(screen.getByRole("button", { name: "Action audience All" }));
+    expect(within(tray).getByRole("button", { name: "Side A" }).querySelector("img")).toBeInTheDocument();
+    expect(within(tray).getByRole("button", { name: "End B" }).querySelector("img")).toBeInTheDocument();
+    expect(within(tray).getByRole("button", { name: "Upper" }).querySelector("img")).toBeInTheDocument();
     expect(within(tray).getByRole("button", { name: "Uprights Left" })).toBeInTheDocument();
     expect(within(tray).getByRole("button", { name: "Uprights Right" })).toBeInTheDocument();
-    await user.click(within(tray).getByRole("button", { name: "East" }));
-    expect(screen.getByRole("button", { name: "Action audience East" })).toHaveTextContent("East");
+    for (const retiredDirection of ["East", "West", "North", "South"]) {
+      expect(within(tray).queryByRole("button", { name: retiredDirection })).not.toBeInTheDocument();
+    }
+    await user.click(within(tray).getByRole("button", { name: "End B" }));
+    expect(screen.getByRole("button", { name: "Action audience End B" }).querySelector("img")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
     expect(screen.getByRole("heading", { name: "Finish Cheer", level: 2 })).toBeInTheDocument();
@@ -125,6 +134,8 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
     await user.click(screen.getByRole("button", { name: "Action audience All" }));
     const tray = screen.getByRole("region", { name: "Selected choreography controls" });
+    expect(within(tray).getByRole("button", { name: "Side A" }).querySelector("img")).toBeInTheDocument();
+    expect(within(tray).getByRole("button", { name: "End A" }).querySelector("img")).toBeInTheDocument();
     expect(within(tray).getByRole("button", { name: "Backboard Left" })).toBeInTheDocument();
     expect(within(tray).getByRole("button", { name: "Backboard Right" })).toBeInTheDocument();
     expect(within(tray).queryByRole("button", { name: "Uprights Left" })).not.toBeInTheDocument();
@@ -230,7 +241,7 @@ describe("Cheer frontend", () => {
     await closeHowTo(user, true);
     await user.click(screen.getByRole("button", { name: "Place Action at beat 2" }));
     await user.click(screen.getByRole("button", { name: "Action audience All" }));
-    await user.click(within(screen.getByRole("region", { name: "Selected choreography controls" })).getByRole("button", { name: "West" }));
+    await user.click(within(screen.getByRole("region", { name: "Selected choreography controls" })).getByRole("button", { name: "End A" }));
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
     await user.type(screen.getByLabelText("Team"), "Edmonton Elks");
     await user.type(screen.getByLabelText("Rivalry / Opponent"), "Calgary");
@@ -245,7 +256,7 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Lyrics" }));
     expect(screen.getByLabelText("Lyric line 1")).toHaveValue("Hold the line");
     await user.click(screen.getByRole("button", { name: "Build" }));
-    expect(screen.getByRole("button", { name: "Action audience West" })).toHaveTextContent("West");
+    expect(screen.getByRole("button", { name: "Action audience End A" }).querySelector("img")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
     expect(screen.getByLabelText("Team")).toHaveValue("Edmonton Elks");
     expect(screen.getByLabelText("Rivalry / Opponent")).toHaveValue("Calgary");

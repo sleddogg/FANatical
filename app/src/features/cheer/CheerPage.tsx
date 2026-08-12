@@ -17,7 +17,7 @@ type LibraryFilter = "All" | "Bookmarked" | "My Cheers";
 type CardMode = "Read" | "Listen" | "Follow";
 
 const cheerStyles = ["Standard", "Echo", "Call & Response", "Fight Song", "Clap Pattern"] as const satisfies readonly CheerStyle[];
-const cheerSports = ["Football", "Baseball", "Basketball", "Hockey", "Other"] as const satisfies readonly CheerSport[];
+const cheerSports = ["Football", "Baseball", "Basketball", "Hockey", "Soccer", "Other"] as const satisfies readonly CheerSport[];
 const checkInSessionKey = "fanatical.cheer.check-in";
 
 function loadCheckIn(): CheerCheckIn | null {

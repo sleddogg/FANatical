@@ -1,4 +1,5 @@
 import type { CheerRecord } from "./types";
+import { migrateLegacyAudience } from "./cheerRouting";
 
 const databaseName = "fanatical-cheer";
 const databaseVersion = 1;
@@ -18,12 +19,28 @@ function isCheerLibrary(value: unknown): value is readonly CheerRecord[] {
   });
 }
 
+function migrateStoredCheer(cheer: CheerRecord): CheerRecord {
+  return {
+    ...cheer,
+    measures: cheer.measures.map((measure) => ({
+      ...measure,
+      actionSegments: measure.actionSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
+      lyricSegments: measure.lyricSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
+      restSegments: measure.restSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
+    })),
+  };
+}
+
+function migrateStoredLibrary(value: unknown): readonly CheerRecord[] | null {
+  return isCheerLibrary(value) ? value.map(migrateStoredCheer) : null;
+}
+
 function loadFallback(): readonly CheerRecord[] | null {
   try {
     const stored = window.localStorage.getItem(fallbackStorageKey);
     if (!stored) return null;
     const parsed: unknown = JSON.parse(stored);
-    return isCheerLibrary(parsed) ? parsed : null;
+    return migrateStoredLibrary(parsed);
   } catch {
     return null;
   }
@@ -54,7 +71,7 @@ export async function loadCheerLibrary(): Promise<readonly CheerRecord[] | null>
       request.addEventListener("error", () => reject(request.error));
     });
     database.close();
-    return isCheerLibrary(result) ? result : null;
+    return migrateStoredLibrary(result);
   } catch {
     return loadFallback();
   }
