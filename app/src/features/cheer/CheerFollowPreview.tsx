@@ -7,9 +7,10 @@ function previewStyle(startUnit: number, units: number): CSSProperties {
 }
 
 export function CheerFollowPreview({ cheer, checkIn }: { readonly cheer: CheerRecord; readonly checkIn: CheerCheckIn }) {
+  const context = checkIn.type === "MappedVenue" ? `${checkIn.resolved.level} · ${checkIn.resolved.side} · ${checkIn.resolved.end}` : `${checkIn.location.name} · Whole crowd`;
   return (
     <div className="cheer-follow-preview">
-      <header><strong>Your checked-in choreography</strong><small>{checkIn.level} · {checkIn.eastWest} · {checkIn.northSouth}</small></header>
+      <header><strong>Your checked-in choreography</strong><small>{context}</small></header>
       {cheer.measures.map((measure, index) => {
         const actions = segmentPositions(measure.actionSegments).filter(({ segment }) => audienceMatchesCheckIn(segment.audience, checkIn));
         const lyrics = segmentPositions(measure.lyricSegments).filter(({ segment }) => audienceMatchesCheckIn(segment.audience, checkIn));

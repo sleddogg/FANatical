@@ -29,6 +29,9 @@ describe("Cheer composition helpers", () => {
   it("uses sixteenth-note units to calculate a 4/4 measure", () => {
     expect(durationUnits.Whole).toBe(16);
     expect(durationUnits["Dotted Half"]).toBe(12);
+    expect(durationUnits["Three Quarter"]).toBe(3);
+    expect(durationUnits["One and a Quarter"]).toBe(5);
+    expect(durationUnits["One and a Half"]).toBe(6);
     const measure: CheerMeasure = { id: "measure", actionSegments: [
       actionSegment("one", 0, "Half", "None"),
       actionSegment("two", 8, "Quarter", "Clap", "East"),
@@ -60,12 +63,24 @@ describe("Cheer composition helpers", () => {
   });
 
   it("routes only All and matching single location attributes", () => {
-    const checkIn = { level: "Upper", eastWest: "East", northSouth: "North" } as const;
+    const checkIn = {
+      type: "MappedVenue",
+      raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "", section: "214", row: "12", seat: "8" },
+      resolved: { level: "Upper", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
+      confirmedAt: "2026-08-12T00:00:00.000Z",
+    } as const;
     expect(audienceMatchesCheckIn("All", checkIn)).toBe(true);
     expect(audienceMatchesCheckIn("Upper", checkIn)).toBe(true);
-    expect(audienceMatchesCheckIn("East", checkIn)).toBe(true);
-    expect(audienceMatchesCheckIn("North", checkIn)).toBe(true);
+    expect(audienceMatchesCheckIn("Side A", checkIn)).toBe(true);
+    expect(audienceMatchesCheckIn("End A", checkIn)).toBe(true);
     expect(audienceMatchesCheckIn("Lower", checkIn)).toBe(false);
-    expect(audienceMatchesCheckIn("West", checkIn)).toBe(false);
+    expect(audienceMatchesCheckIn("Side B", checkIn)).toBe(false);
+  });
+
+  it("allows only All routing at a general location", () => {
+    const checkIn = { type: "GeneralLocation", location: { id: "park", name: "Park", locality: "Edmonton", contextKey: "park" }, routing: { mode: "AllOnly" }, confirmedAt: "2026-08-12T00:00:00.000Z" } as const;
+    expect(audienceMatchesCheckIn("All", checkIn)).toBe(true);
+    expect(audienceMatchesCheckIn("Upper", checkIn)).toBe(false);
+    expect(audienceMatchesCheckIn("Side A", checkIn)).toBe(false);
   });
 });

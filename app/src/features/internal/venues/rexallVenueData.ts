@@ -1,4 +1,4 @@
-import type { SectionException, TeamEndUse, TeamLevelUse, TeamSeatingProfile, TeamSideUse, VenueEnd, VenueLevel, VenueMapping, VenueSectionMapping, VenueSide } from "./types";
+import type { SectionException, TeamEndUse, TeamLevelUse, TeamSeatingProfile, TeamSideUse, VenueEnd, VenueLevel, VenueMapping, VenueSeatInventoryRule, VenueSectionMapping, VenueSelectableValues, VenueSide, VenueSportConfiguration } from "./types";
 
 export const rexallStorageKey = "fanatical.internal.venues.rexall-place.v1";
 export const venueRoutingConventionVersion = 2;
@@ -51,17 +51,38 @@ const seededProfiles: readonly TeamSeatingProfile[] = [{
   ends: "Both",
 }];
 
+const numericValues = (start: number, end: number): VenueSelectableValues => ({ values: [], ranges: [{ start: String(start), end: String(end) }] });
+
+const seededSeatInventoryRules: readonly VenueSeatInventoryRule[] = [{
+  id: "rexall-lower-bowl",
+  sections: [],
+  levels: ["Lower"],
+  rows: numericValues(1, 30),
+  seats: numericValues(1, 24),
+  rowSeatOverrides: [],
+}, {
+  id: "rexall-upper-bowl",
+  sections: [],
+  levels: ["Upper"],
+  rows: numericValues(1, 20),
+  seats: numericValues(1, 24),
+  rowSeatOverrides: [],
+}];
+
 export const seededRexallVenue: VenueMapping = {
   id: "venue-rexall-place",
   slug: "rexall-place",
   routingConventionVersion: venueRoutingConventionVersion,
   name: "Rexall Place",
   location: "Edmonton, Alberta",
+  sectionFormat: "Numeric",
   seatingChartImageUrl: "https://seatingchartview.com/wp-content/uploads/2016/01/Rexall-Place-Hockey-Seating-Chart-768x724.jpg",
   seatingChartSourceLabel: "Northlands Coliseum hockey seating chart — SeatingChartView",
   seatingChartSourceUrl: "https://seatingchartview.com/northlands-coliseum/",
   sections: [...lowerSections, ...upperSections].sort((first, second) => first - second).map(sectionMapping),
   teamProfiles: seededProfiles,
+  sports: [{ sport: "Hockey", teamProfileIds: seededProfiles.map((profile) => profile.id) }],
+  seatInventoryRules: seededSeatInventoryRules,
   updatedAt: "2026-08-11T00:00:00.000Z",
 };
 
@@ -209,6 +230,42 @@ function migrateProfile(value: unknown, convention: StoredRoutingConvention): Te
   };
 }
 
+function stringValues(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function migrateSelectableValues(value: unknown, fallback: VenueSelectableValues): VenueSelectableValues {
+  if (!isRecord(value)) return fallback;
+  const ranges = Array.isArray(value.ranges) ? value.ranges.flatMap((range) => isRecord(range) && typeof range.start === "string" && typeof range.end === "string" ? [{ start: range.start, end: range.end }] : []) : [];
+  const values = stringValues(value.values);
+  return values.length || ranges.length ? { values, ranges } : fallback;
+}
+
+function migrateSeatInventoryRules(value: unknown): readonly VenueSeatInventoryRule[] {
+  if (!Array.isArray(value)) return seededRexallVenue.seatInventoryRules;
+  const rules = value.flatMap((candidate, index) => {
+    if (!isRecord(candidate)) return [];
+    const fallback = seededRexallVenue.seatInventoryRules[index] ?? seededRexallVenue.seatInventoryRules[0]!;
+    const levels = stringValues(candidate.levels).filter((level): level is VenueLevel => level === "Upper" || level === "Lower" || level === "N/A");
+    const rowSeatOverrides = Array.isArray(candidate.rowSeatOverrides) ? candidate.rowSeatOverrides.flatMap((override) => isRecord(override) ? [{ rowStart: typeof override.rowStart === "string" ? override.rowStart : "", rowEnd: typeof override.rowEnd === "string" ? override.rowEnd : "", seats: migrateSelectableValues(override.seats, fallback.seats) }] : []) : [];
+    return [{
+      id: typeof candidate.id === "string" ? candidate.id : `seat-inventory-${index + 1}`,
+      sections: stringValues(candidate.sections),
+      levels,
+      rows: migrateSelectableValues(candidate.rows, fallback.rows),
+      seats: migrateSelectableValues(candidate.seats, fallback.seats),
+      rowSeatOverrides,
+    }];
+  });
+  return rules.length ? rules : seededRexallVenue.seatInventoryRules;
+}
+
+function migrateVenueSports(value: unknown): readonly VenueSportConfiguration[] {
+  if (!Array.isArray(value)) return seededRexallVenue.sports;
+  const sports = value.flatMap((candidate) => isRecord(candidate) && typeof candidate.sport === "string" ? [{ sport: candidate.sport, teamProfileIds: stringValues(candidate.teamProfileIds) }] : []);
+  return sports.length ? sports : seededRexallVenue.sports;
+}
+
 function migrateVenueMapping(value: unknown): VenueMapping | null {
   if (!isRecord(value) || value.slug !== "rexall-place" || typeof value.name !== "string" || !Array.isArray(value.sections) || !Array.isArray(value.teamProfiles)) return null;
   const convention = storedConvention(value);
@@ -221,11 +278,14 @@ function migrateVenueMapping(value: unknown): VenueMapping | null {
     routingConventionVersion: venueRoutingConventionVersion,
     name: value.name,
     location: typeof value.location === "string" ? value.location : seededRexallVenue.location,
+    sectionFormat: value.sectionFormat === "Mixed" ? "Mixed" : "Numeric",
     seatingChartImageUrl: typeof value.seatingChartImageUrl === "string" ? value.seatingChartImageUrl : seededRexallVenue.seatingChartImageUrl,
     seatingChartSourceLabel: typeof value.seatingChartSourceLabel === "string" ? value.seatingChartSourceLabel : seededRexallVenue.seatingChartSourceLabel,
     seatingChartSourceUrl: typeof value.seatingChartSourceUrl === "string" ? value.seatingChartSourceUrl : seededRexallVenue.seatingChartSourceUrl,
     sections,
     teamProfiles,
+    sports: migrateVenueSports(value.sports),
+    seatInventoryRules: migrateSeatInventoryRules(value.seatInventoryRules),
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : seededRexallVenue.updatedAt,
   };
 }
@@ -262,13 +322,15 @@ function rangeMatches(value: string, start: string, end: string): boolean {
   return (!start || normalized >= start.trim().toUpperCase()) && (!end || normalized <= end.trim().toUpperCase());
 }
 
-function exceptionMatches(rule: SectionException, row: string, seat: number): boolean {
+function exceptionMatches(rule: SectionException, row: string, seat: string | number): boolean {
   const rowMatches = rangeMatches(row, rule.rowStart, rule.rowEnd);
-  const seatMatches = (rule.seatStart === null || seat >= rule.seatStart) && (rule.seatEnd === null || seat <= rule.seatEnd);
+  const numericSeat = typeof seat === "number" ? seat : Number(seat);
+  const hasSeatBoundary = rule.seatStart !== null || rule.seatEnd !== null;
+  const seatMatches = !hasSeatBoundary || (Number.isFinite(numericSeat) && (rule.seatStart === null || numericSeat >= rule.seatStart) && (rule.seatEnd === null || numericSeat <= rule.seatEnd));
   return rowMatches && seatMatches;
 }
 
-function resolveAxis<T extends VenueLevel | VenueSide | VenueEnd>(section: VenueSectionMapping, row: string, seat: number, axis: "level" | "side" | "end"): { value: T; source: string } {
+function resolveAxis<T extends VenueLevel | VenueSide | VenueEnd>(section: VenueSectionMapping, row: string, seat: string | number, axis: "level" | "side" | "end"): { value: T; source: string } {
   const matchingRule = section.exceptions.find((rule) => exceptionMatches(rule, row, seat) && rule[axis] !== null);
   if (matchingRule) {
     const qualifiers = [matchingRule.rowStart || matchingRule.rowEnd ? `row ${matchingRule.rowStart || "first"}–${matchingRule.rowEnd || "last"}` : "", matchingRule.seatStart !== null || matchingRule.seatEnd !== null ? `seats ${matchingRule.seatStart ?? "first"}–${matchingRule.seatEnd ?? "last"}` : ""].filter(Boolean).join(", ");
@@ -277,7 +339,7 @@ function resolveAxis<T extends VenueLevel | VenueSide | VenueEnd>(section: Venue
   return { value: section[axis] as T, source: `Section ${section.section} mapping` };
 }
 
-export function resolveRexallSeat(venue: VenueMapping, sectionValue: string, row: string, seat: number) {
+export function resolveRexallSeat(venue: VenueMapping, sectionValue: string, row: string, seat: string | number) {
   const normalizedSection = sectionValue.trim().replace(/^section\s*/i, "");
   const section = venue.sections.find((candidate) => candidate.section.toLowerCase() === normalizedSection.toLowerCase());
   if (!section) return null;
@@ -287,4 +349,47 @@ export function resolveRexallSeat(venue: VenueMapping, sectionValue: string, row
     side: resolveAxis<VenueSide>(section, row, seat, "side"),
     end: resolveAxis<VenueEnd>(section, row, seat, "end"),
   };
+}
+
+function expandSelectableValues(configuration: VenueSelectableValues): readonly string[] {
+  const values = [...configuration.values];
+  for (const range of configuration.ranges) {
+    const startNumber = Number(range.start);
+    const endNumber = Number(range.end);
+    if (Number.isInteger(startNumber) && Number.isInteger(endNumber)) {
+      const direction = startNumber <= endNumber ? 1 : -1;
+      for (let value = startNumber; direction > 0 ? value <= endNumber : value >= endNumber; value += direction) values.push(String(value));
+      continue;
+    }
+    const start = range.start.trim().toUpperCase();
+    const end = range.end.trim().toUpperCase();
+    if (start.length === 1 && end.length === 1) {
+      const direction = start.charCodeAt(0) <= end.charCodeAt(0) ? 1 : -1;
+      for (let value = start.charCodeAt(0); direction > 0 ? value <= end.charCodeAt(0) : value >= end.charCodeAt(0); value += direction) values.push(String.fromCharCode(value));
+    } else {
+      values.push(range.start);
+      if (range.end !== range.start) values.push(range.end);
+    }
+  }
+  return [...new Set(values)];
+}
+
+function inventoryRuleFor(venue: VenueMapping, sectionValue: string) {
+  const section = venue.sections.find((candidate) => candidate.section.toLowerCase() === sectionValue.trim().replace(/^section\s*/i, "").toLowerCase());
+  if (!section) return null;
+  const rule = venue.seatInventoryRules.find((candidate) => candidate.sections.includes(section.section))
+    ?? venue.seatInventoryRules.find((candidate) => candidate.levels.includes(section.level));
+  return rule ? { rule, section } : null;
+}
+
+export function validRexallRows(venue: VenueMapping, sectionValue: string): readonly string[] {
+  const inventory = inventoryRuleFor(venue, sectionValue);
+  return inventory ? expandSelectableValues(inventory.rule.rows) : [];
+}
+
+export function validRexallSeats(venue: VenueMapping, sectionValue: string, row: string): readonly string[] {
+  const inventory = inventoryRuleFor(venue, sectionValue);
+  if (!inventory) return [];
+  const override = inventory.rule.rowSeatOverrides.find((candidate) => rangeMatches(row, candidate.rowStart, candidate.rowEnd));
+  return expandSelectableValues(override?.seats ?? inventory.rule.seats);
 }

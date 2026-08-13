@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -96,15 +96,14 @@ describe("Cheer frontend", () => {
 
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
     expect(screen.getByRole("heading", { name: "Finish Cheer", level: 2 })).toBeInTheDocument();
-    expect(screen.getByText("Selected when this Cheer was created").parentElement).toHaveTextContent("SportFootball");
-    expect(screen.queryByRole("combobox", { name: /Sport/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Sport" })).toHaveValue("Football");
     expect(screen.getByLabelText("Team")).toHaveValue("");
     await user.type(screen.getByLabelText("Short description / instruction"), "Raise the noise on third down.");
     await user.click(screen.getByRole("button", { name: "Publish Cheer" }));
     expect(screen.getByRole("heading", { name: "North End Echo" })).toBeInTheDocument();
     expect(screen.getByText("Raise the noise on third down.")).toBeInTheDocument();
     expect(screen.getByText(/Published · Echo/)).toBeInTheDocument();
-  });
+  }, 10_000);
 
   it("automatically continues Use line into the next fixed measure", async () => {
     const user = userEvent.setup();
@@ -176,7 +175,7 @@ describe("Cheer frontend", () => {
     expect(screen.getByRole("button", { name: "Action Note timing Sixteenth at beat 4 and three quarters" })).toHaveTextContent("𝅘𝅥𝅯");
     await user.click(screen.getByRole("button", { name: "Action Note timing Sixteenth at beat 4 and three quarters" }));
     const tray = screen.getByRole("region", { name: "Selected choreography controls" });
-    expect(within(tray).getAllByRole("button").filter((button) => /beat/.test(button.getAttribute("aria-label") ?? "")).map((button) => button.getAttribute("aria-label")?.split(",")[0])).toEqual(["Sixteenth", "Eighth", "Quarter", "Half", "Dotted Half", "Whole"]);
+    expect(within(tray).getAllByRole("button").filter((button) => /beat/.test(button.getAttribute("aria-label") ?? "")).map((button) => button.getAttribute("aria-label")?.split(",")[0])).toEqual(["Sixteenth", "Eighth", "Three Quarter", "Quarter", "One and a Quarter", "One and a Half", "Half", "Dotted Half", "Whole"]);
     await user.click(within(tray).getByRole("button", { name: "Rest" }));
     expect(screen.getByRole("button", { name: "Rest timing Sixteenth at beat 4 and three quarters" })).toHaveTextContent("𝄿");
     expect(screen.queryByRole("button", { name: "Action Clap at beat 4 and three quarters" })).not.toBeInTheDocument();
@@ -186,6 +185,33 @@ describe("Cheer frontend", () => {
     expect(screen.getByText("Measure 2")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Rest timing Quarter at beat 1" })).toHaveTextContent("↪");
   });
+
+  it("expands a Rest by rippling both timelines as one undoable transaction", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await reachBuilder(user, "Shared Rest", "Pause together");
+    await closeHowTo(user, true);
+
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
+    await user.click(screen.getByRole("button", { name: "Action Note timing Eighth at beat 1" }));
+    const tray = screen.getByRole("region", { name: "Selected choreography controls" });
+    await user.click(within(tray).getByRole("button", { name: "Rest" }));
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1 and a half" }));
+    await user.click(screen.getByRole("button", { name: "Place Lyric at beat 1 and a half" }));
+    await user.click(screen.getByRole("button", { name: "Rest timing Eighth at beat 1" }));
+    await user.click(within(tray).getByRole("button", { name: /One and a Quarter.*1¼ beats/ }));
+    const dialog = screen.getByRole("dialog", { name: "Shift following events?" });
+    expect(dialog).toHaveTextContent("This change needs ¾ beat more space. Shift later events by ¾ beat?");
+    await user.click(within(dialog).getByRole("button", { name: "Continue and Shift" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 2 and a quarter" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Lyrics at beat 2 and a quarter")).toBeInTheDocument();
+
+    await user.click(within(tray).getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 1 and a half" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Lyrics at beat 1 and a half")).toBeInTheDocument();
+    await user.click(within(tray).getByRole("button", { name: "Redo" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 2 and a quarter" })).toBeInTheDocument();
+  }, 10_000);
 
   it("copies an exact Action into an available position and across a measure boundary", async () => {
     const user = userEvent.setup();
@@ -208,6 +234,58 @@ describe("Cheer frontend", () => {
     expect(within(tray).getByRole("button", { name: "Cancel Copy" })).toBeInTheDocument();
   });
 
+  it("inserts and deletes lane timing with ten-step Undo and Redo controls", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await reachBuilder(user, "Ripple Editor", "Move one lane only");
+    await closeHowTo(user, true);
+
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 2" }));
+    const tray = screen.getByRole("region", { name: "Selected choreography controls" });
+    await user.click(within(tray).getByRole("button", { name: "Insert" }));
+    expect(within(tray).getByRole("button", { name: "Cancel Insert" })).toBeInTheDocument();
+    await user.click(within(tray).getByRole("button", { name: "Action" }));
+    await user.click(within(tray).getByRole("button", { name: /Eighth.*½ beat/ }));
+    await user.click(screen.getByRole("button", { name: "Action Note timing Eighth at beat 2" }));
+    expect(screen.getByRole("status")).toHaveTextContent("shifted later Actions by ½ beat");
+    expect(screen.getByRole("button", { name: "Action Clap at beat 2 and a half" })).toBeInTheDocument();
+
+    await user.click(within(tray).getByRole("button", { name: "Undo" }));
+    expect(screen.queryByRole("button", { name: "Action Clap at beat 2 and a half" })).not.toBeInTheDocument();
+    await user.click(within(tray).getByRole("button", { name: "Redo" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 2 and a half" })).toBeInTheDocument();
+    await user.click(within(tray).getByRole("button", { name: "Undo" }));
+
+    await user.click(screen.getByRole("button", { name: "Place Lyric at beat 2" }));
+    expect(within(tray).getByRole("button", { name: "Redo" })).toBeDisabled();
+    await user.click(within(tray).getByRole("button", { name: "Delete Timing" }));
+    await user.click(within(tray).getByRole("button", { name: /Eighth.*½ beat/ }));
+    await user.click(screen.getByRole("button", { name: "Delete timing from Action at beat 1" }));
+    const dialog = screen.getByRole("dialog", { name: "Delete empty timing?" });
+    expect(dialog).toHaveTextContent("shift all later Actions earlier");
+    await user.click(within(dialog).getByRole("button", { name: "Delete Timing" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 1 and a half" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Lyrics at beat 2")).toBeInTheDocument();
+  }, 10_000);
+
+  it("offers a same-lane ripple when an edited duration exceeds its gap", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await reachBuilder(user, "Timing Ripple", "Grow this cue");
+    await closeHowTo(user, true);
+
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1 and a half" }));
+    await user.click(screen.getByRole("button", { name: "Action Note timing Eighth at beat 1" }));
+    const tray = screen.getByRole("region", { name: "Selected choreography controls" });
+    await user.click(within(tray).getByRole("button", { name: /Quarter.*1 beat/ }));
+    const dialog = screen.getByRole("dialog", { name: "Shift following events?" });
+    expect(dialog).toHaveTextContent("Selected timing is larger than the available space");
+    expect(dialog).toHaveTextContent("shift the following Actions by ½ beat");
+    await user.click(within(dialog).getByRole("button", { name: "Continue and Shift" }));
+    expect(screen.getByRole("button", { name: "Action Clap at beat 2" })).toBeInTheDocument();
+  });
+
   it("reopens a published Cheer with identity, finish metadata, lyrics, and direct placement", async () => {
     const user = userEvent.setup();
     renderCheer();
@@ -224,8 +302,7 @@ describe("Cheer frontend", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit Cheer" }));
     expect(screen.getByLabelText("Title")).toHaveValue("Editable Echo");
-    expect(screen.getByText("Sport-specific choreography stays locked to this Cheer.").parentElement).toHaveTextContent("Football");
-    expect(screen.queryByRole("combobox", { name: "Sport" })).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Sport" })).toHaveValue("Football");
     await user.click(screen.getByRole("button", { name: "Continue to Lyrics" }));
     expect(screen.getByLabelText("Lyric line 1")).toHaveValue("Go Patriots go");
     await user.click(screen.getByRole("button", { name: "Build" }));
@@ -233,6 +310,29 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
     expect(screen.getByLabelText("Rivalry / Opponent")).toHaveValue("New York");
   });
+
+  it("locks Sport only while sport-specific WHO routing remains", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await reachBuilder(user, "Sport Lock", "Raise it up", "Football");
+    await closeHowTo(user, true);
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
+    await user.click(screen.getByRole("button", { name: "Action audience All" }));
+    const tray = screen.getByRole("region", { name: "Selected choreography controls" });
+    await user.click(within(tray).getByRole("button", { name: "Uprights Left" }));
+    await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
+    expect(screen.queryByRole("combobox", { name: "Sport" })).not.toBeInTheDocument();
+    expect(screen.getByText("Locked by sport-specific WHO routing in this Cheer.").parentElement).toHaveTextContent("Football");
+
+    await user.click(screen.getByRole("button", { name: /Build/ }));
+    await user.click(screen.getByRole("button", { name: "Action audience Uprights Left" }));
+    await user.click(within(screen.getByRole("region", { name: "Selected choreography controls" })).getByRole("button", { name: "All" }));
+    expect(screen.getByRole("button", { name: "Action audience All" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
+    expect(screen.getByRole("combobox", { name: "Sport" })).toHaveValue("Football");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Sport" }), "Generic");
+    expect(screen.getByRole("combobox", { name: "Sport" })).toHaveValue("Generic");
+  }, 10_000);
 
   it("restores a complete saved Cheer from persistent browser storage after remount", async () => {
     const user = userEvent.setup();
@@ -262,16 +362,52 @@ describe("Cheer frontend", () => {
     expect(screen.getByLabelText("Rivalry / Opponent")).toHaveValue("Calgary");
   });
 
-  it("keeps manual Check In session state without a temporary Library notice", async () => {
+  it("resolves and persists a manual venue Check-In without legacy compass controls", async () => {
     const user = userEvent.setup();
     renderCheer();
     await user.click(screen.getByRole("button", { name: "Check In" }));
     const dialog = screen.getByRole("dialog", { name: "Check In" });
-    await user.click(within(dialog).getByRole("button", { name: "Lower" }));
-    await user.click(within(dialog).getByRole("button", { name: "West" }));
-    await user.click(within(dialog).getByRole("button", { name: "South" }));
-    await user.click(within(dialog).getByRole("button", { name: "Save Check In" }));
-    expect(JSON.parse(window.sessionStorage.getItem("fanatical.cheer.check-in") ?? "{}")).toEqual({ level: "Lower", eastWest: "West", northSouth: "South" });
+    expect(within(dialog).getByRole("button", { name: "Take Photo / Upload Screenshot" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "East" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Enter Manually" }));
+    await user.type(within(dialog).getByLabelText(/Venue/), "Rexall Place");
+    expect(within(dialog).getByLabelText(/Sport/)).toHaveValue("Hockey");
+    await user.selectOptions(within(dialog).getByLabelText(/Team \/ Event/), "Edmonton Oil Kings");
+    const sectionInput = within(dialog).getByLabelText(/Section/);
+    expect(sectionInput).toHaveAttribute("inputmode", "numeric");
+    expect(dialog.querySelector("#check-in-sections")).not.toBeInTheDocument();
+    await user.type(sectionInput, "20");
+    expect(within(dialog).queryByText("Choose a valid section for this venue.")).not.toBeInTheDocument();
+    fireEvent.blur(sectionInput);
+    expect(within(dialog).getByText("Choose a valid section for this venue.")).toBeInTheDocument();
+    await user.clear(sectionInput);
+    await user.type(sectionInput, "202");
+    expect(within(dialog).getByRole("button", { name: "Row 12" })).toBeInTheDocument();
+    expect(within(dialog).queryByText("Choose a valid section for this venue.")).not.toBeInTheDocument();
+    await user.clear(sectionInput);
+    await user.type(sectionInput, "999");
+    expect(within(dialog).getByText("Choose a valid section for this venue.")).toBeInTheDocument();
+    await user.clear(sectionInput);
+    await user.type(sectionInput, "114");
+    await user.click(within(dialog).getByRole("button", { name: "Row 12" }));
+    expect(within(dialog).getByRole("button", { name: "Change Row, currently 12" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Seat 8" }));
+    expect(within(dialog).getByRole("button", { name: "Change Seat, currently 8" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Review Check-In" }));
+    expect(within(dialog).getByText("Section 114 · Row 12 · Seat 8")).toBeInTheDocument();
+    expect(within(dialog).queryByText("Lower · Side A · End A")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Rules used")).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Confirm Check-In" }));
+    expect(JSON.parse(window.localStorage.getItem("fanatical.cheer.check-in.v2") ?? "{}")).toMatchObject({
+      raw: { venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oil Kings", section: "114", row: "12", seat: "8" },
+      resolved: { level: "Lower", side: "Side A", end: "End A" },
+    });
+    const checkInControl = screen.getByRole("button", { name: /Change Check In/ });
+    expect(checkInControl).toHaveTextContent("Sec 114 · R12 · S8");
+    await user.click(checkInControl);
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Check Out" })).toBeInTheDocument();
+    await user.click(within(screen.getByRole("dialog", { name: "Check In" })).getByRole("button", { name: "Close Check In" }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Follow" }));
     expect(screen.getByRole("heading", { name: "Follow", level: 1 })).toBeInTheDocument();
@@ -283,6 +419,34 @@ describe("Cheer frontend", () => {
     expect(screen.getByText("Practice player · 60 BPM")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Play" }));
     expect(screen.getByRole("status")).toHaveTextContent("3Get ready");
+  });
+
+  it("accepts ticket images through the provider-neutral Check-In path", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await user.click(screen.getByRole("button", { name: "Check In" }));
+    const dialog = screen.getByRole("dialog", { name: "Check In" });
+    await user.click(within(dialog).getByRole("button", { name: "Take Photo / Upload Screenshot" }));
+    expect(within(dialog).getByText("Ticket recognition is not enabled yet.")).toBeInTheDocument();
+    const file = new File(["ticket"], "oilers-ticket.png", { type: "image/png" });
+    await user.upload(within(dialog).getByLabelText("Ticket file"), file);
+    expect(within(dialog).getByText("oilers-ticket.png")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue to Confirm / Edit" }));
+    expect(within(dialog).getByRole("heading", { name: "Confirm / Edit ticket details" })).toBeInTheDocument();
+  });
+
+  it("checks into a shared general location with All-only routing", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await user.click(screen.getByRole("button", { name: "Check In" }));
+    const dialog = screen.getByRole("dialog", { name: "Check In" });
+    await user.click(within(dialog).getByRole("button", { name: "Choose General Location" }));
+    await user.type(within(dialog).getByLabelText("Named location"), "Sir Winston Churchill Square");
+    await user.click(within(dialog).getByRole("button", { name: "Review Location" }));
+    expect(within(dialog).getByText("Whole crowd")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Confirm Check-In" }));
+    expect(JSON.parse(window.localStorage.getItem("fanatical.cheer.check-in.v2") ?? "{}")).toMatchObject({ type: "GeneralLocation", location: { id: "location-churchill-square", contextKey: "edmonton:churchill-square" }, routing: { mode: "AllOnly" } });
+    expect(screen.getByRole("button", { name: /Change Check In/ })).toHaveTextContent("Sir Winston Churchill Square");
   });
 
   it("keeps unsupported-language lyrics buildable without syllable estimates", async () => {

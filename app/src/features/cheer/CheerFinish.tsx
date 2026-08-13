@@ -1,10 +1,12 @@
 import type { FormEvent } from "react";
-import type { CheerDraft, CheerLanguage, CheerPublicationStatus, CheerStyle } from "./types";
+import { cheerSportOptions } from "./cheerRouting";
+import type { CheerDraft, CheerLanguage, CheerPublicationStatus, CheerSport, CheerStyle } from "./types";
 
 const cheerStyles = ["Standard", "Echo", "Call & Response", "Fight Song", "Clap Pattern"] as const satisfies readonly CheerStyle[];
 
-export function CheerFinish({ draft, onChange, onFinish }: {
+export function CheerFinish({ draft, requiredSport, onChange, onFinish }: {
   readonly draft: CheerDraft;
+  readonly requiredSport: CheerSport | null;
   readonly onChange: (draft: CheerDraft) => void;
   readonly onFinish: (status: CheerPublicationStatus) => void;
 }) {
@@ -21,7 +23,7 @@ export function CheerFinish({ draft, onChange, onFinish }: {
         <div className="cheer-finish__grid">
           <label className="cheer-finish__wide">Title<input required maxLength={100} value={draft.title} onChange={(event) => onChange({ ...draft, title: event.target.value })} /></label>
           <label>Cheer Style<select value={draft.style} onChange={(event) => onChange({ ...draft, style: event.target.value as CheerStyle })}>{cheerStyles.map((style) => <option key={style}>{style}</option>)}</select></label>
-          <div className="cheer-finish__readonly"><span>Sport</span><strong>{draft.sport}</strong><small>Selected when this Cheer was created</small></div>
+          {requiredSport ? <div className="cheer-finish__readonly"><span>Sport</span><strong>{requiredSport}</strong><small>Locked by sport-specific WHO routing in this Cheer.</small></div> : <label>Sport<select value={draft.sport} onChange={(event) => onChange({ ...draft, sport: event.target.value as CheerSport })}>{cheerSportOptions.map((sport) => <option key={sport}>{sport}</option>)}</select></label>}
           <label>League<input value={draft.league} placeholder="NFL, NBA, NHL…" onChange={(event) => onChange({ ...draft, league: event.target.value })} /></label>
           <label>Team<input value={draft.team} placeholder="Team or league-wide" onChange={(event) => onChange({ ...draft, team: event.target.value })} /></label>
           <label>Rivalry / Opponent<input value={draft.opponent} placeholder="Optional" onChange={(event) => onChange({ ...draft, opponent: event.target.value })} /></label>

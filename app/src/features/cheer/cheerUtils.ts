@@ -7,7 +7,10 @@ export const durationUnits: Readonly<Record<CheerDuration, number>> = {
   Whole: 16,
   "Dotted Half": 12,
   Half: 8,
+  "One and a Half": 6,
+  "One and a Quarter": 5,
   Quarter: 4,
+  "Three Quarter": 3,
   Eighth: 2,
   Sixteenth: 1,
 };
@@ -50,7 +53,8 @@ export function canPlaceRest(measure: CheerMeasure, startUnit: number, units: nu
 }
 
 export function audienceMatchesCheckIn(audience: CrowdAssignment, checkIn: CheerCheckIn) {
-  return audience === "All" || audience === checkIn.level || audience === checkIn.eastWest || audience === checkIn.northSouth;
+  if (checkIn.type === "GeneralLocation") return audience === "All";
+  return audience === "All" || audience === checkIn.resolved.level || audience === checkIn.resolved.side || audience === checkIn.resolved.end;
 }
 
 export function estimateSyllables(value: string, language: CheerLanguage = "Auto") {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { loadRexallVenue, resolveRexallSeat, rexallStorageKey, saveRexallVenue, seededRexallVenue } from "./rexallVenueData";
+import { loadRexallVenue, resolveRexallSeat, rexallStorageKey, saveRexallVenue, seededRexallVenue, validRexallRows, validRexallSeats } from "./rexallVenueData";
 
 describe("Rexall Place venue mapping", () => {
   beforeEach(() => window.localStorage.removeItem(rexallStorageKey));
@@ -14,6 +14,10 @@ describe("Rexall Place venue mapping", () => {
       expect.objectContaining({ teamName: "Edmonton Oilers", levels: "Upper + Lower" }),
       expect.objectContaining({ teamName: "Edmonton Oil Kings", levels: "Lower only" }),
     ]));
+    expect(venue.sports).toEqual([{ sport: "Hockey", teamProfileIds: ["edmonton-oilers", "edmonton-oil-kings"] }]);
+    expect(validRexallRows(venue, "114")).toHaveLength(30);
+    expect(validRexallRows(venue, "214")).toHaveLength(20);
+    expect(validRexallSeats(venue, "114", "12")).toEqual(expect.arrayContaining(["1", "8", "24"]));
   });
 
   it("resolves section defaults and explains boundary exceptions", () => {
@@ -24,6 +28,23 @@ describe("Rexall Place venue mapping", () => {
     expect(exception?.side).toEqual({ value: "Side B", source: "Section 110 seats 11–24 exception" });
     expect(exception?.end).toEqual({ value: "End A", source: "Section 110 mapping" });
     expect(exception?.level.source).toBe("Section 110 mapping");
+  });
+
+  it("supports compact ranges and explicit non-numeric row or seat values", () => {
+    const configured = {
+      ...seededRexallVenue,
+      seatInventoryRules: [{
+        id: "section-114-special",
+        sections: ["114"],
+        levels: [],
+        rows: { values: ["AA"], ranges: [{ start: "A", end: "C" }] },
+        seats: { values: ["GA"], ranges: [] },
+        rowSeatOverrides: [],
+      }],
+    };
+    expect(validRexallRows(configured, "114")).toEqual(["AA", "A", "B", "C"]);
+    expect(validRexallSeats(configured, "114", "AA")).toEqual(["GA"]);
+    expect(resolveRexallSeat(configured, "114", "AA", "GA")).toMatchObject({ level: { value: "Lower" }, side: { value: "Side A" }, end: { value: "End A" } });
   });
 
   it("migrates legacy compass mappings, overrides, profiles, and venue reference data in place", () => {

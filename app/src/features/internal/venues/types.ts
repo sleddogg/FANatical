@@ -33,17 +33,52 @@ export type TeamSeatingProfile = Readonly<{
   ends: TeamEndUse;
 }>;
 
+export type VenueValueRange = Readonly<{
+  start: string;
+  end: string;
+}>;
+
+export type VenueSelectableValues = Readonly<{
+  values: readonly string[];
+  ranges: readonly VenueValueRange[];
+}>;
+
+export type VenueRowSeatOverride = Readonly<{
+  rowStart: string;
+  rowEnd: string;
+  seats: VenueSelectableValues;
+}>;
+
+// Ticket inventory is intentionally range-based. A venue can describe valid rows
+// and seats without creating a physical routing record for every individual seat.
+export type VenueSeatInventoryRule = Readonly<{
+  id: string;
+  sections: readonly string[];
+  levels: readonly VenueLevel[];
+  rows: VenueSelectableValues;
+  seats: VenueSelectableValues;
+  rowSeatOverrides: readonly VenueRowSeatOverride[];
+}>;
+
+export type VenueSportConfiguration = Readonly<{
+  sport: string;
+  teamProfileIds: readonly string[];
+}>;
+
 export type VenueMapping = Readonly<{
   id: string;
   slug: string;
   routingConventionVersion: number;
   name: string;
   location: string;
+  sectionFormat: "Numeric" | "Mixed";
   seatingChartImageUrl: string;
   seatingChartSourceLabel: string;
   seatingChartSourceUrl: string;
   sections: readonly VenueSectionMapping[];
   teamProfiles: readonly TeamSeatingProfile[];
+  sports: readonly VenueSportConfiguration[];
+  seatInventoryRules: readonly VenueSeatInventoryRule[];
   updatedAt: string;
 }>;
 

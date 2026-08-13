@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cheerAudienceImage, cheerAudienceOptions, migrateLegacyAudience } from "./cheerRouting";
+import { cheerAudienceImage, cheerAudienceOptions, migrateLegacyAudience, requiredSportForRouting } from "./cheerRouting";
 import type { CheerSport, CrowdAssignment } from "./types";
 
 const expectedOptions: Record<CheerSport, CrowdAssignment[]> = {
@@ -8,7 +8,8 @@ const expectedOptions: Record<CheerSport, CrowdAssignment[]> = {
   Basketball: ["All", "Upper", "Lower", "Side A", "Side B", "End A", "End B", "Backboard Left", "Backboard Right"],
   Football: ["All", "Upper", "Lower", "Side A", "Side B", "End A", "End B", "Uprights Left", "Uprights Right"],
   Baseball: ["All", "Upper", "Lower", "Side A", "Side B", "First Base Side", "Third Base Side", "Outfield"],
-  Other: ["All", "Upper", "Lower"],
+  Generic: ["All", "Upper", "Lower", "Side A", "Side B", "End A", "End B"],
+  Other: ["All", "Upper", "Lower", "Side A", "Side B", "End A", "End B"],
 };
 
 describe("Cheer WHO routing", () => {
@@ -32,5 +33,13 @@ describe("Cheer WHO routing", () => {
     expect(migrateLegacyAudience("East", "Baseball")).toBe("First Base Side");
     expect(migrateLegacyAudience("West", "Baseball")).toBe("Third Base Side");
     expect(migrateLegacyAudience("North", "Baseball")).toBe("Outfield");
+  });
+
+  it("locks only sport-specific routing assignments", () => {
+    const measure = (audience: CrowdAssignment) => [{ id: "m", actionSegments: [{ id: "a", eventId: "a", startUnit: 0, units: 2, duration: "Eighth" as const, timingType: "Note" as const, continuesFromPrevious: false, continuesToNext: false, action: "Clap" as const, audience }], lyricSegments: [], restSegments: [] }];
+    expect(requiredSportForRouting(measure("Side A"))).toBeNull();
+    expect(requiredSportForRouting(measure("Uprights Left"))).toBe("Football");
+    expect(requiredSportForRouting(measure("Backboard Right"))).toBe("Basketball");
+    expect(requiredSportForRouting(measure("Outfield"))).toBe("Baseball");
   });
 });
