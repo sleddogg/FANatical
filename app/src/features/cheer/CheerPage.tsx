@@ -14,7 +14,7 @@ import { loadCheerLibrary, saveCheerLibrary } from "./cheerStorage";
 import { clearCheerCheckIn, loadCheerCheckIn, saveCheerCheckIn } from "./cheerCheckIn";
 import { allCheersFilter, availableNowFilter, cheerLibraryFilterLabel, filterCheers, hasLiveTeamGameContext, isCheerLaunchEligible, type CheerLibraryFilter as LibraryFilter } from "./cheerLibrary";
 import { cheerSportOptions, requiredSportForRouting } from "./cheerRouting";
-import { createCheerProposal, launchContext, loadCheerProposals, pruneStoredCheerProposals, saveCheerProposals, type CheerGameMoment, type CheerLaunchMode, type CheerProposal } from "./cheerLaunch";
+import { createCheerProposal, launchContext, loadCheerProposals, pruneStoredCheerProposals, saveCheerProposals, type CheerGameMoment, type CheerLaunchMode, type CheerProposal, type CheerTargetSelection } from "./cheerLaunch";
 import { preloadAvailableLiveVariants, withPublishTimeLiveVariants } from "./cheerLiveVariants";
 import { CHEER_PLAYBACK_BPM, estimateSyllables, lyricLines } from "./cheerUtils";
 import { emptyCheerDraft, seededCheerLibrary } from "./mockCheerData";
@@ -114,7 +114,7 @@ export function CheerPage() {
   const availableLiveProposals = useMemo(() => {
     if (!checkIn) return [];
     const context = launchContext(checkIn);
-    return liveProposals.filter((proposal) => proposal.contextKey === context.key
+    return liveProposals.filter((proposal) => proposal.eventId === context.eventId
       && cheers.some((cheer) => cheer.id === proposal.cheerId && isCheerLaunchEligible(cheer, checkIn)));
   }, [checkIn, cheers, liveProposals]);
   const filterLabel = cheerLibraryFilterLabel(filter);
@@ -319,11 +319,11 @@ export function CheerPage() {
     setNotice("");
   };
 
-  const createLaunchProposal = (mode: CheerLaunchMode, gameMoment: CheerGameMoment | null) => {
+  const createLaunchProposal = (mode: CheerLaunchMode, gameMoment: CheerGameMoment | null, targetSelection: CheerTargetSelection | null) => {
     if (!cheerPendingLaunch || !checkIn || !isCheerLaunchEligible(cheerPendingLaunch, checkIn)) {
       return "This Cheer is no longer eligible for the current Check-In.";
     }
-    const result = createCheerProposal(loadCheerProposals(), { cheer: cheerPendingLaunch, checkIn, mode, gameMoment });
+    const result = createCheerProposal(loadCheerProposals(), { cheer: cheerPendingLaunch, checkIn, mode, gameMoment, targetSelection });
     if (result.error) return result.error;
     saveCheerProposals(result.proposals);
     setLiveProposals(result.proposals);
@@ -364,7 +364,7 @@ export function CheerPage() {
       {checkInOpen ? <CheerCheckInDialog initial={checkIn} onSave={saveCheckIn} onClear={clearCheckIn} onClose={() => setCheckInOpen(false)} /> : null}
       {cheerPendingDeletion ? <DeleteCheerDialog cheer={cheerPendingDeletion} onCancel={() => setDeleteCheerId(null)} onConfirm={deleteCheer} /> : null}
       {cheerPendingContact ? <ContactCreatorDialog cheer={cheerPendingContact} onClose={() => setContactCheerId(null)} /> : null}
-      {cheerPendingLaunch && checkIn ? <CheerLaunchSetupDialog cheer={cheerPendingLaunch} onCancel={() => setLaunchCheerId(null)} onLaunch={createLaunchProposal} /> : null}
+      {cheerPendingLaunch && checkIn ? <CheerLaunchSetupDialog cheer={cheerPendingLaunch} checkIn={checkIn} onCancel={() => setLaunchCheerId(null)} onLaunch={createLaunchProposal} /> : null}
     </div>
   );
 }

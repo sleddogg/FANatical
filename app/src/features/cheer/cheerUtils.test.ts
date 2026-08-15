@@ -65,7 +65,7 @@ describe("Cheer composition helpers", () => {
   it("routes only All and matching single location attributes", () => {
     const checkIn = {
       type: "MappedVenue",
-      raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "", section: "214", row: "12", seat: "8" },
+      raw: { method: "Manual", eventId: "mock-event:venue-rexall-place:hockey:current", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "", section: "214", row: "12", seat: "8" },
       resolved: { level: "Upper", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
       confirmedAt: "2026-08-12T00:00:00.000Z",
     } as const;

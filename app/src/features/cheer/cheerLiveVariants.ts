@@ -46,9 +46,9 @@ function segmentMatchesRouting(audience: CrowdAssignment, routing: CheerLiveRout
 function variantMeasure(cheer: CheerRecord, routing: CheerLiveRouting): readonly CheerLiveMeasure[] {
   return cheer.measures.map((measure) => ({
     id: measure.id,
-    actionSegments: measure.actionSegments.filter((segment) => segmentMatchesRouting(segment.audience, routing)).map(({ audience: _audience, ...segment }) => segment),
-    lyricSegments: measure.lyricSegments.filter((segment) => segmentMatchesRouting(segment.audience, routing)).map(({ audience: _audience, ...segment }) => segment),
-    restSegments: measure.restSegments.map(({ audience: _audience, ...segment }) => segment),
+    actionSegments: measure.actionSegments.filter((segment) => segmentMatchesRouting(segment.audience, routing)).map(({ audience, ...segment }) => ({ ...segment, sourceAudience: audience })),
+    lyricSegments: measure.lyricSegments.filter((segment) => segmentMatchesRouting(segment.audience, routing)).map(({ audience, ...segment }) => ({ ...segment, sourceAudience: audience })),
+    restSegments: measure.restSegments.map(({ audience, ...segment }) => ({ ...segment, sourceAudience: audience })),
   }));
 }
 
@@ -86,6 +86,43 @@ export function selectLiveVariant(cheer: CheerRecord, checkIn: CheerCheckIn): Ch
     && (variant.routing.side === null || variant.routing.side === checkIn.resolved.side)
     && (variant.routing.end === null || variant.routing.end === checkIn.resolved.end)
   )) ?? null;
+}
+
+export function hasPlayableLiveVariant(cheer: CheerRecord, checkIn: CheerCheckIn | null) {
+  if (!checkIn) return false;
+  const variant = selectLiveVariant(cheer, checkIn);
+  return Boolean(variant?.measures.length);
+}
+
+const targetRelativeAudiences = new Set<CrowdAssignment>(["Backboard Left", "Backboard Right", "Uprights Left", "Uprights Right"]);
+
+export function resolveTargetRelativeLiveVariant(
+  cheer: CheerRecord,
+  variant: CheerLiveVariant,
+  checkIn: CheerCheckIn,
+  targetEnd: CheerLiveRouting["end"],
+): CheerLiveVariant {
+  if (!targetEnd) return variant;
+  const audienceBySegmentId = new Map(cheer.measures.flatMap((measure) => [
+    ...measure.actionSegments,
+    ...measure.lyricSegments,
+    ...measure.restSegments,
+  ]).map((segment) => [segment.id, segment.audience] as const));
+  const fanIsInTargetEnd = checkIn.type === "MappedVenue" && checkIn.resolved.end === targetEnd;
+  const belongsInFanVariant = (segment: { readonly id: string; readonly sourceAudience?: CrowdAssignment }) => {
+    const audience = segment.sourceAudience ?? audienceBySegmentId.get(segment.id);
+    return !audience || !targetRelativeAudiences.has(audience) || fanIsInTargetEnd;
+  };
+  return {
+    ...variant,
+    measures: variant.measures.map((measure) => ({
+      ...measure,
+      actionSegments: measure.actionSegments.filter(belongsInFanVariant),
+      lyricSegments: measure.lyricSegments.filter(belongsInFanVariant),
+      // A Rest is a whole-timeline pause, not an audience-targeted instruction.
+      restSegments: measure.restSegments,
+    })),
+  };
 }
 
 export function preloadAvailableLiveVariants(cheers: readonly CheerRecord[], checkIn: CheerCheckIn | null) {

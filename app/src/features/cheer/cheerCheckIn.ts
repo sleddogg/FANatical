@@ -3,6 +3,7 @@ import type { VenueMapping } from "../internal/venues/types";
 import type { CheerCheckIn, CheerSport, GeneralLocationCheckIn, MappedVenueCheckIn } from "./types";
 
 export const cheerCheckInStorageKey = "fanatical.cheer.check-in.v2";
+export const cheerCheckInChangedEvent = "fanatical:cheer-check-in-changed";
 const legacyCheckInSessionKey = "fanatical.cheer.check-in";
 
 export type CheckInVenueOption = Readonly<{
@@ -70,7 +71,7 @@ export function loadGeneralLocations(): readonly GeneralLocationRecord[] {
 }
 
 export function emptyMappedCheckInDraft(method: MappedCheckInDraft["method"]): MappedCheckInDraft {
-  return { method, venueId: "", venueName: "", sport: "Other", teamEvent: "", section: "", row: "", seat: "" };
+  return { method, eventId: "", venueId: "", venueName: "", sport: "Other", teamEvent: "", section: "", row: "", seat: "" };
 }
 
 export function configuredVenueSports(venue: VenueMapping): readonly CheerSport[] {
@@ -80,7 +81,16 @@ export function configuredVenueSports(venue: VenueMapping): readonly CheerSport[
 export function configuredTeamEvents(venue: VenueMapping, sport: CheerSport) {
   const configuration = venue.sports.find((candidate) => candidate.sport === sport);
   if (!configuration) return [];
-  return venue.teamProfiles.filter((profile) => configuration.teamProfileIds.includes(profile.id));
+  return venue.teamProfiles
+    .filter((profile) => configuration.teamProfileIds.includes(profile.id))
+    .map((profile) => ({ ...profile, eventId: `mock-event:${venue.id}:${profile.id}:current` }));
+}
+
+function legacyMappedEventId(venue: VenueMapping, draft: Pick<MappedCheckInDraft, "sport" | "teamEvent">) {
+  const configuredEvent = configuredTeamEvents(venue, draft.sport)
+    .find((event) => event.teamName.toLocaleLowerCase() === draft.teamEvent.trim().toLocaleLowerCase());
+  const eventSlug = draft.teamEvent.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "venue-event";
+  return configuredEvent?.eventId ?? `mock-event:${venue.id}:${eventSlug}:current`;
 }
 
 export function venueRows(venue: VenueMapping, section: string) {
@@ -96,7 +106,7 @@ export function resolveMappedCheckIn(venue: VenueMapping, draft: MappedCheckInDr
   if (!resolution) return null;
   return {
     type: "MappedVenue",
-    raw: { ...draft, venueId: venue.id, venueName: venue.name },
+    raw: { ...draft, eventId: draft.eventId || legacyMappedEventId(venue, draft), venueId: venue.id, venueName: venue.name },
     resolved: {
       level: resolution.level.value,
       side: resolution.side.value,
@@ -143,7 +153,12 @@ function isGeneralLocationCheckIn(value: unknown): value is GeneralLocationCheck
 
 function migrateStoredCheckIn(value: unknown): CheerCheckIn | null {
   if (isGeneralLocationCheckIn(value)) return value;
-  if (isMappedCheckIn(value)) return { ...value, type: "MappedVenue" };
+  if (isMappedCheckIn(value)) {
+    const raw = value.raw as MappedVenueCheckIn["raw"] & { eventId?: string };
+    const venue = loadCheckInVenues().find(({ venue: candidate }) => candidate.id === raw.venueId)?.venue;
+    const eventId = raw.eventId || (venue ? legacyMappedEventId(venue, raw) : `mock-event:${raw.venueId}:${raw.teamEvent.trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-") || "venue-event"}:current`);
+    return { ...value, type: "MappedVenue", raw: { ...raw, eventId } };
+  }
   return null;
 }
 
@@ -162,9 +177,11 @@ export function loadCheerCheckIn(): CheerCheckIn | null {
 export function saveCheerCheckIn(checkIn: CheerCheckIn) {
   window.localStorage.setItem(cheerCheckInStorageKey, JSON.stringify(checkIn));
   window.sessionStorage.removeItem(legacyCheckInSessionKey);
+  window.dispatchEvent(new Event(cheerCheckInChangedEvent));
 }
 
 export function clearCheerCheckIn() {
   window.localStorage.removeItem(cheerCheckInStorageKey);
   window.sessionStorage.removeItem(legacyCheckInSessionKey);
+  window.dispatchEvent(new Event(cheerCheckInChangedEvent));
 }

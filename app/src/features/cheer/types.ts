@@ -62,6 +62,7 @@ export type MappedVenueCheckIn = Readonly<{
   type: "MappedVenue";
   raw: Readonly<{
     method: "Image" | "Manual";
+    eventId: string;
     venueId: string;
     venueName: string;
     sport: CheerSport;
@@ -105,9 +106,9 @@ export type CheerLiveRouting = Readonly<{
   side: Extract<CrowdAssignment, "Side A" | "Side B"> | null;
   end: Extract<CrowdAssignment, "End A" | "End B"> | null;
 }>;
-export type CheerLiveActionSegment = Omit<CheerActionSegment, "audience">;
-export type CheerLiveLyricSegment = Omit<CheerLyricSegment, "audience">;
-export type CheerLiveRestSegment = Omit<CheerRestSegment, "audience">;
+export type CheerLiveActionSegment = Omit<CheerActionSegment, "audience"> & Readonly<{ sourceAudience?: CrowdAssignment }>;
+export type CheerLiveLyricSegment = Omit<CheerLyricSegment, "audience"> & Readonly<{ sourceAudience?: CrowdAssignment }>;
+export type CheerLiveRestSegment = Omit<CheerRestSegment, "audience"> & Readonly<{ sourceAudience?: CrowdAssignment }>;
 export type CheerLiveMeasure = Readonly<{
   id: string;
   actionSegments: readonly CheerLiveActionSegment[];

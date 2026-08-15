@@ -9,6 +9,7 @@ import { NewsPage } from "../features/news/NewsPage";
 import { FanbasePage } from "../features/fanbase/FanbasePage";
 import { QuizPage } from "../features/quiz/QuizPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
+import { PersonalSportsStatsPage } from "../features/profile/PersonalSportsStatsPage";
 import { CheerPage } from "../features/cheer/CheerPage";
 import { CheerLaunchPage } from "../features/cheer/CheerLaunchPage";
 import { CheerLivePage } from "../features/cheer/CheerLivePage";
@@ -60,6 +61,10 @@ export const appRoutes: RouteObject[] = [
             path: item.path.slice(1),
             element: <PlaceholderPage title={item.label} description={item.description} />,
           })),
+          {
+            path: "profile/stats",
+            element: <PersonalSportsStatsPage />,
+          },
           {
             path: "profile",
             element: <ProfilePage />,

@@ -13,6 +13,11 @@ export type NewsContentType =
 export type NewsViewType = "local" | "external";
 export type SourceAccessStatus = "usable" | "partial" | "restricted" | "unavailable";
 
+export type NewsDiscussionScope =
+  | Readonly<{ kind: "team"; teamId: TeamId }>
+  | Readonly<{ kind: "league"; leagueId: LeagueId }>
+  | Readonly<{ kind: "sport"; sportId: SportId }>;
+
 export type NewsSource = Readonly<{
   id: string;
   name: string;
@@ -36,6 +41,7 @@ export type NewsItem = Readonly<{
   sport: SportId;
   league: LeagueId;
   teamIds: readonly TeamId[];
+  discussionScope?: NewsDiscussionScope;
   viewType: NewsViewType;
   imageUrl?: string;
   imageAlt?: string;

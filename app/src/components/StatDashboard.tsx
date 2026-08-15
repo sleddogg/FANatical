@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "./stat-dashboard.css";
 
 export type DashboardStat = Readonly<{
@@ -5,6 +6,7 @@ export type DashboardStat = Readonly<{
   value: string;
   icon: string;
   detail?: string;
+  to?: string;
 }>;
 
 export function StatDashboard({
@@ -29,11 +31,12 @@ export function StatDashboard({
 }
 
 function DashboardStatCard({ stat, size }: { readonly stat: DashboardStat; readonly size: "large" | "small" }) {
-  return (
-    <article className={`stat-dashboard__card stat-dashboard__card--${size}`}>
+  const content = <>
       <span className="stat-dashboard__label"><i aria-hidden="true">{stat.icon}</i>{stat.label}</span>
       <strong>{stat.value}</strong>
       {stat.detail ? <small>{stat.detail}</small> : null}
-    </article>
-  );
+    </>;
+  return stat.to
+    ? <Link className={`stat-dashboard__card stat-dashboard__card--${size} stat-dashboard__card--link`} to={stat.to} aria-label={`View ${stat.label} details`}>{content}</Link>
+    : <article className={`stat-dashboard__card stat-dashboard__card--${size}`}>{content}</article>;
 }

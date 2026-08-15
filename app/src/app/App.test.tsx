@@ -32,6 +32,7 @@ describe("FANatical application shell", () => {
     ["/cheer", "Cheer Library"],
     ["/cheer/launch", "Cheer Launch"],
     ["/profile", "NorthStarFan"],
+    ["/profile/stats", "NorthStarFan Sports Stats"],
   ])("resolves %s", (route, heading) => {
     renderRoute(route);
 

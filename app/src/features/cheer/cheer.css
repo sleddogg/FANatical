@@ -2347,6 +2347,122 @@
   }
 }
 
+.cheer-live-discovery-pulse {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-control);
+  color: var(--color-control-text);
+  box-shadow: var(--shadow-raised);
+  animation: live-discovery-pulse 700ms ease-in-out 2;
+}
+
+.cheer-live-discovery-pulse strong {
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  letter-spacing: 0.05em;
+}
+
+@keyframes live-discovery-pulse {
+  0%, 100% { transform: scale(1); box-shadow: var(--shadow-raised); }
+  50% { transform: scale(1.015); box-shadow: 0 0 0 4px rgba(239, 125, 26, 0.25), var(--shadow-raised); }
+}
+
+.live-notification-stack {
+  position: fixed;
+  z-index: 900;
+  top: max(var(--space-4), env(safe-area-inset-top));
+  right: max(var(--space-4), env(safe-area-inset-right));
+  display: grid;
+  width: min(calc(100vw - var(--space-6)), 25rem);
+  gap: var(--space-3);
+  pointer-events: none;
+}
+
+.live-notification {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg);
+  background: #111;
+  color: #fff;
+  box-shadow: var(--shadow-raised);
+  pointer-events: auto;
+}
+
+.live-notification > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.live-notification > header > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.live-notification > header span {
+  color: #f5a04e;
+  font-size: var(--font-size-xs);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.live-notification > header button {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
+.live-notification p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.live-notification footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.live-notification footer button {
+  min-height: 2.6rem;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.live-notification footer .live-notification__primary {
+  background: #fff;
+  color: #111;
+}
+
+@media (max-width: 38rem) {
+  .live-notification-stack {
+    top: max(var(--space-2), env(safe-area-inset-top));
+    right: var(--space-2);
+    width: calc(100vw - var(--space-4));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheer-live-discovery-pulse {
+    animation: none;
+  }
+}
+
 .cheer-live-player {
   position: relative;
   display: grid;

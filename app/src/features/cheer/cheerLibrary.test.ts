@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { developmentCheerLibrary, initialCheerLibrary, seededCheerLibrary } from "./mockCheerData";
 import { deriveAudienceZoneRequirements } from "./cheerAudienceEligibility";
 import { filterCheers, isCheerLaunchEligible, type CheerLibraryFilter } from "./cheerLibrary";
+import { generateLiveVariants } from "./cheerLiveVariants";
 import type { CheerRecord, CrowdAssignment, MappedVenueCheckIn } from "./types";
 
 const oilersCheckIn: MappedVenueCheckIn = {
   type: "MappedVenue",
-  raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
+  raw: { method: "Manual", eventId: "mock-event:venue-rexall-place:edmonton-oilers:current", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
   resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
   confirmedAt: "2026-08-14T18:00:00.000Z",
 };
@@ -19,7 +20,7 @@ const oilKingsCheckIn: MappedVenueCheckIn = {
 function withAudienceZones(audiences: readonly CrowdAssignment[]): CheerRecord {
   const source = developmentCheerLibrary[0]!;
   const measure = source.measures[0]!;
-  return {
+  const cheer: CheerRecord = {
     ...source,
     id: `audience-${audiences.join("-")}`,
     title: `Audience ${audiences.join(" + ")}`,
@@ -35,6 +36,11 @@ function withAudienceZones(audiences: readonly CrowdAssignment[]): CheerRecord {
       lyricSegments: [],
     }],
   };
+  return { ...cheer, liveVariants: generateLiveVariants(cheer) };
+}
+
+function playable(cheer: CheerRecord): CheerRecord {
+  return { ...cheer, liveVariants: generateLiveVariants(cheer) };
 }
 
 function titles(filter: CheerLibraryFilter) {
@@ -51,14 +57,20 @@ describe("Cheer Library filtering and launch eligibility", () => {
   });
 
   it("keeps browsing filters separate from current launch eligibility", () => {
-    const [genericHockey, nhl, oilers, shl, baseball] = developmentCheerLibrary;
+    const [genericHockey, nhl, oilers, shl, baseball] = developmentCheerLibrary.map(playable);
     expect(isCheerLaunchEligible(genericHockey!, oilersCheckIn)).toBe(true);
     expect(isCheerLaunchEligible(nhl!, oilersCheckIn)).toBe(true);
     expect(isCheerLaunchEligible(oilers!, oilersCheckIn)).toBe(true);
     expect(isCheerLaunchEligible(shl!, oilersCheckIn)).toBe(false);
     expect(isCheerLaunchEligible(baseball!, oilersCheckIn)).toBe(false);
     expect(isCheerLaunchEligible(initialCheerLibrary[0]!, oilersCheckIn)).toBe(false);
-    expect(titles({ kind: "available" })).toEqual(["Hockey Crowd Pulse", "NHL Ice Roar", "Oil Country Rise"]);
+    expect(filterCheers(developmentCheerLibrary.map(playable), { kind: "available" }, oilersCheckIn, "Demo User").map((cheer) => cheer.title)).toEqual(["Hockey Crowd Pulse", "NHL Ice Roar", "Oil Country Rise"]);
+  });
+
+  it("never exposes Launch without a variant playable for the resolved seat", () => {
+    const cheer = developmentCheerLibrary[0]!;
+    expect(isCheerLaunchEligible(cheer, oilersCheckIn)).toBe(false);
+    expect(isCheerLaunchEligible(playable(cheer), oilersCheckIn)).toBe(true);
   });
 
   it("derives Upper and Lower requirements from Who routing", () => {
@@ -73,6 +85,21 @@ describe("Cheer Library filtering and launch eligibility", () => {
     expect(isCheerLaunchEligible(bothLevels, oilersCheckIn)).toBe(true);
     expect(isCheerLaunchEligible(bothLevels, oilKingsCheckIn)).toBe(false);
     expect(isCheerLaunchEligible(lowerOnly, oilKingsCheckIn)).toBe(true);
+  });
+
+  it("allows target-relative choreography to reach its launch-time end selection", () => {
+    const targetRelative = {
+      ...withAudienceZones(["Uprights Left"]),
+      sport: "Football" as const,
+      sportId: "football" as const,
+      leagueId: null,
+      teamId: null,
+    };
+    const footballCheckIn: MappedVenueCheckIn = {
+      ...oilersCheckIn,
+      raw: { ...oilersCheckIn.raw, sport: "Football", teamEvent: "New England Patriots" },
+    };
+    expect(isCheerLaunchEligible(targetRelative, footballCheckIn)).toBe(true);
   });
 
   it("keeps a zone-incompatible Cheer browseable outside Available Now", () => {

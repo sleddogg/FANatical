@@ -41,6 +41,6 @@ describe("Cheer venue Check-In", () => {
       resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section 114 mapping", side: "Section 114 mapping", end: "Section 114 mapping" } },
       confirmedAt: "2026-08-12T00:00:00.000Z",
     }));
-    expect(loadCheerCheckIn()).toMatchObject({ type: "MappedVenue", raw: { section: "114", row: "12", seat: "8" }, resolved: { level: "Lower", side: "Side A", end: "End A" } });
+    expect(loadCheerCheckIn()).toMatchObject({ type: "MappedVenue", raw: { eventId: expect.stringContaining("mock-event:venue-rexall-place"), section: "114", row: "12", seat: "8" }, resolved: { level: "Lower", side: "Side A", end: "End A" } });
   });
 });

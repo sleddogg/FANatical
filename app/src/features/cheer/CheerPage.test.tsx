@@ -56,46 +56,26 @@ describe("Cheer frontend", () => {
     expect(screen.getByRole("button", { name: "Remove bookmark from D-Fence Clap Clap" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("defaults to Available Now for a mapped team Check-In while preserving independent Launch eligibility after filtering", async () => {
+  it("defaults to Available Now but withholds Launch when no playable prototype variant exists", async () => {
     const user = userEvent.setup();
     window.localStorage.setItem("fanatical.cheer.check-in.v2", JSON.stringify({
       type: "MappedVenue",
-      raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
+      raw: { method: "Manual", eventId: "mock-event:venue-rexall-place:edmonton-oilers:current", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
       resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
       confirmedAt: "2026-08-14T18:00:00.000Z",
     }));
     renderCheer();
 
     expect(screen.getByRole("heading", { name: "Available Now" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Hockey Crowd Pulse" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "NHL Ice Roar" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Oil Country Rise" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "SHL Ice Thunder" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Launch" })).toHaveLength(3);
+    expect(screen.getByRole("heading", { name: "No Cheers are available now" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Launch" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Filter Cheer Library" }));
     await user.click(screen.getByRole("menuitemradio", { name: "All" }));
     expect(screen.getByRole("heading", { name: "All Cheers" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ballpark Rally" })).toBeInTheDocument();
     expect(within(screen.getByRole("heading", { name: "Ballpark Rally" }).closest("article")!).queryByRole("button", { name: "Launch" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Launch" })).toHaveLength(3);
-
-    await user.click(within(screen.getByRole("heading", { name: "Oil Country Rise" }).closest("article")!).getByRole("button", { name: "Launch" }));
-    const launchDialog = screen.getByRole("dialog", { name: "Launch Oil Country Rise" });
-    expect(within(launchDialog).getByRole("radio", { name: /ASAP/ })).toBeChecked();
-    await user.click(within(launchDialog).getByRole("button", { name: "Add to Launch Page" }));
-    expect(await screen.findByRole("heading", { name: "Cheer Launch" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Cheer Library/ }));
-    const liveBanner = screen.getByRole("button", { name: /LIVE CHEERS/ });
-    expect(liveBanner).toHaveTextContent("1 active Cheer");
-    await user.click(liveBanner);
-    expect(await screen.findByRole("heading", { name: "Cheer Launch" })).toBeInTheDocument();
-    const proposal = screen.getByRole("heading", { name: "Oil Country Rise" }).closest("article");
-    expect(proposal).not.toBeNull();
-    expect(within(proposal!).getByText("19 / 20")).toBeInTheDocument();
-    await user.click(within(proposal!).getByRole("button", { name: "Join" }));
-    expect(within(proposal!).getByText("20 / 20")).toBeInTheDocument();
-    expect(within(proposal!).getAllByText(/CHEER GOING LIVE IN 5/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Launch" })).not.toBeInTheDocument();
   });
 
   it("shows creator-specific library actions and permanently deletes an owned Cheer after confirmation", async () => {

@@ -12,6 +12,7 @@ import { initialProfile, profileMoments, profileStats, profileTrophies } from ".
 import { MomentCreateDialog } from "./MomentCreateDialog";
 import { ProfileEditDialog } from "./ProfileEditDialog";
 import type { CreateFanMomentInput, FanMoment, ProfileRecord, ProfileTabId } from "./types";
+import { buildSportsStatsSnapshot, fanScoreForUser, resolveFanbaseCompetition, sportsStatsUser } from "../stats/sportsStats";
 import "../fanbase/fanbase.css";
 import "./profile.css";
 
@@ -35,7 +36,7 @@ const profileStatIcons: Readonly<Record<(typeof profileStats)[number]["label"], 
   "Fan Score": "★",
   "Fan Coins": "●",
   Rank: "↗",
-  Engagement: "◉",
+  "Sport IQ": "◎",
 };
 
 function formatMomentDate(value: string) {
@@ -178,6 +179,14 @@ export function ProfilePage() {
   const fanbase = useFanbaseContext();
   const { selectedTeam } = useTeamContext();
   const { fanPhotos } = fanbase;
+  const sportsStats = useMemo(() => sportsStatsUser(demoUser.id, buildSportsStatsSnapshot()), []);
+  const selectedCompetition = resolveFanbaseCompetition(selectedTeam);
+  const selectedFanScore = sportsStats ? fanScoreForUser(sportsStats, selectedCompetition.teamKey) : null;
+  const displayProfileStats = profileStats.map((stat) => stat.label === "Fan Score"
+    ? { ...stat, value: selectedFanScore?.toLocaleString() ?? "—", detail: `${selectedTeam.shortName} Fan Score` }
+    : stat.label === "Sport IQ"
+      ? { ...stat, value: sportsStats?.overallSportIq?.toString() ?? "—", detail: "Overall Sport IQ" }
+      : stat);
   const [profile, setProfile] = useState<ProfileRecord>(initialSessionProfile);
   const [activeTab, setActiveTab] = useState<ProfileTabId>("bio");
   const [editing, setEditing] = useState(false);
@@ -276,7 +285,7 @@ export function ProfilePage() {
 
       <section className="profile-stats-section" aria-labelledby="profile-stats-title">
         <header className="profile-section-heading"><div><h2 id="profile-stats-title">At a glance</h2></div></header>
-        <StatDashboard label="Profile at a glance" primary={profileStats.slice(0, 2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆" }))} secondary={profileStats.slice(2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆" }))} />
+        <StatDashboard label="Profile at a glance" primary={displayProfileStats.slice(0, 2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆" }))} secondary={displayProfileStats.slice(2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆", ...((stat.label === "Fan Score" || stat.label === "Sport IQ") ? { to: "/profile/stats" } : {}) }))} />
       </section>
 
       <section className="profile-tab-section">

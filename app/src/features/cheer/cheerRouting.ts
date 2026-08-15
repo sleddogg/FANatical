@@ -70,6 +70,17 @@ const lockingSports: Partial<Record<CrowdAssignment, CheerSport>> = {
   Outfield: "Baseball",
 };
 
+const targetRelativeAudiences = new Set<CrowdAssignment>([
+  "Backboard Left",
+  "Backboard Right",
+  "Uprights Left",
+  "Uprights Right",
+]);
+
+export function isTargetRelativeAudience(audience: CrowdAssignment) {
+  return targetRelativeAudiences.has(audience);
+}
+
 export function requiredSportForRouting(measures: readonly CheerMeasure[]) {
   for (const measure of measures) {
     for (const segment of [...measure.actionSegments, ...measure.lyricSegments, ...measure.restSegments]) {

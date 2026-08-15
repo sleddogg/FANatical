@@ -37,7 +37,7 @@ export const profileStats: readonly ProfileStat[] = [
   { label: "Fan Score", value: "18,460", detail: "+380 this week" },
   { label: "Fan Coins", value: "2,875", detail: "Available balance" },
   { label: "Rank", value: "#184", detail: "Top 4% of fans" },
-  { label: "Engagement", value: "92%", detail: "Very active" },
+  { label: "Sport IQ", value: "—", detail: "Evidence-weighted overall" },
 ];
 
 export const profileTrophies: readonly Trophy[] = [

@@ -44,7 +44,7 @@ export function CheerLivePlayer({ cheer, variant, sharedStartAt, onComplete }: {
   const totalUnits = variant.measures.length * MEASURE_CAPACITY_UNITS;
   const elapsedUnits = Math.max(0, (now - sharedStartAt) / unitMilliseconds);
   const previewing = now < sharedStartAt;
-  const countdown = Math.min(3, Math.max(1, Math.ceil((sharedStartAt - now) / 1_000)));
+  const countdown = Math.min(5, Math.max(1, Math.ceil((sharedStartAt - now) / 1_000)));
   const currentIndex = useMemo(() => Math.min(variant.measures.length - 1, Math.floor(Math.min(elapsedUnits, totalUnits - 0.001) / MEASURE_CAPACITY_UNITS)), [elapsedUnits, totalUnits, variant.measures.length]);
   const localUnit = previewing ? 0 : elapsedUnits - currentIndex * MEASURE_CAPACITY_UNITS;
   const currentMeasure = previewing ? variant.measures[0] : variant.measures[currentIndex];

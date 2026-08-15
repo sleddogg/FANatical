@@ -7,10 +7,13 @@ function game(startsAt: number, endsAt: number): GameThread {
     id: "game",
     threadId: "thread",
     teamId: "new-england-patriots",
+    sportId: "football",
+    leagueId: "football-nfl",
     opponent: "Opponent",
     venue: "Venue",
     startsAt: new Date(startsAt).toISOString(),
     endsAt: new Date(endsAt).toISOString(),
+    finalResult: null,
   };
 }
 

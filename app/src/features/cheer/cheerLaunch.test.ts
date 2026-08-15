@@ -9,26 +9,32 @@ import {
   MAX_ACTIVE_CHEER_PROPOSALS,
   confirmGameMomentTrigger,
   createCheerProposal,
+  cheerUsesTargetRelativeRouting,
   currentLiveUserId,
   joinCheerProposal,
   leaveCheerProposal,
   pruneExpiredCheerProposals,
   recentTriggerConfirmations,
+  launchContext,
+  proposalBelongsToCheckIn,
   triggerQuorumForJoinedCount,
   type CheerProposal,
 } from "./cheerLaunch";
+import { generateLiveVariants } from "./cheerLiveVariants";
 import type { MappedVenueCheckIn } from "./types";
 
 const checkIn: MappedVenueCheckIn = {
   type: "MappedVenue",
-  raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
+  raw: { method: "Manual", eventId: "mock-event:venue-rexall-place:edmonton-oilers:current", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
   resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
   confirmedAt: "2026-08-14T18:00:00.000Z",
 };
 
 function create(existing: readonly CheerProposal[] = [], mode: "ASAP" | "GameMoment" = "ASAP") {
+  const source = developmentCheerLibrary[0]!;
+  const cheer = { ...source, liveVariants: generateLiveVariants(source) };
   return createCheerProposal(existing, {
-    cheer: developmentCheerLibrary[0]!,
+    cheer,
     checkIn,
     mode,
     gameMoment: mode === "GameMoment" ? "Next Puck Drop" : null,
@@ -48,6 +54,27 @@ describe("shared Cheer Launch proposals", () => {
     expect(blocked.error).toMatch(/5 active Cheer proposals/);
   });
 
+  it("rejects Launch when no playable Live Variant exists", () => {
+    const result = createCheerProposal([], {
+      cheer: developmentCheerLibrary[0]!,
+      checkIn,
+      mode: "ASAP",
+      gameMoment: null,
+      now: 1_000,
+    });
+    expect(result.proposal).toBeNull();
+    expect(result.error).toMatch(/playable Live Variant/i);
+  });
+
+  it("separates proposals for distinct games at the same venue and team", () => {
+    const first = create().proposal!;
+    const nextGameCheckIn = { ...checkIn, raw: { ...checkIn.raw, eventId: "mock-event:venue-rexall-place:edmonton-oilers:next" } };
+    expect(launchContext(checkIn).label).toBe(launchContext(nextGameCheckIn).label);
+    expect(launchContext(checkIn).eventId).not.toBe(launchContext(nextGameCheckIn).eventId);
+    expect(proposalBelongsToCheckIn(first, checkIn)).toBe(true);
+    expect(proposalBelongsToCheckIn(first, nextGameCheckIn)).toBe(false);
+  });
+
   it("joins, reaches the ASAP threshold, and returns to Gathering after Leave", () => {
     const proposal = create().proposal!;
     expect(proposal.joinedUserIds).toHaveLength(ASAP_JOIN_THRESHOLD - 1);
@@ -55,7 +82,7 @@ describe("shared Cheer Launch proposals", () => {
     const joined = joinCheerProposal(proposal, currentLiveUserId, 2_000);
     expect(joined.joinedUserIds).toHaveLength(ASAP_JOIN_THRESHOLD);
     expect(joined.status).toBe("GoingLive");
-    expect(joined.sharedStartAt).toBe(7_000);
+    expect(joined.sharedStartAt).toBe(12_000);
     const left = leaveCheerProposal(joined, currentLiveUserId, 3_000);
     expect(left.joinedUserIds).toHaveLength(ASAP_JOIN_THRESHOLD - 1);
     expect(left.status).toBe("Gathering");
@@ -73,7 +100,7 @@ describe("shared Cheer Launch proposals", () => {
     expect(recentTriggerConfirmations(armed, 2_000)).toHaveLength(9);
     const triggered = confirmGameMomentTrigger(armed, currentLiveUserId, 2_001);
     expect(triggered.status).toBe("GoingLive");
-    expect(triggered.sharedStartAt).toBe(7_001);
+    expect(triggered.sharedStartAt).toBe(12_001);
 
     const expiredAttempt = confirmGameMomentTrigger(armed, currentLiveUserId, 2_000 + CHEER_TRIGGER_WINDOW_MS + 1);
     expect(expiredAttempt.status).toBe("Armed");
@@ -103,5 +130,21 @@ describe("shared Cheer Launch proposals", () => {
     const afterLeave = leaveCheerProposal(armed, currentLiveUserId, 3_000);
     expect(afterLeave.status).toBe("Armed");
     expect(pruneExpiredCheerProposals([afterLeave], 1_000 + GAME_MOMENT_GATHERING_WINDOW_MS * 2)).toEqual([afterLeave]);
+  });
+
+  it("resolves target-relative routing from the launcher's physical end", () => {
+    const source = developmentCheerLibrary[0]!;
+    const targetCheerWithoutVariants = {
+      ...source,
+      measures: source.measures.map((measure, measureIndex) => measureIndex ? measure : {
+        ...measure,
+        actionSegments: measure.actionSegments.map((segment, index) => index ? segment : { ...segment, audience: "Backboard Left" as const }),
+      }),
+    };
+    const targetCheer = { ...targetCheerWithoutVariants, liveVariants: generateLiveVariants(targetCheerWithoutVariants) };
+    expect(cheerUsesTargetRelativeRouting(targetCheer)).toBe(true);
+    expect(createCheerProposal([], { cheer: targetCheer, checkIn, mode: "ASAP", gameMoment: null, now: 1_000 }).error).toMatch(/which end/i);
+    expect(createCheerProposal([], { cheer: targetCheer, checkIn, mode: "ASAP", gameMoment: null, targetSelection: "Your End", now: 1_000 }).proposal).toMatchObject({ targetSelection: "Your End", targetEnd: "End A" });
+    expect(createCheerProposal([], { cheer: targetCheer, checkIn, mode: "ASAP", gameMoment: null, targetSelection: "Opposite End", now: 1_000 }).proposal).toMatchObject({ targetSelection: "Opposite End", targetEnd: "End B" });
   });
 });

@@ -1,0 +1,51 @@
+.personal-stats-page { display: grid; gap: clamp(var(--space-5), 4vw, var(--space-8)); }
+.personal-stats-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-6); padding: clamp(var(--space-5), 5vw, var(--space-8)); border-radius: var(--radius-lg); }
+.personal-stats-hero h2, .personal-fan-scores h2, .personal-sport-breakdown > header h2, .personal-all-sports h2 { margin: var(--space-1) 0; }
+.personal-stats-hero p, .personal-all-sports p { margin: 0; color: var(--color-text-muted); }
+.personal-stats-hero > strong { font-size: clamp(3rem, 10vw, 6rem); letter-spacing: -.07em; }
+.personal-fan-scores, .personal-sport-breakdown { display: grid; gap: var(--space-4); }
+.personal-fan-scores > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-3); }
+.personal-fan-scores article { display: grid; gap: var(--space-1); padding: var(--space-5); border-radius: var(--radius-lg); }
+.personal-fan-scores article > span, .personal-iq-card > span { color: var(--color-text-muted); font-weight: 800; }
+.personal-fan-scores article strong { font-size: 1.65rem; }
+.personal-fan-scores article small, .personal-iq-card small { color: var(--color-text-muted); }
+.personal-sport-tabs { display: flex; gap: var(--space-2); overflow-x: auto; }
+.personal-sport-tabs button { flex: 0 0 auto; min-height: 2.7rem; padding-inline: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 850; cursor: pointer; }
+.personal-sport-tabs button[aria-selected="true"] { background: var(--color-control); color: var(--color-control-text); }
+.personal-sport-panel { display: grid; gap: var(--space-4); }
+.personal-iq-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.personal-iq-card { display: grid; gap: var(--space-1); padding: var(--space-5); border-radius: var(--radius-lg); }
+.personal-iq-card strong { font-size: clamp(2rem, 5vw, 3.25rem); }
+.personal-iq-card--primary { background: #111; color: white; }
+.personal-iq-card--primary > span, .personal-iq-card--primary small { color: rgba(255,255,255,.7); }
+.personal-contribution { display: grid; gap: var(--space-4); padding: var(--space-5); border-radius: var(--radius-lg); }
+.personal-contribution header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: end; }
+.personal-contribution h3 { margin: var(--space-1) 0 0; }
+.personal-contribution header > strong { color: #b85f00; white-space: nowrap; }
+.personal-contribution__bar { display: flex; height: .8rem; overflow: hidden; border-radius: var(--radius-pill); background: #dfdfdc; }
+.personal-contribution__bar span { background: #111; }
+.personal-contribution__bar i { flex: 1; background: #f28b19; }
+.personal-contribution p, .personal-stat-detail-grid article > p { margin: 0; color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.personal-stat-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.personal-stat-detail-grid article { padding: var(--space-5); border-radius: var(--radius-lg); }
+.personal-stat-detail-grid h3 { margin: var(--space-1) 0 var(--space-4); }
+.personal-stat-detail-grid dl { display: grid; gap: var(--space-2); margin: 0 0 var(--space-4); }
+.personal-stat-detail-grid dl div { display: flex; justify-content: space-between; gap: var(--space-4); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); }
+.personal-stat-detail-grid dt { color: var(--color-text-muted); }
+.personal-stat-detail-grid dd { margin: 0; font-weight: 850; }
+.personal-all-sports { padding: var(--space-5); border-radius: var(--radius-lg); }
+.personal-all-sports__table-wrap { overflow-x: auto; margin-top: var(--space-4); }
+.personal-all-sports table { width: 100%; min-width: 38rem; border-collapse: collapse; }
+.personal-all-sports th, .personal-all-sports td { padding: var(--space-3); border-bottom: 1px solid var(--color-border); text-align: left; }
+.personal-all-sports td small { display: block; color: var(--color-text-muted); }
+.personal-trophy-note, .personal-stats-empty { margin: 0; color: var(--color-text-muted); text-align: center; }
+@media (max-width: 48rem) {
+  .personal-iq-cards { grid-template-columns: 1fr; }
+  .personal-stat-detail-grid { grid-template-columns: 1fr; }
+  .personal-contribution header { display: grid; align-items: start; }
+}
+@media (max-width: 34rem) {
+  .personal-stats-hero { grid-template-columns: 1fr; }
+  .personal-stats-hero > strong { justify-self: start; }
+  .personal-stats-topbar > div p { display: none; }
+}

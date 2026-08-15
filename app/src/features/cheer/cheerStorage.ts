@@ -8,6 +8,11 @@ const databaseVersion = 1;
 const storeName = "cheer-library";
 const libraryKey = "records";
 const fallbackStorageKey = "fanatical.cheer.library";
+export const cheerLibraryChangedEvent = "fanatical:cheer-library-changed";
+
+function announceLibraryChange() {
+  window.dispatchEvent(new Event(cheerLibraryChangedEvent));
+}
 
 function isCheerLibrary(value: unknown): value is readonly CheerRecord[] {
   return Array.isArray(value) && value.every((record) => {
@@ -111,6 +116,7 @@ export async function loadCheerLibrary(): Promise<readonly CheerRecord[] | null>
 export async function saveCheerLibrary(cheers: readonly CheerRecord[]): Promise<void> {
   if (!("indexedDB" in window)) {
     saveFallback(cheers);
+    announceLibraryChange();
     return;
   }
   try {
@@ -123,7 +129,9 @@ export async function saveCheerLibrary(cheers: readonly CheerRecord[]): Promise<
       transaction.addEventListener("abort", () => reject(transaction.error));
     });
     database.close();
+    announceLibraryChange();
   } catch {
     saveFallback(cheers);
+    announceLibraryChange();
   }
 }

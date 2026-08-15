@@ -10,7 +10,7 @@ function renderRoute(route = "/fanbase") {
 }
 
 describe("FANbase frontend", () => {
-  it("renders the six hub areas in the required order", () => {
+  it("renders the FANbase areas in the required order", () => {
     renderRoute();
 
     const hub = screen.getByRole("region", { name: "FANbase areas" });
@@ -22,8 +22,72 @@ describe("FANbase frontend", () => {
       "Fan Photos",
       "Events",
       "Groups",
+      "Polls",
+      "Leaderboards",
     ]);
     expect(screen.getByText("New England Patriots fan community")).toBeInTheDocument();
+  });
+
+  it("opens Polls on the current FANbase team's unanswered Active queue", async () => {
+    const user = userEvent.setup();
+    renderRoute();
+
+    await user.click(screen.getByRole("button", { name: /Polls.*Vote on trending questions/i }));
+
+    expect(screen.getByRole("heading", { name: "Polls", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "New England Patriots" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Active" })).toHaveAttribute("aria-selected", "true");
+    expect(document.querySelectorAll(".poll-card")).toHaveLength(10);
+  });
+
+  it("records a Poll vote, reveals results, and exposes Browse search", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=polls");
+
+    const poll = screen.getByRole("heading", { name: "Which unit will define the Patriots' season?" }).closest("article");
+    expect(poll).not.toBeNull();
+    await user.click(within(poll as HTMLElement).getByRole("button", { name: "Defense" }));
+    expect(within(poll as HTMLElement).getByText("Your vote", { exact: false })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Browse" }));
+    const search = screen.getByRole("searchbox", { name: "Search Polls" });
+    await user.type(search, "playoff push");
+    expect(screen.getByRole("heading", { name: "How confident are you in the playoff push?" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Which offensive identity should New England lean into?" })).not.toBeInTheDocument();
+  });
+
+  it("browses an exact official League Poll scope outside the current FANbase", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=polls");
+
+    await user.click(screen.getByRole("button", { name: "Change Poll scope" }));
+    let dialog = screen.getByRole("dialog", { name: "Pick a Sport" });
+    await user.click(within(dialog).getByRole("button", { name: /Hockey.*Browse polls/i }));
+    dialog = screen.getByRole("dialog", { name: "Pick a League" });
+    await user.click(within(dialog).getByRole("button", { name: /NHL.*League or team polls/i }));
+    dialog = screen.getByRole("dialog", { name: "Pick a Team" });
+    await user.click(within(dialog).getByRole("button", { name: "Show NHL polls" }));
+
+    expect(screen.getByRole("heading", { name: "NHL" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Should the NHL change its playoff format?" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Oilers offseason moves/i })).not.toBeInTheDocument();
+  });
+
+  it("creates a team-scoped Poll with generated topic metadata", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=polls");
+
+    await user.click(screen.getByRole("button", { name: "Create Poll" }));
+    const dialog = screen.getByRole("dialog", { name: "Create Poll" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Poll question" }), "Which rookie makes the biggest impact?");
+    await user.type(within(dialog).getByRole("textbox", { name: "Option 1" }), "Quarterback");
+    await user.type(within(dialog).getByRole("textbox", { name: "Option 2" }), "Receiver");
+    await user.type(within(dialog).getByRole("textbox", { name: "Option 3" }), "Cornerback");
+    await user.type(within(dialog).getByRole("textbox", { name: "Option 4" }), "Pass rusher");
+    await user.click(within(dialog).getByRole("button", { name: "Publish Poll" }));
+
+    expect(screen.getByRole("heading", { name: "Which rookie makes the biggest impact?" })).toBeInTheDocument();
+    expect(screen.getByText("One canonical Poll record", { exact: false })).toBeInTheDocument();
   });
 
   it("uses the team-only filter and updates the global selected team", async () => {
@@ -135,13 +199,46 @@ describe("FANbase frontend", () => {
 
     const composer = screen.getByRole("textbox", { name: "Add to the conversation" }).closest("form");
     const conversationHeading = screen.getByRole("heading", { name: "Conversation" });
+    const predictor = screen.getByRole("region", { name: "Call the final score" });
+    const gameContext = screen.getByText("Gillette Stadium").closest("article");
     expect(composer).not.toBeNull();
+    expect(gameContext).not.toBeNull();
+    expect(gameContext!.compareDocumentPosition(predictor) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(predictor.compareDocumentPosition(conversationHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(composer!.compareDocumentPosition(conversationHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByRole("article").filter((article) => article.classList.contains("community-comment"))).toHaveLength(6);
     expect(screen.getAllByRole("button", { name: /Like, .* reactions/i }).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: "Share" }));
     expect(screen.getByRole("status")).toHaveTextContent("Sharing is represented as a local frontend placeholder.");
+  });
+
+  it("submits and locks a sport-specific pregame prediction", async () => {
+    const user = userEvent.setup();
+    renderRoute("/fanbase?area=game-threads&item=game-pats-next");
+
+    const predictor = screen.getByRole("region", { name: "Call the final score" });
+    await user.type(within(predictor).getByRole("spinbutton", { name: "New England Patriots" }), "27");
+    await user.type(within(predictor).getByRole("spinbutton", { name: "Buffalo Bills" }), "20");
+    expect(within(predictor).getByRole("button", { name: "Tie" })).toBeInTheDocument();
+    await user.click(within(predictor).getByRole("button", { name: "Lock Prediction" }));
+
+    expect(within(predictor).getByText("Your prediction is locked")).toBeInTheDocument();
+    expect(within(predictor).getByText(/New England Patriots 27–20 Buffalo Bills/)).toBeInTheDocument();
+  });
+
+  it("resolves a completed prediction with absolute errors, Rating, Percentile, and exact-score recognition", () => {
+    renderRoute("/fanbase?area=game-threads&item=game-pats-recent");
+
+    const predictor = screen.getByRole("region", { name: "Call the final score" });
+    expect(within(predictor).getByLabelText("Final score")).toHaveTextContent("24");
+    expect(within(predictor).getByText("New England Patriots error").parentElement).toHaveTextContent("11");
+    expect(within(predictor).getByText("Buffalo Bills error").parentElement).toHaveTextContent("11");
+    expect(within(predictor).getByText("Total Score Error").parentElement).toHaveTextContent("22");
+    expect(within(predictor).getByText("Predictor Rating").parentElement).toHaveTextContent(/\d+/);
+    expect(within(predictor).getByText("Football Predictor").parentElement).toHaveTextContent("percentile");
+    expect(within(predictor).getByText("Maya84").closest("span")).toHaveTextContent("24–21");
+    expect(within(predictor).getByRole("heading", { name: "CALLED IT" })).toBeInTheDocument();
   });
 
   it.each([

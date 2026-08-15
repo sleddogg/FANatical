@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { developmentCheerLibrary } from "./mockCheerData";
-import { generateLiveVariants, liveRoutingDimensions, loadPreloadedLiveVariant, preloadAvailableLiveVariants, selectLiveVariant, withPublishTimeLiveVariants } from "./cheerLiveVariants";
+import { generateLiveVariants, liveRoutingDimensions, loadPreloadedLiveVariant, preloadAvailableLiveVariants, resolveTargetRelativeLiveVariant, selectLiveVariant, withPublishTimeLiveVariants } from "./cheerLiveVariants";
 import type { CheerRecord, CrowdAssignment, MappedVenueCheckIn } from "./types";
 
 const lowerSideAEndA: MappedVenueCheckIn = {
   type: "MappedVenue",
-  raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
+  raw: { method: "Manual", eventId: "mock-event:venue-rexall-place:edmonton-oilers:current", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
   resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
   confirmedAt: "2026-08-14T18:00:00.000Z",
 };
@@ -67,5 +67,20 @@ describe("publish-time Live Variants", () => {
     expect(selected?.routing).toEqual({ level: "Lower", side: "Side A", end: "End A" });
     expect(preloadAvailableLiveVariants([cheer], lowerSideAEndA)).toHaveLength(1);
     expect(loadPreloadedLiveVariant(cheer.id, lowerSideAEndA)?.id).toBe(selected?.id);
+  });
+
+  it("uses the proposal target end to include target-relative choreography only for fans in that end", () => {
+    const source = routedTest(["All", "Backboard Left"]);
+    const cheer = { ...source, liveVariants: generateLiveVariants(source) };
+    const variant = selectLiveVariant(cheer, lowerSideAEndA)!;
+    const targetFan = resolveTargetRelativeLiveVariant(cheer, variant, lowerSideAEndA, "End A");
+    const otherEndCheckIn: MappedVenueCheckIn = {
+      ...lowerSideAEndA,
+      resolved: { ...lowerSideAEndA.resolved, end: "End B" },
+    };
+    const otherFan = resolveTargetRelativeLiveVariant(cheer, variant, otherEndCheckIn, "End A");
+    expect(targetFan.measures[0]?.actionSegments).toHaveLength(2);
+    expect(otherFan.measures[0]?.actionSegments).toHaveLength(1);
+    expect(otherFan.measures[0]?.actionSegments[0]?.sourceAudience).toBe("All");
   });
 });

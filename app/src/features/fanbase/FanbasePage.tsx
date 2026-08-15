@@ -7,6 +7,8 @@ import { useFanbaseContext } from "./FanbaseContext";
 import { FanbaseHub } from "./FanbaseHub";
 import { FanbaseTeamFilter } from "./FanbaseTeamFilter";
 import { GroupMembershipDialog } from "./GroupMembershipDialog";
+import { PollCreateDialog } from "./PollCreateDialog";
+import { pollScopeForFollowedTeam } from "./polls";
 import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 import { useState } from "react";
 import { formatEventDate } from "./fanbaseFormatting";
@@ -19,6 +21,8 @@ const fanbaseAreaIds = new Set<FanbaseAreaId>([
   "fan-photos",
   "events",
   "groups",
+  "polls",
+  "leaderboards",
 ]);
 
 function isFanbaseArea(value: string | null): value is FanbaseAreaId {
@@ -38,6 +42,8 @@ const areaTitles: Record<FanbaseAreaId, string> = {
   "fan-photos": "Fan Photos",
   events: "Events",
   groups: "Groups",
+  polls: "Polls",
+  leaderboards: "Leaderboards",
 };
 
 const areaCreationTypes: Record<FanbaseAreaId, FanbaseCreationType | null> = {
@@ -47,6 +53,8 @@ const areaCreationTypes: Record<FanbaseAreaId, FanbaseCreationType | null> = {
   "fan-photos": "photo",
   events: "event",
   groups: "group",
+  polls: null,
+  leaderboards: null,
 };
 
 const areaActionLabels: Record<FanbaseAreaId, { accessible: string; visible: string }> = {
@@ -56,6 +64,8 @@ const areaActionLabels: Record<FanbaseAreaId, { accessible: string; visible: str
   "fan-photos": { accessible: "Add Fan Photo", visible: "Add Photo" },
   events: { accessible: "Create Event", visible: "New Event" },
   groups: { accessible: "Create Group", visible: "New Group" },
+  polls: { accessible: "Create Poll", visible: "New Poll" },
+  leaderboards: { accessible: "Leaderboard comparison controls are below", visible: "Rankings" },
 };
 
 export function FanbasePage() {
@@ -66,6 +76,7 @@ export function FanbasePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [groupMembershipOpen, setGroupMembershipOpen] = useState(false);
   const [eventInviteOpen, setEventInviteOpen] = useState(false);
+  const [pollCreateOpen, setPollCreateOpen] = useState(false);
   const areaParam = searchParams.get("area");
   const area = isFanbaseArea(areaParam) ? areaParam : null;
   const itemId = searchParams.get("item");
@@ -130,6 +141,8 @@ export function FanbasePage() {
     if (area === "events") {
       return selectedEvent ? `${selectedEvent.eventType} · ${formatEventDate(selectedEvent.startsAt)} · ${selectedEvent.location.label}` : `${selectedTeam.name} gatherings and watch parties`;
     }
+    if (area === "polls") return `${selectedTeam.name} by default · Browse any official sport, league, or team`;
+    if (area === "leaderboards") return `${selectedTeam.name} fan rankings and sports intelligence`;
     return selectedGroup ? selectedGroup.description : `${selectedTeam.name} joined and discoverable groups`;
   })();
 
@@ -161,9 +174,9 @@ export function FanbasePage() {
             className="fanbase-create-trigger fanbase-create-trigger--contextual"
             type="button"
             aria-label={contextualAction?.accessible}
-            aria-expanded={selectedEvent ? eventInviteOpen : selectedGroup ? groupMembershipOpen : contextualCreationType ? createOpen : undefined}
-            disabled={!contextualCreationType && !selectedGroup && !selectedEvent}
-            onClick={() => selectedEvent ? setEventInviteOpen(true) : selectedGroup ? setGroupMembershipOpen(true) : contextualCreationType && setCreateOpen(true)}
+            aria-expanded={selectedEvent ? eventInviteOpen : selectedGroup ? groupMembershipOpen : area === "polls" ? pollCreateOpen : contextualCreationType ? createOpen : undefined}
+            disabled={!contextualCreationType && !selectedGroup && !selectedEvent && area !== "polls"}
+            onClick={() => selectedEvent ? setEventInviteOpen(true) : selectedGroup ? setGroupMembershipOpen(true) : area === "polls" ? setPollCreateOpen(true) : contextualCreationType && setCreateOpen(true)}
           >
             <span aria-hidden="true">＋</span><span>{contextualAction?.visible}</span>
           </button>
@@ -181,6 +194,7 @@ export function FanbasePage() {
       {teamFilterOpen ? <FanbaseTeamFilter teams={followedTeams} selectedTeamId={selectedTeamId} onSelect={chooseTeam} onClose={() => setTeamFilterOpen(false)} /> : null}
       {eventInviteOpen && selectedEvent ? <EventInviteDialog event={selectedEvent} onInvite={(userIds) => fanbase.invitePeopleToEvent(selectedEvent.id, userIds)} onClose={() => setEventInviteOpen(false)} /> : null}
       {groupMembershipOpen && selectedGroup ? <GroupMembershipDialog group={selectedGroup} onInvite={(userIds) => fanbase.invitePeopleToGroup(selectedGroup.id, userIds)} onAddModerators={(userIds) => fanbase.addGroupModerators(selectedGroup.id, userIds)} onClose={() => setGroupMembershipOpen(false)} /> : null}
+      {pollCreateOpen ? <PollCreateDialog polls={fanbase.polls} initialScope={pollScopeForFollowedTeam(selectedTeam)} onCreate={fanbase.createPoll} onClose={(createdPollId) => { setPollCreateOpen(false); if (createdPollId) setSearchParams({ area: "polls", item: createdPollId }); }} /> : null}
       {createOpen ? (
         <FanbaseCreateDialog
           team={selectedTeam}

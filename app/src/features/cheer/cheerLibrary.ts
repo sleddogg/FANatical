@@ -1,6 +1,8 @@
 import { findOfficialLeague, findOfficialSportById, findOfficialSportByName, findOfficialTeam, leaguesForSport, officialTeams, type OfficialLeagueId, type OfficialSportId, type OfficialTeamId } from "../../data/officialSportsDatabase";
 import { checkInSupportsAudienceZones } from "./cheerAudienceEligibility";
+import { isTargetRelativeAudience } from "./cheerRouting";
 import { audienceMatchesCheckIn } from "./cheerUtils";
+import { hasPlayableLiveVariant } from "./cheerLiveVariants";
 import type { CheerCheckIn, CheerRecord, MappedVenueCheckIn } from "./types";
 
 export type CheerLibraryFilter =
@@ -40,9 +42,10 @@ export function isCheerLaunchEligible(cheer: CheerRecord, checkIn: CheerCheckIn 
   if (!cheer.teamId && cheer.leagueId && cheer.leagueId !== league?.id) return false;
   if (cheer.opponent.trim() && !checkIn.raw.teamEvent.toLocaleLowerCase().includes(cheer.opponent.trim().toLocaleLowerCase())) return false;
   if (!checkInSupportsAudienceZones(cheer, checkIn)) return false;
+  if (!hasPlayableLiveVariant(cheer, checkIn)) return false;
 
   const routedSegments = cheer.measures.flatMap((measure) => [...measure.actionSegments, ...measure.lyricSegments, ...measure.restSegments]);
-  return routedSegments.some((segment) => audienceMatchesCheckIn(segment.audience, checkIn));
+  return routedSegments.some((segment) => isTargetRelativeAudience(segment.audience) || audienceMatchesCheckIn(segment.audience, checkIn));
 }
 
 export function filterCheers(cheers: readonly CheerRecord[], filter: CheerLibraryFilter, checkIn: CheerCheckIn | null, currentCreator: CheerRecord["createdBy"]) {

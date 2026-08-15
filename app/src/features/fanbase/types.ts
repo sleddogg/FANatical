@@ -1,4 +1,6 @@
 import type { TeamId } from "../../domain/team";
+import type { OfficialLeagueId, OfficialSportId, OfficialTeamId } from "../../data/officialSportsDatabase";
+import type { NewsDiscussionScope } from "../news/types";
 
 export type FanbaseAreaId =
   | "article-comments"
@@ -6,7 +8,9 @@ export type FanbaseAreaId =
   | "game-threads"
   | "fan-photos"
   | "events"
-  | "groups";
+  | "groups"
+  | "polls"
+  | "leaderboards";
 
 export type ReactionType = "Like" | "Love" | "Fire" | "Mind Blown";
 export type FanPhotoCategory = "Game Face" | "Fan Cave" | "Memorabilia";
@@ -34,7 +38,8 @@ export type CommunityComment = Readonly<{
 export type DiscussionThread = Readonly<{
   id: string;
   kind: "article" | "locker" | "game" | "group";
-  teamId: TeamId;
+  teamId: TeamId | null;
+  discussionScope?: NewsDiscussionScope;
   newsItemId?: string;
   title?: string;
   body?: string;
@@ -52,10 +57,18 @@ export type GameThread = Readonly<{
   id: string;
   threadId: string;
   teamId: TeamId;
+  sportId: OfficialSportId;
+  leagueId: OfficialLeagueId | null;
   opponent: string;
   venue: string;
   startsAt: string;
   endsAt: string;
+  finalResult: Readonly<{
+    teamAScore: number;
+    teamBScore: number;
+    outcome: GamePredictionOutcome;
+    finalizedAt: string;
+  }> | null;
 }>;
 
 export type FanPhotoImage = Readonly<{
@@ -157,3 +170,36 @@ export type CreateGroupInput = Readonly<{
 }>;
 
 export type GameThreadStatus = "Scheduled" | "Live" | "Post-game" | "Archived";
+export type GamePredictionOutcome = "Regulation" | "Overtime" | "Tie" | "Extra Innings" | "Shootout" | "Draw";
+
+export type PollScope =
+  | Readonly<{ kind: "sport"; sportId: OfficialSportId; leagueId: null; teamId: null }>
+  | Readonly<{ kind: "league"; sportId: OfficialSportId; leagueId: OfficialLeagueId; teamId: null }>
+  | Readonly<{ kind: "team"; sportId: OfficialSportId; leagueId: OfficialLeagueId; teamId: OfficialTeamId }>;
+
+export type PollOption = Readonly<{
+  id: string;
+  label: string;
+  voteCount: number;
+}>;
+
+export type FanPoll = Readonly<{
+  id: string;
+  question: string;
+  options: readonly PollOption[];
+  scope: PollScope;
+  topics: readonly string[];
+  linkedPreviousPollId: string | null;
+  createdBy: CommunityUser;
+  createdAt: string;
+  recentVotesPerHour: number;
+  viewerOptionId: string | null;
+}>;
+
+export type CreatePollInput = Readonly<{
+  question: string;
+  options: readonly string[];
+  scope: PollScope;
+  topics: readonly string[];
+  linkedPreviousPollId: string | null;
+}>;

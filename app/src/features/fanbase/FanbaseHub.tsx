@@ -1,7 +1,11 @@
 import { useMemo } from "react";
 import type { TeamId } from "../../domain/team";
 import { getGameThreadStatus, useFanbaseContext } from "./FanbaseContext";
+import { findFollowedTeam } from "../../data/followedTeams";
+import { pollScopeForFollowedTeam, pollsForScope } from "./polls";
 import type { FanbaseAreaId } from "./types";
+import { mockNewsItems } from "../news/mockNewsData";
+import { newsDiscussionScopeMatchesTeam, newsItemDiscussionScope } from "../news/newsDiscussionScope";
 
 type FanbaseHubProps = {
   readonly teamId: TeamId;
@@ -15,23 +19,34 @@ const areaDefinitions = [
   { id: "fan-photos", title: "Fan Photos", icon: "▧", description: "Rate and react to Game Face, Fan Cave, and Memorabilia posts." },
   { id: "events", title: "Events", icon: "◫", description: "Find watch parties, meetups, rivalry events, and online gatherings." },
   { id: "groups", title: "Groups", icon: "◉", description: "Connect in public, private, invite-based, and joined fan groups." },
+  { id: "polls", title: "Polls", icon: "▥", description: "Vote on trending questions or browse team, league, and sport-wide fan opinion." },
+  { id: "leaderboards", title: "Leaderboards", icon: "↗", description: "Compare Fan Score, Sport IQ, Quiz IQ, Predictor IQ, and trophies." },
 ] as const satisfies readonly { id: FanbaseAreaId; title: string; icon: string; description: string }[];
 
 export function FanbaseHub({ teamId, onOpenArea }: FanbaseHubProps) {
-  const { threads, gameThreads, fanPhotos, events, groups } = useFanbaseContext();
+  const { threads, gameThreads, fanPhotos, events, groups, polls } = useFanbaseContext();
   const activity = useMemo<Record<FanbaseAreaId, string>>(() => {
     const teamThreads = threads.filter((thread) => thread.teamId === teamId);
+    const articleThreads = threads.filter((thread) => {
+      if (thread.kind !== "article") return false;
+      const item = mockNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
+      return item ? newsDiscussionScopeMatchesTeam(thread.discussionScope ?? newsItemDiscussionScope(item), teamId) : false;
+    });
     const liveGames = gameThreads.filter((game) => game.teamId === teamId && getGameThreadStatus(game) === "Live").length;
     const upcomingEvents = events.filter((event) => event.teamId === teamId && Date.parse(event.startsAt) > Date.now()).length;
+    const followedTeam = findFollowedTeam(teamId);
+    const teamPollCount = followedTeam ? pollsForScope(polls, pollScopeForFollowedTeam(followedTeam)).length : 0;
     return {
-      "article-comments": `${teamThreads.filter((thread) => thread.kind === "article").length} active News discussions`,
+      "article-comments": `${articleThreads.length} active News discussions`,
       "locker-room": `${teamThreads.filter((thread) => thread.kind === "locker").length} team topics`,
       "game-threads": liveGames ? `${liveGames} live now` : `${gameThreads.filter((game) => game.teamId === teamId).length} game conversations`,
       "fan-photos": `${fanPhotos.filter((photo) => photo.teamId === teamId).length} photos to explore`,
       events: `${upcomingEvents} upcoming gatherings`,
       groups: `${groups.filter((group) => group.teamId === teamId && group.joined).length} groups joined`,
+      polls: `${teamPollCount} Polls in this FANbase`,
+      leaderboards: "Team, League, Sport, Friends, and Groups",
     };
-  }, [events, fanPhotos, gameThreads, groups, teamId, threads]);
+  }, [events, fanPhotos, gameThreads, groups, polls, teamId, threads]);
 
   return (
     <section className="fanbase-hub" aria-label="FANbase areas">

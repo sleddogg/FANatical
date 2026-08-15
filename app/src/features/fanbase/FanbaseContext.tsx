@@ -2,11 +2,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from "react";
 import { fanPhotoCategoryCoverImages } from "./fanPhotoAssets";
+import { initialPolls } from "./mockPollData";
+import { loadPolls, savePolls } from "./pollStorage";
 import {
   demoUser,
   emptyReactions,
@@ -22,15 +25,18 @@ import type {
   CreateFanPhotoInput,
   CreateGroupInput,
   CreateLockerRoomInput,
+  CreatePollInput,
   DiscussionThread,
   FanEvent,
   FanGroup,
   FanPhoto,
   GameThread,
   GameThreadStatus,
+  FanPoll,
   ReactionSummary,
   ReactionType,
 } from "./types";
+import type { NewsDiscussionScope } from "../news/types";
 
 type FanbaseContextValue = Readonly<{
   threads: readonly DiscussionThread[];
@@ -38,9 +44,10 @@ type FanbaseContextValue = Readonly<{
   fanPhotos: readonly FanPhoto[];
   events: readonly FanEvent[];
   groups: readonly FanGroup[];
+  polls: readonly FanPoll[];
   getArticleThread: (newsItemId: string) => DiscussionThread | undefined;
   getArticleCommentCount: (newsItemId: string) => number;
-  addArticleComment: (newsItemId: string, teamId: DiscussionThread["teamId"], body: string, parentId?: string | null) => string;
+  addArticleComment: (newsItemId: string, scope: NewsDiscussionScope, body: string, parentId?: string | null) => string;
   addComment: (threadId: string, body: string, parentId?: string | null) => void;
   reactToThread: (threadId: string, reaction: ReactionType) => void;
   reactToComment: (threadId: string, commentId: string, reaction: ReactionType) => void;
@@ -62,6 +69,8 @@ type FanbaseContextValue = Readonly<{
   invitePeopleToGroup: (groupId: string, userIds: readonly string[]) => void;
   addGroupModerators: (groupId: string, userIds: readonly string[]) => void;
   reportGroup: (groupId: string) => void;
+  voteInPoll: (pollId: string, optionId: string) => void;
+  createPoll: (input: CreatePollInput) => string;
 }>;
 
 const FanbaseContext = createContext<FanbaseContextValue | undefined>(undefined);
@@ -125,6 +134,11 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
   const [fanPhotos, setFanPhotos] = useState<FanPhoto[]>(() => [...initialFanPhotos]);
   const [events, setEvents] = useState<FanEvent[]>(() => [...initialEvents]);
   const [groups, setGroups] = useState<FanGroup[]>(() => [...initialGroups]);
+  const [polls, setPolls] = useState<FanPoll[]>(() => loadPolls(initialPolls));
+
+  useEffect(() => {
+    savePolls(polls);
+  }, [polls]);
 
   const getArticleThread = useCallback(
     (newsItemId: string) => threads.find((thread) => thread.kind === "article" && thread.newsItemId === newsItemId),
@@ -138,7 +152,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
 
   const addArticleComment = useCallback((
     newsItemId: string,
-    teamId: DiscussionThread["teamId"],
+    scope: NewsDiscussionScope,
     body: string,
     parentId: string | null = null,
   ) => {
@@ -154,7 +168,8 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
       return [{
         id: threadId,
         kind: "article",
-        teamId,
+        teamId: scope.kind === "team" ? scope.teamId : null,
+        discussionScope: scope,
         newsItemId,
         createdAt: new Date().toISOString(),
         priorCommentCount: 0,
@@ -392,12 +407,41 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     setGroups((current) => current.map((group) => group.id === groupId ? { ...group, reported: true } : group));
   }, []);
 
+  const voteInPoll = useCallback((pollId: string, optionId: string) => {
+    setPolls((current) => current.map((poll) => {
+      if (poll.id !== pollId || poll.viewerOptionId !== null || !poll.options.some((option) => option.id === optionId)) return poll;
+      return {
+        ...poll,
+        viewerOptionId: optionId,
+        options: poll.options.map((option) => option.id === optionId ? { ...option, voteCount: option.voteCount + 1 } : option),
+      };
+    }));
+  }, []);
+
+  const createPoll = useCallback((input: CreatePollInput) => {
+    const id = createLocalId("poll");
+    setPolls((current) => [{
+      id,
+      question: input.question.trim(),
+      options: input.options.map((label, index) => ({ id: `${id}-option-${index + 1}`, label: label.trim(), voteCount: 0 })),
+      scope: input.scope,
+      topics: [...input.topics],
+      linkedPreviousPollId: input.linkedPreviousPollId,
+      createdBy: demoUser,
+      createdAt: new Date().toISOString(),
+      recentVotesPerHour: 0,
+      viewerOptionId: null,
+    }, ...current]);
+    return id;
+  }, []);
+
   const value = useMemo<FanbaseContextValue>(() => ({
     threads,
     gameThreads: initialGameThreads,
     fanPhotos,
     events,
     groups,
+    polls,
     getArticleThread,
     getArticleCommentCount,
     addArticleComment,
@@ -422,6 +466,8 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     invitePeopleToGroup,
     addGroupModerators,
     reportGroup,
+    voteInPoll,
+    createPoll,
   }), [
     addArticleComment,
     addComment,
@@ -430,11 +476,13 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     createFanPhoto,
     createGroup,
     createLockerRoomThread,
+    createPoll,
     events,
     fanPhotos,
     getArticleCommentCount,
     getArticleThread,
     groups,
+    polls,
     invitePeopleToEvent,
     invitePeopleToGroup,
     addGroupModerators,
@@ -451,6 +499,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
     toggleEventJoined,
     toggleEventSaved,
     toggleGroupJoined,
+    voteInPoll,
   ]);
 
   return <FanbaseContext.Provider value={value}>{children}</FanbaseContext.Provider>;

@@ -19,6 +19,22 @@
   box-shadow: var(--shadow-soft);
 }
 
+.stat-dashboard__card--link {
+  color: inherit;
+  text-decoration: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stat-dashboard__card--link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised);
+}
+
+.stat-dashboard__card--link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
 .stat-dashboard__label {
   display: inline-flex;
   align-items: center;

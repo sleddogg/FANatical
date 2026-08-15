@@ -1,19 +1,24 @@
+import type { VenueEnd } from "../internal/venues/types";
+import { isTargetRelativeAudience } from "./cheerRouting";
+import { hasPlayableLiveVariant } from "./cheerLiveVariants";
 import type { CheerCheckIn, CheerRecord, CheerSport } from "./types";
 
 export const cheerLaunchStorageKey = "fanatical.cheer.live-proposals.v1";
+export const cheerProposalsChangedEvent = "fanatical:cheer-proposals-changed";
 export const MAX_ACTIVE_CHEER_PROPOSALS = 5;
 export const ASAP_JOIN_THRESHOLD = 20;
 export const GAME_MOMENT_JOIN_THRESHOLD = 100;
 export const ASAP_GATHERING_WINDOW_MS = 2 * 60_000;
 export const GAME_MOMENT_GATHERING_WINDOW_MS = 15 * 60_000;
 export const CHEER_TRIGGER_WINDOW_MS = 1_000;
-export const CHEER_LIVE_COUNTDOWN_MS = 5_000;
+export const CHEER_LIVE_COUNTDOWN_MS = 10_000;
 export const currentLiveUserId = "demo-user";
 export const currentLiveUsername = "Demo User";
 
 export type CheerLaunchMode = "ASAP" | "GameMoment";
 export type CheerGameMoment = "Next Field Goal" | "Next Free Throw" | "Next Puck Drop" | "Next Whistle";
 export type CheerProposalStatus = "Gathering" | "Armed" | "GoingLive";
+export type CheerTargetSelection = "Your End" | "Opposite End";
 
 export type CheerTriggerConfirmation = Readonly<{
   userId: string;
@@ -23,6 +28,7 @@ export type CheerTriggerConfirmation = Readonly<{
 export type CheerProposal = Readonly<{
   id: string;
   cheerId: string;
+  eventId: string;
   contextKey: string;
   contextLabel: string;
   launchedByUserId: string;
@@ -30,6 +36,8 @@ export type CheerProposal = Readonly<{
   launchedAt: number;
   mode: CheerLaunchMode;
   gameMoment: CheerGameMoment | null;
+  targetSelection: CheerTargetSelection | null;
+  targetEnd: VenueEnd | null;
   status: CheerProposalStatus;
   gatheringExpiresAt: number | null;
   sharedStartAt: number | null;
@@ -47,6 +55,21 @@ export const gameMomentsForSport: Readonly<Record<CheerSport, readonly CheerGame
   Other: ["Next Whistle"],
 };
 
+export function cheerUsesTargetRelativeRouting(cheer: CheerRecord) {
+  return cheer.measures.some((measure) => [...measure.actionSegments, ...measure.lyricSegments]
+    .some((segment) => isTargetRelativeAudience(segment.audience)));
+}
+
+export function resolveProposalTargetEnd(checkIn: CheerCheckIn, selection: CheerTargetSelection | null) {
+  if (!selection || checkIn.type !== "MappedVenue") return null;
+  if (selection === "Your End") return checkIn.resolved.end;
+  return checkIn.resolved.end === "End A" ? "End B" : "End A";
+}
+
+export function checkInIsInProposalTarget(checkIn: CheerCheckIn, proposal: CheerProposal) {
+  return checkIn.type === "MappedVenue" && proposal.targetEnd !== null && checkIn.resolved.end === proposal.targetEnd;
+}
+
 function isProposal(value: unknown): value is CheerProposal {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<CheerProposal>;
@@ -61,24 +84,38 @@ function isProposal(value: unknown): value is CheerProposal {
 
 export function launchContext(checkIn: CheerCheckIn) {
   if (checkIn.type === "GeneralLocation") {
-    return { key: `location:${checkIn.location.contextKey}`, label: checkIn.location.name };
+    const eventId = `location:${checkIn.location.contextKey}`;
+    return { eventId, key: `event:${eventId}`, label: checkIn.location.name };
   }
+  const eventId = checkIn.raw.eventId;
   return {
-    key: `venue:${checkIn.raw.venueId}:${checkIn.raw.sport}:${checkIn.raw.teamEvent.trim().toLocaleLowerCase()}`,
+    eventId,
+    key: `event:${eventId}`,
     label: `${checkIn.raw.teamEvent} · ${checkIn.raw.venueName}`,
   };
+}
+
+export function proposalBelongsToCheckIn(proposal: CheerProposal, checkIn: CheerCheckIn) {
+  return proposal.eventId === launchContext(checkIn).eventId;
 }
 
 export function loadCheerProposals(): readonly CheerProposal[] {
   try {
     const parsed: unknown = JSON.parse(window.sessionStorage.getItem(cheerLaunchStorageKey) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter(isProposal).map((proposal) => ({
-      ...proposal,
-      gatheringExpiresAt: proposal.status === "Gathering"
-        ? typeof proposal.gatheringExpiresAt === "number" ? proposal.gatheringExpiresAt : proposal.launchedAt + gatheringWindowForMode(proposal.mode)
-        : null,
-      sharedStartAt: typeof proposal.sharedStartAt === "number" ? proposal.sharedStartAt : null,
-    })) : [];
+    return Array.isArray(parsed) ? parsed.filter(isProposal).map((proposal) => {
+      const eventId = typeof proposal.eventId === "string" ? proposal.eventId : proposal.contextKey;
+      return {
+        ...proposal,
+        eventId,
+        contextKey: `event:${eventId}`,
+        targetSelection: proposal.targetSelection === "Your End" || proposal.targetSelection === "Opposite End" ? proposal.targetSelection : null,
+        targetEnd: proposal.targetEnd === "End A" || proposal.targetEnd === "End B" ? proposal.targetEnd : null,
+        gatheringExpiresAt: proposal.status === "Gathering"
+          ? typeof proposal.gatheringExpiresAt === "number" ? proposal.gatheringExpiresAt : proposal.launchedAt + gatheringWindowForMode(proposal.mode)
+          : null,
+        sharedStartAt: typeof proposal.sharedStartAt === "number" ? proposal.sharedStartAt : null,
+      };
+    }) : [];
   } catch {
     return [];
   }
@@ -86,6 +123,7 @@ export function loadCheerProposals(): readonly CheerProposal[] {
 
 export function saveCheerProposals(proposals: readonly CheerProposal[]) {
   window.sessionStorage.setItem(cheerLaunchStorageKey, JSON.stringify(proposals));
+  window.dispatchEvent(new Event(cheerProposalsChangedEvent));
 }
 
 export function proposalJoinThreshold(mode: CheerLaunchMode) {
@@ -124,22 +162,31 @@ export function createCheerProposal(existing: readonly CheerProposal[], input: {
   readonly checkIn: CheerCheckIn;
   readonly mode: CheerLaunchMode;
   readonly gameMoment: CheerGameMoment | null;
+  readonly targetSelection?: CheerTargetSelection | null;
   readonly now?: number;
 }): Readonly<{ proposals: readonly CheerProposal[]; proposal: CheerProposal | null; error: string | null }> {
   const now = input.now ?? Date.now();
   const active = pruneExpiredCheerProposals(existing, now);
   const context = launchContext(input.checkIn);
-  const activeInContext = active.filter((proposal) => proposal.contextKey === context.key);
+  const activeInContext = active.filter((proposal) => proposal.eventId === context.eventId);
   if (activeInContext.length >= MAX_ACTIVE_CHEER_PROPOSALS) {
     return { proposals: active, proposal: null, error: "This Launch page already has 5 active Cheer proposals." };
   }
   if (input.mode === "GameMoment" && !input.gameMoment) {
     return { proposals: active, proposal: null, error: "Choose a game moment before launching this Cheer." };
   }
+  const targetSelection = input.targetSelection ?? null;
+  if (cheerUsesTargetRelativeRouting(input.cheer) && (input.checkIn.type !== "MappedVenue" || !targetSelection)) {
+    return { proposals: active, proposal: null, error: "Choose which end this Cheer targets before launching." };
+  }
+  if (!hasPlayableLiveVariant(input.cheer, input.checkIn)) {
+    return { proposals: active, proposal: null, error: "This Cheer does not have a playable Live Variant for your resolved seat." };
+  }
 
   const proposal: CheerProposal = {
     id: `cheer-proposal-${crypto.randomUUID()}`,
     cheerId: input.cheer.id,
+    eventId: context.eventId,
     contextKey: context.key,
     contextLabel: context.label,
     launchedByUserId: currentLiveUserId,
@@ -147,6 +194,8 @@ export function createCheerProposal(existing: readonly CheerProposal[], input: {
     launchedAt: now,
     mode: input.mode,
     gameMoment: input.mode === "GameMoment" ? input.gameMoment : null,
+    targetSelection: cheerUsesTargetRelativeRouting(input.cheer) ? targetSelection : null,
+    targetEnd: cheerUsesTargetRelativeRouting(input.cheer) ? resolveProposalTargetEnd(input.checkIn, targetSelection) : null,
     status: "Gathering",
     gatheringExpiresAt: now + gatheringWindowForMode(input.mode),
     sharedStartAt: null,

@@ -6,6 +6,7 @@ import type {
   FanEvent,
   FanGroup,
   FanPhoto,
+  GameThread,
   ReactionSummary,
 } from "./types";
 
@@ -50,6 +51,7 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     id: "article:patriots-camp-tempo",
     kind: "article",
     teamId: "new-england-patriots",
+    discussionScope: { kind: "team", teamId: "new-england-patriots" },
     newsItemId: "patriots-camp-tempo",
     createdAt: relativeDate(-0.4),
     priorCommentCount: 84,
@@ -65,6 +67,7 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     id: "article:red-sox-bullpen-plan",
     kind: "article",
     teamId: "boston-red-sox",
+    discussionScope: { kind: "team", teamId: "boston-red-sox" },
     newsItemId: "red-sox-bullpen-plan",
     createdAt: relativeDate(-1.6),
     priorCommentCount: 63,
@@ -77,6 +80,7 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
     id: "article:celtics-rotation-options",
     kind: "article",
     teamId: "boston-celtics",
+    discussionScope: { kind: "team", teamId: "boston-celtics" },
     newsItemId: "celtics-rotation-options",
     createdAt: relativeDate(-2.9),
     priorCommentCount: 107,
@@ -314,13 +318,13 @@ export const initialDiscussionThreads: readonly DiscussionThread[] = [
 ];
 
 export const initialGameThreads = [
-  { id: "game-pats-jets", threadId: "game-pats-jets-thread", teamId: "new-england-patriots", opponent: "New York Jets", venue: "Gillette Stadium", startsAt: relativeDate(-2), endsAt: relativeDate(1) },
-  { id: "game-pats-next", threadId: "game-pats-next-thread", teamId: "new-england-patriots", opponent: "Buffalo Bills", venue: "Highmark Stadium", startsAt: relativeDate(30), endsAt: relativeDate(33) },
-  { id: "game-pats-recent", threadId: "game-pats-recent-thread", teamId: "new-england-patriots", opponent: "Buffalo Bills", venue: "Gillette Stadium", startsAt: relativeDate(-15), endsAt: relativeDate(-12) },
-  { id: "game-pats-archive", threadId: "game-pats-dolphins-thread", teamId: "new-england-patriots", opponent: "Miami Dolphins", venue: "Hard Rock Stadium", startsAt: relativeDate(-76), endsAt: relativeDate(-73) },
-  { id: "game-sox-yankees", threadId: "game-sox-yankees-thread", teamId: "boston-red-sox", opponent: "New York Yankees", venue: "Fenway Park", startsAt: relativeDate(8), endsAt: relativeDate(12) },
-  { id: "game-celtics-knicks", threadId: "game-celtics-knicks-thread", teamId: "boston-celtics", opponent: "New York Knicks", venue: "TD Garden", startsAt: relativeDate(-4), endsAt: relativeDate(-1) },
-] as const;
+  { id: "game-pats-jets", threadId: "game-pats-jets-thread", teamId: "new-england-patriots", sportId: "football", leagueId: "football-nfl", opponent: "New York Jets", venue: "Gillette Stadium", startsAt: relativeDate(-2), endsAt: relativeDate(1), finalResult: null },
+  { id: "game-pats-next", threadId: "game-pats-next-thread", teamId: "new-england-patriots", sportId: "football", leagueId: "football-nfl", opponent: "Buffalo Bills", venue: "Highmark Stadium", startsAt: relativeDate(30), endsAt: relativeDate(33), finalResult: null },
+  { id: "game-pats-recent", threadId: "game-pats-recent-thread", teamId: "new-england-patriots", sportId: "football", leagueId: "football-nfl", opponent: "Buffalo Bills", venue: "Gillette Stadium", startsAt: relativeDate(-15), endsAt: relativeDate(-12), finalResult: { teamAScore: 24, teamBScore: 21, outcome: "Regulation", finalizedAt: relativeDate(-11.8) } },
+  { id: "game-pats-archive", threadId: "game-pats-dolphins-thread", teamId: "new-england-patriots", sportId: "football", leagueId: "football-nfl", opponent: "Miami Dolphins", venue: "Hard Rock Stadium", startsAt: relativeDate(-76), endsAt: relativeDate(-73), finalResult: { teamAScore: 20, teamBScore: 20, outcome: "Tie", finalizedAt: relativeDate(-72.8) } },
+  { id: "game-sox-yankees", threadId: "game-sox-yankees-thread", teamId: "boston-red-sox", sportId: "baseball", leagueId: "baseball-mlb", opponent: "New York Yankees", venue: "Fenway Park", startsAt: relativeDate(8), endsAt: relativeDate(12), finalResult: null },
+  { id: "game-celtics-knicks", threadId: "game-celtics-knicks-thread", teamId: "boston-celtics", sportId: "basketball", leagueId: null, opponent: "New York Knicks", venue: "TD Garden", startsAt: relativeDate(-4), endsAt: relativeDate(-1), finalResult: { teamAScore: 112, teamBScore: 108, outcome: "Overtime", finalizedAt: relativeDate(-0.8) } },
+] as const satisfies readonly GameThread[];
 
 type FanPhotoSeed = Readonly<{
   id: string;

@@ -3,10 +3,14 @@ import type { TeamId } from "../../domain/team";
 import { findFollowedTeam } from "../../data/followedTeams";
 import { mockNewsItems, mockSourceCatalog } from "../news/mockNewsData";
 import { getSourceForItem } from "../news/newsFiltering";
+import { newsDiscussionScopeMatchesTeam, newsItemDiscussionScope } from "../news/newsDiscussionScope";
 import { CommunityThreadView } from "./CommunityThreadView";
 import { ArticleDiscussionCard } from "./ArticleDiscussionCard";
 import { FanPhotosArea } from "./FanPhotosArea";
 import { LockerRoomTopicCard } from "./LockerRoomTopicCard";
+import { PollsArea } from "./PollsArea";
+import { GameDayPredictor } from "./GameDayPredictor";
+import { LeaderboardsArea } from "./LeaderboardsArea";
 import { formatGameStatusLabel, GameThreadContextCard } from "./GameThreadContextCard";
 import { getGameThreadStatus, getThreadCommentCount, useFanbaseContext } from "./FanbaseContext";
 import { formatEventDate, formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
@@ -32,13 +36,19 @@ function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaVie
   const fanbase = useFanbaseContext();
   const selectedNewsItem = itemId ? mockNewsItems.find((item) => item.id === itemId) : undefined;
   const articleThreads = fanbase.threads
-    .filter((thread) => thread.kind === "article" && thread.teamId === teamId)
+    .filter((thread) => {
+      if (thread.kind !== "article") return false;
+      const item = mockNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
+      if (!item) return false;
+      const scope = thread.discussionScope ?? newsItemDiscussionScope(item);
+      return newsDiscussionScopeMatchesTeam(scope, teamId);
+    })
     .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
 
   if (selectedNewsItem) {
     const source = getSourceForItem(selectedNewsItem, mockSourceCatalog);
     const thread = fanbase.getArticleThread(selectedNewsItem.id);
-    const discussionTeamId = thread?.teamId ?? teamId;
+    const discussionScope = thread?.discussionScope ?? newsItemDiscussionScope(selectedNewsItem);
     const discussionPath = `/fanbase?area=article-comments&item=${selectedNewsItem.id}`;
     return (
       <>
@@ -61,7 +71,7 @@ function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaVie
             if (thread) {
               fanbase.addComment(thread.id, body, parentId);
             } else {
-              fanbase.addArticleComment(selectedNewsItem.id, discussionTeamId, body, parentId);
+              fanbase.addArticleComment(selectedNewsItem.id, discussionScope, body, parentId);
             }
           }}
           onReactToThread={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)}
@@ -151,6 +161,7 @@ function GameThreadsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewPro
     return (
       <>
         <GameThreadContextCard game={selectedGame} thread={selectedThread} teamName={teamName} status={status} onReport={() => fanbase.reportThread(selectedThread.id)} />
+        <GameDayPredictor game={selectedGame} teamName={teamName} />
         <CommunityThreadView
           thread={selectedThread}
           title={selectedThread.title ?? `vs. ${selectedGame.opponent}`}
@@ -241,5 +252,7 @@ export function FanbaseAreaView(props: FanbaseAreaViewProps) {
     case "fan-photos": return <FanPhotosArea teamId={props.teamId} itemId={props.itemId} itemOrigin={props.itemOrigin} category={props.photoCategory} onOpenCategory={props.onOpenPhotoCategory} onOpenItem={props.onOpenItem} onOpenRatingItem={props.onOpenRatingItem} onCloseItem={props.onCloseItem} />;
     case "events": return <EventsArea {...props} />;
     case "groups": return <GroupsArea {...props} />;
+    case "polls": return <PollsArea teamId={props.teamId} itemId={props.itemId} />;
+    case "leaderboards": return <LeaderboardsArea teamId={props.teamId} />;
   }
 }
