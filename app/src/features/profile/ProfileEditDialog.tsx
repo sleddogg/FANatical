@@ -107,7 +107,7 @@ export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialo
           <fieldset>
             <legend>Fan Identity</legend>
             <div className="profile-edit-dialog__field-grid">
-              {draft.fanIdentity.map((field) => <label key={field.id}>{field.label}<textarea rows={field.value.length > 45 ? 3 : 2} value={field.value} onChange={(event) => updateField("fanIdentity", field.id, event.target.value)} /></label>)}
+              {draft.fanIdentity.filter((field) => field.id !== "primary-team" && field.id !== "secondary-teams").map((field) => <label key={field.id}>{field.label}<textarea rows={field.value.length > 45 ? 3 : 2} value={field.value} onChange={(event) => updateField("fanIdentity", field.id, event.target.value)} /></label>)}
             </div>
           </fieldset>
           <fieldset aria-labelledby="profile-edit-sports-title">

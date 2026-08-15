@@ -10,20 +10,24 @@ import {
 } from "react";
 import {
   defaultSelectedTeamId,
-  findFollowedTeam,
-  followedTeams,
+  followedTeams as seededFollowedTeams,
+  loadFollowedTeams,
+  loadPersistedFollowedTeamIds,
+  savePersistedFollowedTeamIds,
 } from "../data/followedTeams";
 import {
   localSelectedTeamPreferenceStore,
   type SelectedTeamPreferenceStore,
 } from "../data/selectedTeamPreference";
 import type { FollowedTeam, TeamId } from "../domain/team";
+import type { OfficialTeamId } from "../data/officialSportsDatabase";
 
 type TeamContextValue = Readonly<{
   followedTeams: readonly FollowedTeam[];
   selectedTeam: FollowedTeam;
   selectedTeamId: TeamId;
   selectTeam: (teamId: TeamId) => void;
+  addFollowedTeam: (teamId: OfficialTeamId) => "added" | "duplicate" | "unavailable";
 }>;
 
 type TeamProviderProps = PropsWithChildren<{
@@ -32,8 +36,8 @@ type TeamProviderProps = PropsWithChildren<{
 
 const TeamContext = createContext<TeamContextValue | undefined>(undefined);
 
-function requireFollowedTeam(teamId: TeamId): FollowedTeam {
-  const team = findFollowedTeam(teamId);
+function requireFollowedTeam(teams: readonly FollowedTeam[], teamId: TeamId): FollowedTeam {
+  const team = teams.find((candidate) => candidate.id === teamId);
 
   if (!team) {
     throw new Error(`Followed team ${teamId} does not exist in the team catalog.`);
@@ -42,12 +46,13 @@ function requireFollowedTeam(teamId: TeamId): FollowedTeam {
   return team;
 }
 
-const defaultSelectedTeam = requireFollowedTeam(defaultSelectedTeamId);
+const defaultSelectedTeam = requireFollowedTeam(seededFollowedTeams, defaultSelectedTeamId);
 
 export function TeamProvider({
   children,
   preferenceStore = localSelectedTeamPreferenceStore,
 }: TeamProviderProps) {
+  const [followedTeams, setFollowedTeams] = useState<readonly FollowedTeam[]>(loadFollowedTeams);
   const [selectedTeamId, setSelectedTeamId] = useState<TeamId>(defaultSelectedTeamId);
   const selectionChangedInSession = useRef(false);
 
@@ -55,7 +60,7 @@ export function TeamProvider({
     let isCurrent = true;
 
     void preferenceStore.loadSelectedTeamId().then((storedTeamId) => {
-      if (isCurrent && !selectionChangedInSession.current && storedTeamId && findFollowedTeam(storedTeamId)) {
+      if (isCurrent && !selectionChangedInSession.current && storedTeamId && followedTeams.some((team) => team.id === storedTeamId)) {
         setSelectedTeamId(storedTeamId);
       }
     });
@@ -63,11 +68,11 @@ export function TeamProvider({
     return () => {
       isCurrent = false;
     };
-  }, [preferenceStore]);
+  }, [followedTeams, preferenceStore]);
 
   const selectTeam = useCallback(
     (teamId: TeamId) => {
-      if (!findFollowedTeam(teamId)) {
+      if (!followedTeams.some((team) => team.id === teamId)) {
         return;
       }
 
@@ -75,13 +80,23 @@ export function TeamProvider({
       setSelectedTeamId(teamId);
       void preferenceStore.saveSelectedTeamId(teamId);
     },
-    [preferenceStore],
+    [followedTeams, preferenceStore],
   );
 
-  const selectedTeam = findFollowedTeam(selectedTeamId) ?? defaultSelectedTeam;
+  const addFollowedTeam = useCallback((teamId: OfficialTeamId) => {
+    if (followedTeams.some((team) => team.officialTeamId === teamId)) return "duplicate";
+    const persistedIds = [...loadPersistedFollowedTeamIds(), teamId];
+    savePersistedFollowedTeamIds(persistedIds);
+    const nextTeams = loadFollowedTeams();
+    if (!nextTeams.some((team) => team.officialTeamId === teamId)) return "unavailable";
+    setFollowedTeams(nextTeams);
+    return "added";
+  }, [followedTeams]);
+
+  const selectedTeam = followedTeams.find((team) => team.id === selectedTeamId) ?? defaultSelectedTeam;
   const value = useMemo<TeamContextValue>(
-    () => ({ followedTeams, selectedTeam, selectedTeamId, selectTeam }),
-    [selectTeam, selectedTeam, selectedTeamId],
+    () => ({ followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam }),
+    [addFollowedTeam, followedTeams, selectTeam, selectedTeam, selectedTeamId],
   );
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;

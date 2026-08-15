@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StatDashboard } from "../../components/StatDashboard";
+import { TeamBadge } from "../../components/TeamBadge";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseCreateDialog } from "../fanbase/FanbaseCreateDialog";
 import { FanPhotoCategoryHub, FanPhotoViewer } from "../fanbase/FanPhotosArea";
@@ -11,6 +12,9 @@ import type { FanPhoto, FanPhotoCategory } from "../fanbase/types";
 import { initialProfile, profileMoments, profileStats, profileTrophies } from "./mockProfileData";
 import { MomentCreateDialog } from "./MomentCreateDialog";
 import { ProfileEditDialog } from "./ProfileEditDialog";
+import { ProfileAddTeamDialog } from "./ProfileAddTeamDialog";
+import type { FollowedTeam } from "../../domain/team";
+import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import type { CreateFanMomentInput, FanMoment, ProfileRecord, ProfileTabId } from "./types";
 import { buildSportsStatsSnapshot, fanScoreForUser, resolveFanbaseCompetition, sportsStatsUser } from "../stats/sportsStats";
 import "../fanbase/fanbase.css";
@@ -155,10 +159,15 @@ function MomentDetailScreen({ moment, photo, onBack, onOpenPhoto }: { readonly m
   );
 }
 
-function ProfileTabContent({ tab, profile, photos, moments, onOpenPhoto, onOpenMoment, onAddMoment }: { readonly tab: ProfileTabId; readonly profile: ProfileRecord; readonly photos: readonly FanPhoto[]; readonly moments: readonly FanMoment[]; readonly onOpenPhoto: (photo: FanPhoto) => void; readonly onOpenMoment: (momentId: string) => void; readonly onAddMoment: () => void }) {
-  if (tab === "bio" || tab === "fan-identity") {
-    const fields = (tab === "bio" ? profile.bio : profile.fanIdentity).filter((field) => field.value.trim());
-    return <section className="profile-details" aria-labelledby={`profile-${tab}-title`}><header><span className="eyebrow">{tab === "bio" ? "The person behind the fandom" : "Teams, traditions, and loyalties"}</span><h2 id={`profile-${tab}-title`}>{tab === "bio" ? "Bio" : "Fan Identity"}</h2></header><dl>{fields.map((field) => <div key={field.id}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>;
+function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpenPhoto, onOpenMoment, onAddMoment, onAddTeam }: { readonly tab: ProfileTabId; readonly profile: ProfileRecord; readonly photos: readonly FanPhoto[]; readonly moments: readonly FanMoment[]; readonly followedTeams: readonly FollowedTeam[]; readonly onOpenPhoto: (photo: FanPhoto) => void; readonly onOpenMoment: (momentId: string) => void; readonly onAddMoment: () => void; readonly onAddTeam: () => void }) {
+  if (tab === "bio") {
+    const fields = profile.bio.filter((field) => field.value.trim());
+    return <section className="profile-details" aria-labelledby="profile-bio-title"><header><span className="eyebrow">The person behind the fandom</span><h2 id="profile-bio-title">Bio</h2></header><dl>{fields.map((field) => <div key={field.id}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>;
+  }
+
+  if (tab === "fan-identity") {
+    const fields = profile.fanIdentity.filter((field) => field.value.trim() && field.id !== "primary-team" && field.id !== "secondary-teams");
+    return <section className="profile-details profile-details--fan-identity" aria-labelledby="profile-fan-identity-title"><header className="profile-fan-identity-heading"><div><span className="eyebrow">Teams, traditions, and loyalties</span><h2 id="profile-fan-identity-title">Fan Identity</h2></div><button type="button" onClick={onAddTeam}><span aria-hidden="true">+</span> Add Team</button></header><div className="profile-followed-teams" aria-label="Profile followed teams">{followedTeams.map((team, index) => <article key={team.id}><TeamBadge team={team} /><div><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></div>{index === 0 ? <span>Primary</span> : null}</article>)}</div><dl>{fields.map((field) => <div key={field.id}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>;
   }
 
   if (tab === "sports-played") {
@@ -177,7 +186,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fanbase = useFanbaseContext();
-  const { selectedTeam } = useTeamContext();
+  const { selectedTeam, followedTeams, addFollowedTeam } = useTeamContext();
   const { fanPhotos } = fanbase;
   const sportsStats = useMemo(() => sportsStatsUser(demoUser.id, buildSportsStatsSnapshot()), []);
   const selectedCompetition = resolveFanbaseCompetition(selectedTeam);
@@ -196,6 +205,7 @@ export function ProfilePage() {
   const [moments, setMoments] = useState<readonly FanMoment[]>(() => [...profileMoments]);
   const [openMomentId, setOpenMomentId] = useState<string | null>(null);
   const [momentCreateOpen, setMomentCreateOpen] = useState(false);
+  const [addTeamOpen, setAddTeamOpen] = useState(false);
   const isOwner = true;
   const ownerPhotos = useMemo(() => fanPhotos.filter((photo) => photo.owner.id === demoUser.id), [fanPhotos]);
   const [photoOrder, setPhotoOrder] = useState<PhotoOrder>(() => buildInitialPhotoOrder(ownerPhotos));
@@ -254,6 +264,10 @@ export function ProfilePage() {
     setMomentCreateOpen(false);
   };
 
+  const addTeam = (teamId: OfficialTeamId) => {
+    if (addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  };
+
   if (openMoment) {
     return (
       <>
@@ -293,11 +307,12 @@ export function ProfilePage() {
           {profileTabs.map((tab) => <button key={tab.id} id={`profile-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="profile-tab-panel" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
         </div>
         <div id="profile-tab-panel" role="tabpanel" aria-labelledby={`profile-tab-${activeTab}`} tabIndex={0}>
-          <ProfileTabContent tab={activeTab} profile={profile} photos={ownerPhotos} moments={sortedMoments} onOpenPhoto={setOpenPhoto} onOpenMoment={setOpenMomentId} onAddMoment={() => setMomentCreateOpen(true)} />
+          <ProfileTabContent tab={activeTab} profile={profile} photos={ownerPhotos} moments={sortedMoments} followedTeams={followedTeams} onOpenPhoto={setOpenPhoto} onOpenMoment={setOpenMomentId} onAddMoment={() => setMomentCreateOpen(true)} onAddTeam={() => setAddTeamOpen(true)} />
         </div>
       </section>
 
       {editing ? <ProfileEditDialog profile={profile} onSave={setProfile} onClose={() => setEditing(false)} /> : null}
+      {addTeamOpen ? <ProfileAddTeamDialog followedTeams={followedTeams} onAdd={addTeam} onClose={() => setAddTeamOpen(false)} /> : null}
       {momentCreateOpen ? <MomentCreateDialog photos={ownerPhotos} onCreate={createMoment} onClose={() => setMomentCreateOpen(false)} /> : null}
       {openPhoto ? <FanPhotoViewer photo={openPhoto} openedFromRatingQueue={false} onClose={() => setOpenPhoto(null)} /> : null}
     </div>

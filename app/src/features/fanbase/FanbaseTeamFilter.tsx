@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { FollowedTeam, TeamId } from "../../domain/team";
+import { TeamBadge } from "../../components/TeamBadge";
 
 type FanbaseTeamFilterProps = {
   readonly teams: readonly FollowedTeam[];
@@ -33,7 +34,7 @@ export function FanbaseTeamFilter({ teams, selectedTeamId, onSelect, onClose }: 
         <div className="fanbase-team-filter__list">
           {teams.map((team) => (
             <button key={team.id} type="button" aria-pressed={team.id === selectedTeamId} onClick={() => onSelect(team.id)}>
-              <img src={team.logoUrl} alt="" />
+              <TeamBadge team={team} />
               <span><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></span>
               <span aria-hidden="true">{team.id === selectedTeamId ? "✓" : "›"}</span>
             </button>

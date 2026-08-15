@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { appRoutes } from "../../app/routes";
+import { followedTeamsStorageKey } from "../../data/followedTeams";
 
 function renderProfile() {
   window.sessionStorage.clear();
@@ -11,6 +12,10 @@ function renderProfile() {
 }
 
 describe("Profile owner experience", () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(followedTeamsStorageKey);
+  });
+
   it("renders identity, canonical FANfoto categories, stats, and one active tab", () => {
     renderProfile();
 
@@ -135,5 +140,33 @@ describe("Profile owner experience", () => {
     expect(screen.getByRole("heading", { name: "The 2006 comeback", level: 2 })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back to Moments" }));
     expect(screen.getByRole("tab", { name: "Moments" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("adds an official team to the shared persisted followed-team list and prevents duplicates", async () => {
+    const user = userEvent.setup();
+    const rendered = renderProfile();
+
+    await user.click(screen.getByRole("tab", { name: "Fan Identity" }));
+    await user.click(screen.getByRole("button", { name: "Add Team" }));
+    expect(screen.getByRole("dialog", { name: "Pick a Sport" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Hockey/ }));
+    await user.click(screen.getByRole("button", { name: /^NHL/ }));
+    await user.click(screen.getByRole("button", { name: "Select Edmonton Oilers" }));
+    await user.click(screen.getByRole("button", { name: "Confirm Add Team" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Edmonton Oilers")).toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(followedTeamsStorageKey) ?? "[]")).toContain("hockey-nhl-edmonton-oilers");
+
+    await user.click(screen.getByRole("button", { name: "Add Team" }));
+    await user.click(screen.getByRole("button", { name: /^Hockey/ }));
+    await user.click(screen.getByRole("button", { name: /^NHL/ }));
+    expect(screen.getByRole("button", { name: "Edmonton Oilers, already followed" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    rendered.unmount();
+    renderProfile();
+    await user.click(screen.getByRole("tab", { name: "Fan Identity" }));
+    expect(screen.getByText("Edmonton Oilers")).toBeInTheDocument();
   });
 });

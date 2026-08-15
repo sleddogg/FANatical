@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { formatPublishedAt } from "./newsFiltering";
 import { NewsActionRow } from "./NewsActionRow";
 import type { NewsItem, NewsSource } from "./types";
+import { TeamBadge } from "../../components/TeamBadge";
+import { findFollowedTeam } from "../../data/followedTeams";
 
 type NewsItemOverlayProps = {
   readonly item: NewsItem;
@@ -31,6 +33,7 @@ export function NewsItemOverlay({
   onExternalContinue,
 }: NewsItemOverlayProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const team = item.teamIds.length === 1 ? findFollowedTeam(item.teamIds[0]!) : undefined;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -82,7 +85,7 @@ export function NewsItemOverlay({
             <div className="news-item-detail__image">
               <img src={item.imageUrl} alt={item.imageAlt ?? ""} />
             </div>
-          ) : null}
+          ) : team ? <div className="news-item-detail__image news-item-detail__image--team"><TeamBadge team={team} /></div> : null}
 
           {item.viewType === "local" ? (
             <div className="news-item-detail__body">

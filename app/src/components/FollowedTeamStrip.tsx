@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TeamId } from "../domain/team";
 import { useTeamContext } from "../state/TeamContext";
+import { ProfileAddTeamDialog } from "../features/profile/ProfileAddTeamDialog";
+import type { OfficialTeamId } from "../data/officialSportsDatabase";
+import { TeamBadge } from "./TeamBadge";
 
 type ScrollState = Readonly<{
   canScrollBackward: boolean;
@@ -15,9 +18,10 @@ const initialScrollState: ScrollState = {
 };
 
 export function FollowedTeamStrip() {
-  const { followedTeams, selectedTeam, selectedTeamId, selectTeam } = useTeamContext();
+  const { followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam } = useTeamContext();
   const viewportRef = useRef<HTMLDivElement>(null);
   const [scrollState, setScrollState] = useState<ScrollState>(initialScrollState);
+  const [addTeamOpen, setAddTeamOpen] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const viewport = viewportRef.current;
@@ -55,6 +59,10 @@ export function FollowedTeamStrip() {
     };
   }, [updateScrollState]);
 
+  useEffect(() => {
+    updateScrollState();
+  }, [followedTeams.length, updateScrollState]);
+
   const browseTeams = (direction: -1 | 1) => {
     const viewport = viewportRef.current;
 
@@ -72,8 +80,13 @@ export function FollowedTeamStrip() {
     selectTeam(teamId);
   };
 
+  const addTeam = (teamId: OfficialTeamId) => {
+    if (addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  };
+
   return (
-    <div className="team-strip" data-has-overflow={scrollState.hasOverflow}>
+    <>
+      <div className="team-strip" data-has-overflow={scrollState.hasOverflow}>
       <button
         className="team-strip__arrow team-strip__arrow--previous"
         type="button"
@@ -103,7 +116,7 @@ export function FollowedTeamStrip() {
                 title={`${team.name} · ${team.league}`}
                 onClick={() => handleTeamSelection(team.id)}
               >
-                <img src={team.logoUrl} alt="" onLoad={updateScrollState} />
+                <TeamBadge team={team} />
                 {isSelected ? <span className="team-strip__selected-marker" aria-hidden="true">✓</span> : null}
               </button>
             );
@@ -124,9 +137,9 @@ export function FollowedTeamStrip() {
       <button
         className="team-strip__add"
         type="button"
-        aria-label="Add Team (coming later)"
-        title="Add Team will be implemented in a later task"
-        disabled
+        aria-label="Add Team"
+        title="Add a followed team"
+        onClick={() => setAddTeamOpen(true)}
       >
         <span aria-hidden="true">+</span>
       </button>
@@ -134,6 +147,8 @@ export function FollowedTeamStrip() {
       <span className="visually-hidden" aria-live="polite">
         Selected team: {selectedTeam.name}
       </span>
-    </div>
+      </div>
+      {addTeamOpen ? <ProfileAddTeamDialog followedTeams={followedTeams} onAdd={addTeam} onClose={() => setAddTeamOpen(false)} placement="bottom" /> : null}
+    </>
   );
 }

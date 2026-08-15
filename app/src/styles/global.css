@@ -212,6 +212,27 @@ a {
   box-shadow: inset 0 0 0 0.12rem rgba(255, 255, 255, 0.7);
 }
 
+.team-badge {
+  display: inline-grid;
+  width: 2.75rem;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0.2rem solid var(--team-badge-ring);
+  border-radius: 50%;
+  background: var(--team-badge-center);
+  box-shadow: 0 0.12rem 0.35rem rgba(17, 17, 17, 0.2);
+  color: var(--team-badge-text);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.015em;
+  line-height: 1;
+}
+
+.team-badge[data-initial-count="3"] {
+  font-size: 0.66rem;
+}
+
 .bottom-navigation {
   position: fixed;
   right: 0;
@@ -348,11 +369,8 @@ a {
   box-shadow: 0 0 0 0.12rem var(--color-surface), 0 0 0 0.26rem var(--color-control);
 }
 
-.team-strip__team img {
-  display: block;
+.team-strip__team .team-badge {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 .team-strip__selected-marker {
@@ -380,6 +398,7 @@ a {
   font-weight: 500;
   line-height: 1;
   opacity: 1;
+  cursor: pointer;
 }
 
 .team-strip__add:disabled {

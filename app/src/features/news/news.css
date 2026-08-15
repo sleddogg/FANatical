@@ -228,6 +228,10 @@
   object-fit: contain;
 }
 
+.news-card__image--team .team-badge {
+  width: 100%;
+}
+
 .news-actions {
   display: flex;
   align-items: center;
@@ -419,10 +423,8 @@
   gap: var(--space-3);
 }
 
-.news-filter-team img {
+.news-filter-team .team-badge {
   width: 2.5rem;
-  height: 2.5rem;
-  object-fit: contain;
 }
 
 .news-filter-team > span {
@@ -860,6 +862,10 @@
   width: min(100%, 18rem);
   max-height: 18rem;
   object-fit: contain;
+}
+
+.news-item-detail__image--team .team-badge {
+  width: min(45vw, 10rem);
 }
 
 .news-item-detail__body {

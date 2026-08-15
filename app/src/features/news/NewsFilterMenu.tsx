@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { TeamBadge } from "../../components/TeamBadge";
 import type { FollowedTeam } from "../../domain/team";
 import { leagueOptions, sportOptions } from "./mockNewsData";
 import type { NewsFeedContext } from "./types";
@@ -82,7 +83,7 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
             {followedTeams.map((team) => (
               <button key={team.id} type="button" onClick={() => onApply({ kind: "team", teamId: team.id })}>
                 <span className="news-filter-team">
-                  <img src={team.logoUrl} alt="" />
+                  <TeamBadge team={team} />
                   <span><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></span>
                 </span>
                 <span aria-hidden="true">›</span>

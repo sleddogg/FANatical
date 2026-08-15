@@ -1,6 +1,3 @@
-import celticsLogo from "../../assets/teams/celtics.png";
-import patriotsLogo from "../../assets/teams/patriots.png";
-import redSoxLogo from "../../assets/teams/redsox.png";
 import type {
   FollowedSourcePreference,
   LeagueId,
@@ -136,8 +133,6 @@ export const mockNewsItems = [
     league: "nfl",
     teamIds: ["new-england-patriots"],
     viewType: "local",
-    imageUrl: patriotsLogo,
-    imageAlt: "New England Patriots logo",
     viewCount: 3240,
     reactionCount: 241,
   },
@@ -178,8 +173,6 @@ export const mockNewsItems = [
     league: "mlb",
     teamIds: ["boston-red-sox"],
     viewType: "local",
-    imageUrl: redSoxLogo,
-    imageAlt: "Boston Red Sox logo",
     viewCount: 2910,
     reactionCount: 193,
   },
@@ -217,8 +210,6 @@ export const mockNewsItems = [
     league: "nba",
     teamIds: ["boston-celtics"],
     viewType: "local",
-    imageUrl: celticsLogo,
-    imageAlt: "Boston Celtics logo",
     viewCount: 4270,
     reactionCount: 356,
   },
@@ -333,8 +324,6 @@ export const mockNewsItems = [
     league: "milb",
     teamIds: ["boston-red-sox"],
     viewType: "local",
-    imageUrl: redSoxLogo,
-    imageAlt: "Boston Red Sox logo",
     viewCount: 1640,
     reactionCount: 87,
   },

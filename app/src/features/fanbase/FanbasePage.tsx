@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { TeamBadge } from "../../components/TeamBadge";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseAreaView } from "./FanbaseAreaViews";
 import { FanbaseCreateDialog, type FanbaseCreationType } from "./FanbaseCreateDialog";
@@ -161,7 +162,7 @@ export function FanbasePage() {
           <button className="fanbase-back-trigger" type="button" aria-label={`Back to ${backTarget}`} onClick={back}><span aria-hidden="true">←</span><span className="fanbase-back-trigger__full">Back to {backTarget}</span><span className="fanbase-back-trigger__short">Back</span></button>
         ) : (
           <button className="fanbase-team-trigger" type="button" aria-label="Choose FANbase team" aria-expanded={teamFilterOpen} onClick={() => setTeamFilterOpen(true)}>
-            <span aria-hidden="true">☰</span><img src={selectedTeam.logoUrl} alt="" /><span>{selectedTeam.shortName}</span>
+            <span aria-hidden="true">☰</span><TeamBadge team={selectedTeam} /><span>{selectedTeam.shortName}</span>
           </button>
         )}
         <div className="fanbase-topbar__title">

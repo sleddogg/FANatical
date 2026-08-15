@@ -1,10 +1,13 @@
-export type TeamId = "new-england-patriots" | "boston-red-sox" | "boston-celtics";
+import type { OfficialSportName, OfficialTeamId, TeamColors } from "../data/officialSportsDatabase";
+
+export type TeamId = string;
 
 export type FollowedTeam = Readonly<{
   id: TeamId;
+  officialTeamId: OfficialTeamId | null;
   name: string;
   shortName: string;
-  sport: "Football" | "Baseball" | "Basketball";
-  league: "NFL" | "MLB" | "NBA";
-  logoUrl: string;
+  sport: OfficialSportName;
+  league: string;
+  colors: TeamColors;
 }>;

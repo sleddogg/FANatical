@@ -1,6 +1,8 @@
 import { formatPublishedAt } from "./newsFiltering";
 import { NewsActionRow } from "./NewsActionRow";
 import type { NewsItem, NewsSource } from "./types";
+import { TeamBadge } from "../../components/TeamBadge";
+import { findFollowedTeam } from "../../data/followedTeams";
 
 type NewsCardProps = {
   readonly item: NewsItem;
@@ -23,6 +25,8 @@ export function NewsCard({
   onDiscussion,
   onShare,
 }: NewsCardProps) {
+  const team = item.teamIds.length === 1 ? findFollowedTeam(item.teamIds[0]!) : undefined;
+
   return (
     <article className="news-card">
       <button className="news-card__open" type="button" aria-label={`Open ${item.headline}`} onClick={onOpen}>
@@ -43,7 +47,7 @@ export function NewsCard({
           <span className="news-card__image">
             <img src={item.imageUrl} alt={item.imageAlt ?? ""} />
           </span>
-        ) : null}
+        ) : team ? <span className="news-card__image news-card__image--team"><TeamBadge team={team} /></span> : null}
       </button>
 
       <NewsActionRow

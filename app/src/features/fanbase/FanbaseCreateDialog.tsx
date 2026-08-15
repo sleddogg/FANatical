@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { TeamBadge } from "../../components/TeamBadge";
 import type { FollowedTeam } from "../../domain/team";
 import type {
   CreateEventInput,
@@ -186,7 +187,7 @@ export function FanbaseCreateDialog({
 
             {creationType === "photo" ? (
               <>
-                <div className="fanbase-create__mock-upload"><img src={team.logoUrl} alt="" /><span>Mock artwork for this local-only photo flow</span><small>Real uploads and image processing are intentionally deferred.</small></div>
+                <div className="fanbase-create__mock-upload"><TeamBadge team={team} /><span>Mock artwork for this local-only photo flow</span><small>Real uploads and image processing are intentionally deferred.</small></div>
                 <label>Photo title<input name="title" required maxLength={80} /></label>
                 <label>Category<select name="category" defaultValue={initialPhotoCategory ?? "Game Face"}><option>Game Face</option><option>Fan Cave</option><option>Memorabilia</option></select></label>
                 <label>Details<textarea name="details" required rows={4} maxLength={600} /></label>
