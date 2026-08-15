@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { findOfficialLeague, findOfficialSportByName, findOfficialTeam, leaguesForSport, teamsForLeague, type OfficialLeagueId, type OfficialTeamId } from "../../data/officialSportsDatabase";
 import { cheerSportOptions } from "./cheerRouting";
 import type { CheerDraft, CheerLanguage, CheerPublicationStatus, CheerSport, CheerStyle } from "./types";
 
@@ -10,6 +11,29 @@ export function CheerFinish({ draft, requiredSport, onChange, onFinish }: {
   readonly onChange: (draft: CheerDraft) => void;
   readonly onFinish: (status: CheerPublicationStatus) => void;
 }) {
+  const availableLeagues = leaguesForSport(draft.sportId);
+  const availableTeams = teamsForLeague(draft.leagueId);
+
+  const changeSport = (sport: CheerSport) => {
+    const officialSport = findOfficialSportByName(sport);
+    if (!officialSport) return;
+    onChange({ ...draft, sport, sportId: officialSport.id, leagueId: null, teamId: null, league: "", team: "" });
+  };
+
+  const changeLeague = (value: string) => {
+    const leagueId = value ? value as OfficialLeagueId : null;
+    const league = findOfficialLeague(leagueId);
+    if (leagueId && (!league || league.parentSportId !== draft.sportId)) return;
+    onChange({ ...draft, leagueId, teamId: null, league: league?.displayName ?? "", team: "" });
+  };
+
+  const changeTeam = (value: string) => {
+    const teamId = value ? value as OfficialTeamId : null;
+    const team = findOfficialTeam(teamId);
+    if (teamId && (!team || team.parentLeagueId !== draft.leagueId)) return;
+    onChange({ ...draft, teamId, team: team?.displayName ?? "" });
+  };
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
@@ -23,9 +47,9 @@ export function CheerFinish({ draft, requiredSport, onChange, onFinish }: {
         <div className="cheer-finish__grid">
           <label className="cheer-finish__wide">Title<input required maxLength={100} value={draft.title} onChange={(event) => onChange({ ...draft, title: event.target.value })} /></label>
           <label>Cheer Style<select value={draft.style} onChange={(event) => onChange({ ...draft, style: event.target.value as CheerStyle })}>{cheerStyles.map((style) => <option key={style}>{style}</option>)}</select></label>
-          {requiredSport ? <div className="cheer-finish__readonly"><span>Sport</span><strong>{requiredSport}</strong><small>Locked by sport-specific WHO routing in this Cheer.</small></div> : <label>Sport<select value={draft.sport} onChange={(event) => onChange({ ...draft, sport: event.target.value as CheerSport })}>{cheerSportOptions.map((sport) => <option key={sport}>{sport}</option>)}</select></label>}
-          <label>League<input value={draft.league} placeholder="NFL, NBA, NHL…" onChange={(event) => onChange({ ...draft, league: event.target.value })} /></label>
-          <label>Team<input value={draft.team} placeholder="Team or league-wide" onChange={(event) => onChange({ ...draft, team: event.target.value })} /></label>
+          {requiredSport ? <div className="cheer-finish__readonly"><span>Sport</span><strong>{requiredSport}</strong><small>Locked by sport-specific WHO routing in this Cheer.</small></div> : <label>Sport<select value={draft.sport} onChange={(event) => changeSport(event.target.value as CheerSport)}>{cheerSportOptions.map((sport) => <option key={sport}>{sport}</option>)}</select></label>}
+          <label>League<select value={draft.leagueId ?? ""} onChange={(event) => changeLeague(event.target.value)}><option value="">Sport-wide (no league)</option>{availableLeagues.map((league) => <option key={league.id} value={league.id}>{league.displayName}</option>)}</select></label>
+          <label>Team<select disabled={!draft.leagueId} value={draft.teamId ?? ""} onChange={(event) => changeTeam(event.target.value)}><option value="">League-wide (no team)</option>{availableTeams.map((team) => <option key={team.id} value={team.id}>{team.displayName}</option>)}</select></label>
           <label>Rivalry / Opponent<input value={draft.opponent} placeholder="Optional" onChange={(event) => onChange({ ...draft, opponent: event.target.value })} /></label>
           <label>Language<select value={draft.language} onChange={(event) => onChange({ ...draft, language: event.target.value as CheerLanguage })}><option>Auto</option><option>English</option><option>Other</option></select></label>
           <label className="cheer-finish__wide">Short description / instruction<textarea rows={4} maxLength={280} value={draft.description} placeholder="Tell fans when or how to use this Cheer…" onChange={(event) => onChange({ ...draft, description: event.target.value })} /></label>

@@ -35,13 +35,16 @@ describe("Cheer frontend", () => {
     const user = userEvent.setup();
     renderCheer();
 
-    expect(screen.getByRole("heading", { name: "Cheer", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "D-Fence Clap Clap" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Read" }));
+    expect(screen.getByRole("heading", { name: "Cheer Library", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /LIVE CHEERS/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "All Cheers", level: 2 })).toBeInTheDocument();
+    const dFenceCard = screen.getByRole("heading", { name: "D-Fence Clap Clap" }).closest("article");
+    expect(dFenceCard).not.toBeNull();
+    await user.click(within(dFenceCard!).getByRole("button", { name: "Read" }));
     expect(screen.getByRole("heading", { name: "Read", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "D-Fence Clap Clap", level: 2 }).closest("main")).toHaveTextContent("D-Fence");
     await user.click(screen.getByRole("button", { name: /Cheer Library/ }));
-    await user.click(screen.getByRole("button", { name: "Listen" }));
+    await user.click(within(screen.getByRole("heading", { name: "D-Fence Clap Clap" }).closest("article")!).getByRole("button", { name: "Listen" }));
     expect(screen.getByRole("heading", { name: "Listen", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("No reference recording is attached to this Cheer yet.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Record Reference" })).toBeInTheDocument();
@@ -52,6 +55,86 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Bookmark D-Fence Clap Clap" }));
     expect(screen.getByRole("button", { name: "Remove bookmark from D-Fence Clap Clap" })).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("defaults to Available Now for a mapped team Check-In while preserving independent Launch eligibility after filtering", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("fanatical.cheer.check-in.v2", JSON.stringify({
+      type: "MappedVenue",
+      raw: { method: "Manual", venueId: "venue-rexall-place", venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oilers", section: "114", row: "12", seat: "8" },
+      resolved: { level: "Lower", side: "Side A", end: "End A", sources: { level: "Section mapping", side: "Section mapping", end: "Section mapping" } },
+      confirmedAt: "2026-08-14T18:00:00.000Z",
+    }));
+    renderCheer();
+
+    expect(screen.getByRole("heading", { name: "Available Now" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hockey Crowd Pulse" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "NHL Ice Roar" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Oil Country Rise" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "SHL Ice Thunder" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Launch" })).toHaveLength(3);
+
+    await user.click(screen.getByRole("button", { name: "Filter Cheer Library" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    expect(screen.getByRole("heading", { name: "All Cheers" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ballpark Rally" })).toBeInTheDocument();
+    expect(within(screen.getByRole("heading", { name: "Ballpark Rally" }).closest("article")!).queryByRole("button", { name: "Launch" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Launch" })).toHaveLength(3);
+
+    await user.click(within(screen.getByRole("heading", { name: "Oil Country Rise" }).closest("article")!).getByRole("button", { name: "Launch" }));
+    const launchDialog = screen.getByRole("dialog", { name: "Launch Oil Country Rise" });
+    expect(within(launchDialog).getByRole("radio", { name: /ASAP/ })).toBeChecked();
+    await user.click(within(launchDialog).getByRole("button", { name: "Add to Launch Page" }));
+    expect(await screen.findByRole("heading", { name: "Cheer Launch" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Cheer Library/ }));
+    const liveBanner = screen.getByRole("button", { name: /LIVE CHEERS/ });
+    expect(liveBanner).toHaveTextContent("1 active Cheer");
+    await user.click(liveBanner);
+    expect(await screen.findByRole("heading", { name: "Cheer Launch" })).toBeInTheDocument();
+    const proposal = screen.getByRole("heading", { name: "Oil Country Rise" }).closest("article");
+    expect(proposal).not.toBeNull();
+    expect(within(proposal!).getByText("19 / 20")).toBeInTheDocument();
+    await user.click(within(proposal!).getByRole("button", { name: "Join" }));
+    expect(within(proposal!).getByText("20 / 20")).toBeInTheDocument();
+    expect(within(proposal!).getAllByText(/CHEER GOING LIVE IN 5/).length).toBeGreaterThan(0);
+  });
+
+  it("shows creator-specific library actions and permanently deletes an owned Cheer after confirmation", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+
+    const fanaticalCard = screen.getByRole("heading", { name: "D-Fence Clap Clap" }).closest("article");
+    expect(fanaticalCard).not.toBeNull();
+    expect(within(fanaticalCard!).queryByRole("button", { name: "Edit Cheer" })).not.toBeInTheDocument();
+    expect(within(fanaticalCard!).queryByRole("button", { name: "Delete Cheer" })).not.toBeInTheDocument();
+    await user.click(within(fanaticalCard!).getByRole("button", { name: "Contact Creator" }));
+    const contactDialog = screen.getByRole("dialog", { name: "Contact Creator" });
+    expect(contactDialog).toHaveTextContent("suggest a new verse");
+    expect(contactDialog).toHaveTextContent("without exposing private contact information");
+    await user.click(within(contactDialog).getByRole("button", { name: "Close" }));
+
+    await reachBuilder(user, "Oilers Fight Song", "Let’s go Oilers", "Hockey");
+    await closeHowTo(user, true);
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
+    await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
+    await user.click(screen.getByRole("button", { name: "Publish Cheer" }));
+
+    const ownerCard = screen.getByRole("heading", { name: "Oilers Fight Song" }).closest("article");
+    expect(ownerCard).not.toBeNull();
+    expect(within(ownerCard!).getByRole("button", { name: "Edit Cheer" })).toBeInTheDocument();
+    expect(within(ownerCard!).getByRole("button", { name: "Delete Cheer" })).toBeInTheDocument();
+    expect(within(ownerCard!).queryByRole("button", { name: "Contact Creator" })).not.toBeInTheDocument();
+
+    await user.click(within(ownerCard!).getByRole("button", { name: "Delete Cheer" }));
+    const deleteDialog = screen.getByRole("dialog", { name: "Delete this Cheer?" });
+    expect(deleteDialog).toHaveTextContent("This cannot be undone.");
+    await user.click(within(deleteDialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("heading", { name: "Oilers Fight Song" })).toBeInTheDocument();
+
+    await user.click(within(ownerCard!).getByRole("button", { name: "Delete Cheer" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Delete this Cheer?" })).getByRole("button", { name: "Delete Cheer" }));
+    expect(screen.queryByRole("heading", { name: "Oilers Fight Song" })).not.toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem("fanatical.cheer.library")).not.toContain("Oilers Fight Song"));
+  }, 10_000);
 
   it("places independent events directly, exposes rhythmic controls, and publishes through Finish Cheer", async () => {
     const user = userEvent.setup();
@@ -147,6 +230,41 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Save Draft" }));
     expect(screen.getByText(/Draft · Echo/)).toBeInTheDocument();
   });
+
+  it("uses dependent official League and Team selectors and clears invalid downstream choices", async () => {
+    const user = userEvent.setup();
+    renderCheer();
+    await reachBuilder(user, "Controlled Metadata", "Official choices", "Hockey");
+    await closeHowTo(user, true);
+    await user.click(screen.getByRole("button", { name: "Place Action at beat 1" }));
+    await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
+
+    const sport = screen.getByLabelText("Sport");
+    const league = screen.getByLabelText("League");
+    const team = screen.getByLabelText("Team");
+    expect(league).toHaveDisplayValue("Sport-wide (no league)");
+    expect(within(league).getByRole("option", { name: "NHL" })).toBeInTheDocument();
+    expect(within(league).queryByRole("option", { name: "NFL" })).not.toBeInTheDocument();
+    expect(team).toBeDisabled();
+
+    await user.selectOptions(league, "hockey-nhl");
+    expect(team).toBeEnabled();
+    expect(within(team).getByRole("option", { name: "Edmonton Oilers" })).toBeInTheDocument();
+    await user.selectOptions(team, "hockey-nhl-edmonton-oilers");
+
+    await user.selectOptions(sport, "Baseball");
+    expect(league).toHaveDisplayValue("Sport-wide (no league)");
+    expect(team).toBeDisabled();
+    expect(team).toHaveDisplayValue("League-wide (no team)");
+    expect(within(league).getByRole("option", { name: "MLB" })).toBeInTheDocument();
+    expect(within(league).queryByRole("option", { name: "NHL" })).not.toBeInTheDocument();
+
+    await user.selectOptions(league, "baseball-mlb");
+    await user.selectOptions(team, "baseball-mlb-boston-red-sox");
+    await user.selectOptions(league, "baseball-npb");
+    expect(team).toHaveDisplayValue("League-wide (no team)");
+    expect(within(team).queryByRole("option", { name: "Boston Red Sox" })).not.toBeInTheDocument();
+  }, 10_000);
 
   it("confirms deletion from the measure header", async () => {
     const user = userEvent.setup();
@@ -343,7 +461,8 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Action audience All" }));
     await user.click(within(screen.getByRole("region", { name: "Selected choreography controls" })).getByRole("button", { name: "End A" }));
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
-    await user.type(screen.getByLabelText("Team"), "Edmonton Elks");
+    await user.selectOptions(screen.getByLabelText("League"), "football-cfl");
+    await user.selectOptions(screen.getByLabelText("Team"), "football-cfl-edmonton-elks");
     await user.type(screen.getByLabelText("Rivalry / Opponent"), "Calgary");
     await user.click(screen.getByRole("button", { name: "Save Draft" }));
 
@@ -358,13 +477,19 @@ describe("Cheer frontend", () => {
     await user.click(screen.getByRole("button", { name: "Build" }));
     expect(screen.getByRole("button", { name: "Action audience End A" }).querySelector("img")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Finish Cheer" }));
-    expect(screen.getByLabelText("Team")).toHaveValue("Edmonton Elks");
+    expect(screen.getByLabelText("League")).toHaveDisplayValue("CFL");
+    expect(screen.getByLabelText("Team")).toHaveDisplayValue("Edmonton Elks");
     expect(screen.getByLabelText("Rivalry / Opponent")).toHaveValue("Calgary");
   });
 
   it("resolves and persists a manual venue Check-In without legacy compass controls", async () => {
     const user = userEvent.setup();
     renderCheer();
+    await user.click(screen.getByRole("button", { name: "Filter Cheer Library" }));
+    await user.click(screen.getByRole("menuitem", { name: /Sport/ }));
+    await user.click(screen.getByRole("button", { name: "Baseball" }));
+    await user.click(screen.getByRole("button", { name: "Show All Baseball Cheers" }));
+    expect(screen.getByRole("heading", { name: "Baseball" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Check In" }));
     const dialog = screen.getByRole("dialog", { name: "Check In" });
     expect(within(dialog).getByRole("button", { name: "Take Photo / Upload Screenshot" })).toBeInTheDocument();
@@ -402,6 +527,7 @@ describe("Cheer frontend", () => {
       raw: { venueName: "Rexall Place", sport: "Hockey", teamEvent: "Edmonton Oil Kings", section: "114", row: "12", seat: "8" },
       resolved: { level: "Lower", side: "Side A", end: "End A" },
     });
+    expect(screen.getByRole("heading", { name: "Available Now" })).toBeInTheDocument();
     const checkInControl = screen.getByRole("button", { name: /Change Check In/ });
     expect(checkInControl).toHaveTextContent("Sec 114 · R12 · S8");
     await user.click(checkInControl);
@@ -409,7 +535,9 @@ describe("Cheer frontend", () => {
     expect(screen.getByRole("button", { name: "Check Out" })).toBeInTheDocument();
     await user.click(within(screen.getByRole("dialog", { name: "Check In" })).getByRole("button", { name: "Close Check In" }));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Follow" }));
+    await user.click(screen.getByRole("button", { name: "Filter Cheer Library" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await user.click(within(screen.getByRole("heading", { name: "D-Fence Clap Clap" }).closest("article")!).getByRole("button", { name: "Follow" }));
     expect(screen.getByRole("heading", { name: "Follow", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Follow choreography" })).toHaveTextContent("CurrentMeasure 1");
     expect(screen.getByRole("region", { name: "Follow choreography" })).toHaveTextContent("NextMeasure 2");

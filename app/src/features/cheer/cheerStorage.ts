@@ -1,5 +1,7 @@
 import type { CheerRecord } from "./types";
+import { findOfficialLeague, findOfficialLeagueByName, findOfficialSportById, findOfficialSportByName, findOfficialTeam, findOfficialTeamByName } from "../../data/officialSportsDatabase";
 import { migrateLegacyAudience } from "./cheerRouting";
+import { withPublishTimeLiveVariants } from "./cheerLiveVariants";
 
 const databaseName = "fanatical-cheer";
 const databaseVersion = 1;
@@ -20,15 +22,44 @@ function isCheerLibrary(value: unknown): value is readonly CheerRecord[] {
 }
 
 function migrateStoredCheer(cheer: CheerRecord): CheerRecord {
-  return {
+  const stored = cheer as CheerRecord & { sportId?: unknown; leagueId?: unknown; teamId?: unknown };
+  const sport = findOfficialSportById(typeof stored.sportId === "string" ? stored.sportId : null)
+    ?? findOfficialSportByName(cheer.sport)
+    ?? findOfficialSportByName("Football")!;
+  const hasControlledMetadata = typeof stored.sportId === "string" && Object.prototype.hasOwnProperty.call(stored, "leagueId");
+  const normalizedTitle = cheer.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const canRetainSeedClassification = cheer.id === "cheer-d-fence" || normalizedTitle === "defense" || normalizedTitle === "d fence clap clap";
+  const storedLeague = hasControlledMetadata
+    ? findOfficialLeague(typeof stored.leagueId === "string" ? stored.leagueId : null)
+    : canRetainSeedClassification ? findOfficialLeagueByName(sport.id, cheer.league) : null;
+  const league = storedLeague?.parentSportId === sport.id ? storedLeague : null;
+  const storedTeam = hasControlledMetadata
+    ? findOfficialTeam(typeof stored.teamId === "string" ? stored.teamId : null)
+    : canRetainSeedClassification && league ? findOfficialTeamByName(league.id, cheer.team) : null;
+  const team = storedTeam?.parentLeagueId === league?.id ? storedTeam : null;
+
+  const migrated: CheerRecord = {
     ...cheer,
+    sportId: sport.id,
+    leagueId: league?.id ?? null,
+    teamId: team?.id ?? null,
+    sport: sport.displayName,
+    league: league?.displayName ?? "",
+    team: team?.displayName ?? "",
     measures: cheer.measures.map((measure) => ({
       ...measure,
-      actionSegments: measure.actionSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
-      lyricSegments: measure.lyricSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
-      restSegments: measure.restSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, cheer.sport) })),
+      actionSegments: measure.actionSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, sport.displayName) })),
+      lyricSegments: measure.lyricSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, sport.displayName) })),
+      restSegments: measure.restSegments.map((segment) => ({ ...segment, audience: migrateLegacyAudience(segment.audience, sport.displayName) })),
     })),
   };
+  // One targeted migration seeds the existing published `test` Cheer. Other
+  // stored Cheers are deliberately not backfilled in this pass.
+  return migrated.title.trim().toLocaleLowerCase() === "test"
+    && migrated.publicationStatus === "Published"
+    && !migrated.liveVariants?.length
+    ? withPublishTimeLiveVariants(migrated)
+    : migrated;
 }
 
 function migrateStoredLibrary(value: unknown): readonly CheerRecord[] | null {

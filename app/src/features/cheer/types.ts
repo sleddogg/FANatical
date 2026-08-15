@@ -1,4 +1,4 @@
-import type { TeamId } from "../../domain/team";
+import type { OfficialLeagueId, OfficialSportId, OfficialSportName, OfficialTeamId } from "../../data/officialSportsDatabase";
 import type { VenueEnd, VenueLevel, VenueSide } from "../internal/venues/types";
 
 export type CheerStyle = "Standard" | "Echo" | "Call & Response" | "Fight Song" | "Clap Pattern";
@@ -8,7 +8,7 @@ export type CheerContentTrack = "action" | "lyrics";
 export type CheerAction = "None" | "Clap" | "Stomp" | "Wave";
 export type CrowdAssignment = "All" | "Upper" | "Lower" | "Side A" | "Side B" | "End A" | "End B" | "First Base Side" | "Third Base Side" | "Outfield" | "Backboard Left" | "Backboard Right" | "Uprights Left" | "Uprights Right" | "North" | "East" | "West" | "South";
 export type CheerLanguage = "Auto" | "English" | "Other";
-export type CheerSport = "Football" | "Baseball" | "Basketball" | "Hockey" | "Soccer" | "Generic" | "Other";
+export type CheerSport = OfficialSportName;
 export type CheerPublicationStatus = "Draft" | "Published";
 
 export type CheerActionSegment = Readonly<{
@@ -99,6 +99,29 @@ export type GeneralLocationCheckIn = Readonly<{
 
 export type CheerCheckIn = MappedVenueCheckIn | GeneralLocationCheckIn;
 
+export type CheerLiveRoutingDimension = "Level" | "Side" | "End";
+export type CheerLiveRouting = Readonly<{
+  level: Extract<CrowdAssignment, "Upper" | "Lower"> | null;
+  side: Extract<CrowdAssignment, "Side A" | "Side B"> | null;
+  end: Extract<CrowdAssignment, "End A" | "End B"> | null;
+}>;
+export type CheerLiveActionSegment = Omit<CheerActionSegment, "audience">;
+export type CheerLiveLyricSegment = Omit<CheerLyricSegment, "audience">;
+export type CheerLiveRestSegment = Omit<CheerRestSegment, "audience">;
+export type CheerLiveMeasure = Readonly<{
+  id: string;
+  actionSegments: readonly CheerLiveActionSegment[];
+  lyricSegments: readonly CheerLiveLyricSegment[];
+  restSegments: readonly CheerLiveRestSegment[];
+}>;
+export type CheerLiveVariant = Readonly<{
+  id: string;
+  routingDimensions: readonly CheerLiveRoutingDimension[];
+  routing: CheerLiveRouting;
+  measures: readonly CheerLiveMeasure[];
+  generatedAt: string;
+}>;
+
 export type CheerRecord = Readonly<{
   id: string;
   title: string;
@@ -108,7 +131,10 @@ export type CheerRecord = Readonly<{
   recordingUrl: string | null;
   bpm: number;
   measures: readonly CheerMeasure[];
-  teamId: TeamId;
+  liveVariants?: readonly CheerLiveVariant[];
+  sportId: OfficialSportId;
+  leagueId: OfficialLeagueId | null;
+  teamId: OfficialTeamId | null;
   description?: string;
   sport: CheerSport;
   league: string;
@@ -128,6 +154,9 @@ export type CheerDraft = Readonly<{
   recordingUrl: string | null;
   bpm: number;
   measures: readonly CheerMeasure[];
+  sportId: OfficialSportId;
+  leagueId: OfficialLeagueId | null;
+  teamId: OfficialTeamId | null;
   sport: CheerSport;
   league: string;
   team: string;

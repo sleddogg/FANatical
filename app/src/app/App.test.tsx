@@ -29,7 +29,8 @@ describe("FANatical application shell", () => {
     ["/news", "News"],
     ["/quiz", "Quiz"],
     ["/fanbase", "FANbase"],
-    ["/cheer", "Cheer"],
+    ["/cheer", "Cheer Library"],
+    ["/cheer/launch", "Cheer Launch"],
     ["/profile", "NorthStarFan"],
   ])("resolves %s", (route, heading) => {
     renderRoute(route);
