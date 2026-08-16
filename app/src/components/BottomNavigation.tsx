@@ -3,6 +3,7 @@ import { featureNavigation } from "../app/navigation";
 import { BrandMark } from "./BrandMark";
 import { FollowedTeamStrip } from "./FollowedTeamStrip";
 import { NavIcon } from "./NavIcon";
+import { useAuth } from "../features/account/AuthContext";
 
 type BottomNavigationProps = {
   readonly variant: "home" | "inner";
@@ -13,8 +14,10 @@ function navClassName({ isActive }: { isActive: boolean }) {
 }
 
 export function BottomNavigation({ variant }: BottomNavigationProps) {
+  const { configured, user } = useAuth();
+  const profileLabel = configured && !user ? "Sign In" : "Profile";
   return (
-    <nav className="bottom-navigation" aria-label={variant === "home" ? "Home navigation" : "Application navigation"}>
+    <nav className={`bottom-navigation bottom-navigation--${variant}`} aria-label={variant === "home" ? "Home navigation" : "Application navigation"}>
       <NavLink className={navClassName} to="/" end aria-label="FANatical home">
         <BrandMark />
       </NavLink>
@@ -32,9 +35,9 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
         </div>
       )}
 
-      <NavLink className={navClassName} to="/profile" aria-label="Profile">
+      <NavLink className={navClassName} to="/profile" aria-label={profileLabel}>
         <NavIcon name="profile" />
-        <span className="visually-hidden">Profile</span>
+        <span className="visually-hidden">{profileLabel}</span>
       </NavLink>
     </nav>
   );

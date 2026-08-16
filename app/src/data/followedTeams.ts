@@ -35,7 +35,7 @@ export const followedTeams = [
 
 export const defaultSelectedTeamId: TeamId = "new-england-patriots";
 
-function officialTeamToFollowedTeam(teamId: OfficialTeamId): FollowedTeam | null {
+export function officialTeamToFollowedTeam(teamId: OfficialTeamId): FollowedTeam | null {
   const team = findOfficialTeam(teamId);
   const league = team ? findOfficialLeague(team.parentLeagueId) : null;
   const sport = league ? findOfficialSportById(league.parentSportId) : null;
@@ -50,6 +50,11 @@ function officialTeamToFollowedTeam(teamId: OfficialTeamId): FollowedTeam | null
     league: league.displayName,
     colors: team.colors,
   };
+}
+
+export function followedTeamsFromOfficialIds(teamIds: readonly OfficialTeamId[]): readonly FollowedTeam[] {
+  const seededByOfficialId = new Map<OfficialTeamId, FollowedTeam>(followedTeams.map((team) => [team.officialTeamId, team]));
+  return [...new Set(teamIds)].map((teamId) => seededByOfficialId.get(teamId) ?? officialTeamToFollowedTeam(teamId)).filter((team): team is FollowedTeam => team !== null);
 }
 
 export function loadPersistedFollowedTeamIds(): readonly OfficialTeamId[] {

@@ -1,4 +1,5 @@
 import type { VenueEnd } from "../internal/venues/types";
+import { createUuid } from "../../lib/uuid";
 import { isTargetRelativeAudience } from "./cheerRouting";
 import { hasPlayableLiveVariant } from "./cheerLiveVariants";
 import type { CheerCheckIn, CheerRecord, CheerSport } from "./types";
@@ -184,7 +185,7 @@ export function createCheerProposal(existing: readonly CheerProposal[], input: {
   }
 
   const proposal: CheerProposal = {
-    id: `cheer-proposal-${crypto.randomUUID()}`,
+    id: `cheer-proposal-${createUuid()}`,
     cheerId: input.cheer.id,
     eventId: context.eventId,
     contextKey: context.key,

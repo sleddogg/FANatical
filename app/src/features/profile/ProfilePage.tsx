@@ -17,6 +17,10 @@ import type { FollowedTeam } from "../../domain/team";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import type { CreateFanMomentInput, FanMoment, ProfileRecord, ProfileTabId } from "./types";
 import { buildSportsStatsSnapshot, fanScoreForUser, resolveFanbaseCompetition, sportsStatsUser } from "../stats/sportsStats";
+import { AccountDialog } from "../account/AccountDialog";
+import { useAuth } from "../account/AuthContext";
+import { useAccountBootstrap } from "../account/AccountBootstrap";
+import { loadOwnedProfile, saveOwnedProfile, subscribeToAccountChanges } from "../account/accountRepository";
 import "../fanbase/fanbase.css";
 import "./profile.css";
 
@@ -183,6 +187,8 @@ function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpe
 }
 
 export function ProfilePage() {
+  const { configured, loading: authLoading, user, signOut } = useAuth();
+  const { ready, revision } = useAccountBootstrap();
   const navigate = useNavigate();
   const location = useLocation();
   const fanbase = useFanbaseContext();
@@ -206,7 +212,11 @@ export function ProfilePage() {
   const [openMomentId, setOpenMomentId] = useState<string | null>(null);
   const [momentCreateOpen, setMomentCreateOpen] = useState(false);
   const [addTeamOpen, setAddTeamOpen] = useState(false);
-  const isOwner = true;
+  const [accountDialogMode, setAccountDialogMode] = useState<"sign-in" | "create" | null>(null);
+  const [accountActionBusy, setAccountActionBusy] = useState(false);
+  const [accountActionError, setAccountActionError] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const isOwner = !configured || Boolean(user);
   const ownerPhotos = useMemo(() => fanPhotos.filter((photo) => photo.owner.id === demoUser.id), [fanPhotos]);
   const [photoOrder, setPhotoOrder] = useState<PhotoOrder>(() => buildInitialPhotoOrder(ownerPhotos));
 
@@ -224,6 +234,34 @@ export function ProfilePage() {
       return next;
     });
   }, [ownerPhotos]);
+
+  useEffect(() => {
+    if (!configured || !user) {
+      if (configured) setProfile(initialProfile);
+      return;
+    }
+    if (!ready) return;
+    let current = true;
+    const load = () => loadOwnedProfile(user.id).then((record) => {
+      if (!current || !record) return;
+      setProfile(record);
+      setProfileError("");
+    }).catch((reason: unknown) => {
+      if (current) setProfileError(reason instanceof Error ? reason.message : "Profile could not be refreshed.");
+    });
+    void load();
+    const refreshOnFocus = () => { void load(); };
+    const refreshOnVisibility = () => { if (document.visibilityState === "visible") void load(); };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+    const unsubscribe = subscribeToAccountChanges(user.id, refreshOnFocus, ["profiles", "fan_identities", "sports_played"]);
+    return () => {
+      current = false;
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+      unsubscribe();
+    };
+  }, [configured, ready, revision, user]);
 
   const photoById = useMemo(() => new Map(ownerPhotos.map((photo) => [photo.id, photo])), [ownerPhotos]);
   const orderedOwnerPhotos = useMemo(() => photoCategories.flatMap((category) => photoOrder[category].map((id) => photoById.get(id)).filter((photo): photo is FanPhoto => Boolean(photo))), [photoById, photoOrder]);
@@ -264,8 +302,27 @@ export function ProfilePage() {
     setMomentCreateOpen(false);
   };
 
-  const addTeam = (teamId: OfficialTeamId) => {
-    if (addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  const addTeam = async (teamId: OfficialTeamId) => {
+    if (await addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  };
+
+  const saveProfile = async (nextProfile: ProfileRecord) => {
+    const ownedProfile = user ? { ...nextProfile, id: user.id } : nextProfile;
+    if (configured && user) await saveOwnedProfile(user.id, ownedProfile);
+    setProfile(ownedProfile);
+  };
+
+  const signOutHere = async () => {
+    setAccountActionBusy(true);
+    setAccountActionError("");
+    try {
+      await signOut();
+      setEditing(false);
+    } catch (reason) {
+      setAccountActionError(reason instanceof Error ? reason.message : "This device could not be signed out.");
+    } finally {
+      setAccountActionBusy(false);
+    }
   };
 
   if (openMoment) {
@@ -292,8 +349,43 @@ export function ProfilePage() {
       <header className="profile-topbar">
         <button className="profile-back-button" type="button" onClick={goBack}><span aria-hidden="true">←</span><span>Back</span></button>
         <div><span className="eyebrow">Profile</span><h1>{profile.displayName}</h1><p>{profile.tagline}</p></div>
-        {isOwner ? <button className="profile-edit-button" type="button" onClick={() => setEditing(true)} aria-label="Edit profile"><span aria-hidden="true">✎</span><span>Edit</span></button> : <span />}
+        {authLoading ? <span aria-hidden="true" /> : isOwner ? <button className="profile-edit-button" type="button" onClick={() => setEditing(true)} aria-label="Edit profile"><span aria-hidden="true">✎</span><span>Edit</span></button> : <button className="profile-edit-button" type="button" onClick={() => setAccountDialogMode("sign-in")} aria-label="Sign in to FANatical"><span aria-hidden="true">→</span><span>Sign In</span></button>}
       </header>
+
+      {configured ? (
+        <section className="profile-account-panel" aria-labelledby="profile-account-title">
+          {authLoading ? (
+            <div className="profile-account-panel__identity">
+              <span className="eyebrow">FANatical account</span>
+              <h2 id="profile-account-title">Checking account…</h2>
+            </div>
+          ) : user ? (
+            <>
+              <div className="profile-account-panel__identity">
+                <span className="eyebrow">FANatical account</span>
+                <h2 id="profile-account-title">Signed in</h2>
+                <p>{user.email ?? "Authenticated FANatical account"}</p>
+              </div>
+              <button className="profile-account-panel__sign-out" type="button" disabled={accountActionBusy} onClick={() => void signOutHere()}>{accountActionBusy ? "Signing Out…" : "Sign Out"}</button>
+            </>
+          ) : (
+            <>
+              <div className="profile-account-panel__identity">
+                <span className="eyebrow">FANatical account</span>
+                <h2 id="profile-account-title">Make this Profile yours</h2>
+                <p>Sign in to your account or create your FANatical identity.</p>
+              </div>
+              <div className="profile-account-panel__actions">
+                <button type="button" onClick={() => setAccountDialogMode("sign-in")}>Sign In</button>
+                <button type="button" onClick={() => setAccountDialogMode("create")}>Create Account</button>
+              </div>
+            </>
+          )}
+        </section>
+      ) : null}
+
+      {accountActionError ? <p className="profile-account-error" role="alert">Account action needs attention: {accountActionError}</p> : null}
+      {profileError ? <p className="profile-account-error" role="alert">Profile sync needs attention: {profileError}</p> : null}
 
       <ProfilePhotoShowcase photos={orderedOwnerPhotos} featuredCategory={profile.featuredFanPhotoCategory} onOpenCategory={setOpenPhotoCategory} />
 
@@ -311,7 +403,8 @@ export function ProfilePage() {
         </div>
       </section>
 
-      {editing ? <ProfileEditDialog profile={profile} onSave={setProfile} onClose={() => setEditing(false)} /> : null}
+      {editing ? <ProfileEditDialog profile={profile} accountBacked={Boolean(configured && user)} onSave={saveProfile} onClose={() => setEditing(false)} {...(configured && user ? { onSignOut: signOutHere } : {})} /> : null}
+      {accountDialogMode ? <AccountDialog initialMode={accountDialogMode} onClose={() => setAccountDialogMode(null)} /> : null}
       {addTeamOpen ? <ProfileAddTeamDialog followedTeams={followedTeams} onAdd={addTeam} onClose={() => setAddTeamOpen(false)} /> : null}
       {momentCreateOpen ? <MomentCreateDialog photos={ownerPhotos} onCreate={createMoment} onClose={() => setMomentCreateOpen(false)} /> : null}
       {openPhoto ? <FanPhotoViewer photo={openPhoto} openedFromRatingQueue={false} onClose={() => setOpenPhoto(null)} /> : null}

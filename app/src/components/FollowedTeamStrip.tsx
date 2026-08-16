@@ -38,65 +38,66 @@ export function FollowedTeamStrip() {
     });
   }, []);
 
-  useEffect(() => {
+  const updateStripLayout = useCallback(() => {
     const viewport = viewportRef.current;
+    const frame = viewport?.parentElement;
 
-    if (!viewport) {
-      return;
+    if (!viewport || !frame) return;
+
+    frame.style.removeProperty("width");
+    const availableWidth = frame.clientWidth;
+    const firstTeam = viewport.querySelector<HTMLElement>(".team-strip__team");
+    const teamWidth = firstTeam?.offsetWidth ?? 0;
+    const gap = Number.parseFloat(window.getComputedStyle(viewport).columnGap) || 0;
+    const hasOverflow = viewport.scrollWidth > availableWidth + 2;
+
+    if (hasOverflow && teamWidth > 0) {
+      const pitch = teamWidth + gap;
+      const fullyVisibleTeams = Math.max(1, Math.floor((availableWidth - teamWidth / 2) / pitch));
+      const peekWidth = Math.min(availableWidth, fullyVisibleTeams * pitch + teamWidth / 2);
+      frame.style.width = `${peekWidth}px`;
     }
 
     updateScrollState();
-    viewport.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
-
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateScrollState);
-    resizeObserver?.observe(viewport);
-
-    return () => {
-      viewport.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
-      resizeObserver?.disconnect();
-    };
   }, [updateScrollState]);
 
   useEffect(() => {
-    updateScrollState();
-  }, [followedTeams.length, updateScrollState]);
-
-  const browseTeams = (direction: -1 | 1) => {
     const viewport = viewportRef.current;
 
     if (!viewport) {
       return;
     }
 
-    viewport.scrollBy({
-      left: direction * Math.max(96, viewport.clientWidth * 0.72),
-      behavior: "smooth",
-    });
-  };
+    updateStripLayout();
+    viewport.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateStripLayout);
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateStripLayout);
+    const navigation = viewport.closest(".bottom-navigation");
+    if (navigation) resizeObserver?.observe(navigation);
+
+    return () => {
+      viewport.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateStripLayout);
+      resizeObserver?.disconnect();
+    };
+  }, [updateScrollState, updateStripLayout]);
+
+  useEffect(() => {
+    updateStripLayout();
+  }, [followedTeams.length, updateStripLayout]);
 
   const handleTeamSelection = (teamId: TeamId) => {
     selectTeam(teamId);
   };
 
-  const addTeam = (teamId: OfficialTeamId) => {
-    if (addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  const addTeam = async (teamId: OfficialTeamId) => {
+    if (await addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
   };
 
   return (
     <>
       <div className="team-strip" data-has-overflow={scrollState.hasOverflow}>
-      <button
-        className="team-strip__arrow team-strip__arrow--previous"
-        type="button"
-        aria-label="Browse previous followed teams"
-        disabled={!scrollState.canScrollBackward}
-        onClick={() => browseTeams(-1)}
-      >
-        <span aria-hidden="true">‹</span>
-      </button>
-
       <div
         className="team-strip__viewport-frame"
         data-can-scroll-backward={scrollState.canScrollBackward}
@@ -123,16 +124,6 @@ export function FollowedTeamStrip() {
           })}
         </div>
       </div>
-
-      <button
-        className="team-strip__arrow team-strip__arrow--next"
-        type="button"
-        aria-label="Browse more followed teams"
-        disabled={!scrollState.canScrollForward}
-        onClick={() => browseTeams(1)}
-      >
-        <span aria-hidden="true">›</span>
-      </button>
 
       <button
         className="team-strip__add"

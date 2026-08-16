@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ProfileRecord } from "./types";
+import { useNavigationSide, type NavigationSide } from "../../data/navigationSidePreference";
+import { ProfileVisualSettings } from "../profileVisual/ProfileVisualSettings";
+import { useProfileVisual } from "../profileVisual/ProfileVisualContext";
 
 let localSportSequence = 0;
 
 type ProfileEditDialogProps = {
   readonly profile: ProfileRecord;
-  readonly onSave: (profile: ProfileRecord) => void;
+  readonly onSave: (profile: ProfileRecord) => void | Promise<void>;
   readonly onClose: () => void;
+  readonly accountBacked?: boolean;
+  readonly onSignOut?: () => void | Promise<void>;
 };
 
-export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialogProps) {
+export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = false, onSignOut }: ProfileEditDialogProps) {
   const [draft, setDraft] = useState(profile);
+  const [visualEditorOpen, setVisualEditorOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const { images } = useProfileVisual();
+  const { side: savedNavigationSide, setSide: saveNavigationSide } = useNavigationSide();
+  const [navigationSide, setNavigationSide] = useState<NavigationSide>(savedNavigationSide);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -61,14 +72,23 @@ export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialo
     }));
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSave({
-      ...draft,
-      displayName: draft.displayName.trim(),
-      tagline: draft.tagline.trim(),
-    });
-    onClose();
+    setBusy(true);
+    setError("");
+    try {
+      await onSave({
+        ...draft,
+        displayName: draft.displayName.trim(),
+        tagline: draft.tagline.trim(),
+      });
+      await saveNavigationSide(navigationSide);
+      onClose();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Profile changes could not be saved.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -78,12 +98,12 @@ export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialo
         <header>
           <div>
             <span className="eyebrow">Owner controls</span>
-            <h2 id="profile-edit-title">Edit Profile</h2>
-            <p>Changes stay in this browser session for now.</p>
+            <h2 id="profile-edit-title">{visualEditorOpen ? "Profile Visual" : "Edit Profile"}</h2>
+            <p>{visualEditorOpen ? "Crop and manage the responsive images used on Home." : accountBacked ? "Profile and personal settings synchronize with your FANatical account." : "Prototype changes stay on this device until hosted accounts are configured."}</p>
           </div>
           <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close profile editor" onClick={onClose}>×</button>
         </header>
-        <form onSubmit={submit}>
+        {visualEditorOpen ? <div className="profile-visual-manager"><button type="button" onClick={() => setVisualEditorOpen(false)}>← Back to Profile settings</button><ProfileVisualSettings /></div> : <form onSubmit={(event) => void submit(event)}>
           <fieldset>
             <legend>Profile identity</legend>
             <label>Display name<input required value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} /></label>
@@ -96,6 +116,28 @@ export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialo
                 ))}
               </div>
               <p>The featured category is centered when Profile opens. Its first curated FANfoto supplies the cover.</p>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Personal Settings</legend>
+            <div className="profile-featured-picker" role="radiogroup" aria-labelledby="profile-navigation-side-title">
+              <strong id="profile-navigation-side-title">Navigation Side</strong>
+              <div>
+                {(["left", "right"] as const).map((side) => (
+                  <label key={side}><input type="radio" name="navigationSide" value={side} checked={navigationSide === side} onChange={() => setNavigationSide(side)} /><span>{side === "left" ? "Left" : "Right"}</span></label>
+                ))}
+              </div>
+              <p>Choose which side of the Home profile visual holds the floating feature navigation.</p>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Profile visual</legend>
+            <div className="profile-visual-summary">
+              {(["mobile", "wide"] as const).map((variant) => {
+                const image = images[variant];
+                const label = variant === "mobile" ? "Mobile image" : "Wide image";
+                return <div key={variant}><span><strong>{label}</strong><small>{image?.sourceFilename ?? "FANatical default"}</small></span><button type="button" aria-label={`${image ? "Manage" : "Add"} ${label}`} onClick={() => setVisualEditorOpen(true)}>{image ? "Manage" : "Add image"}</button></div>;
+              })}
             </div>
           </fieldset>
           <fieldset>
@@ -126,10 +168,12 @@ export function ProfileEditDialog({ profile, onSave, onClose }: ProfileEditDialo
             </div>
           </fieldset>
           <div className="profile-edit-dialog__actions">
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit">Save profile</button>
+            {onSignOut ? <button className="profile-edit-dialog__sign-out" type="button" disabled={busy} onClick={() => void onSignOut()}>Sign out on this device</button> : null}
+            <button type="button" disabled={busy} onClick={onClose}>Cancel</button>
+            <button type="submit" disabled={busy}>{busy ? "Saving…" : "Save profile"}</button>
           </div>
-        </form>
+          {error ? <p className="profile-edit-dialog__save-error" role="alert">{error}</p> : null}
+        </form>}
       </section>
     </div>
   );

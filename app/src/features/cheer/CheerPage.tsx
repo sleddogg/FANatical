@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { findOfficialSportByName, isValidOfficialSelection } from "../../data/officialSportsDatabase";
+import { createUuid } from "../../lib/uuid";
 import { useTeamContext } from "../../state/TeamContext";
 import { CheerBuilder } from "./CheerBuilder";
 import { CheerCheckInDialog } from "./CheerCheckInDialog";
@@ -244,7 +245,7 @@ export function CheerPage() {
       setCheers((current) => current.map((cheer) => cheer.id === editingCheerId ? withPublishTimeLiveVariants({ ...cheer, ...draft, bpm: CHEER_PLAYBACK_BPM, publicationStatus }) : cheer));
     } else {
       const cheer = withPublishTimeLiveVariants({
-        id: `cheer-local-${crypto.randomUUID()}`,
+        id: `cheer-local-${createUuid()}`,
         ...draft,
         bpm: CHEER_PLAYBACK_BPM,
         createdBy: currentCheerCreator,

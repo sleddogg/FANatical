@@ -1,4 +1,5 @@
 import type { OfficialLeagueId, OfficialSportId } from "../../data/officialSportsDatabase";
+import { createUuid } from "../../lib/uuid";
 import { demoUser } from "./mockFanbaseData";
 import type { GamePredictionOutcome, GameThread } from "./types";
 
@@ -165,7 +166,7 @@ export function createGamePrediction(game: GameThread, input: { readonly teamASc
   const rules = predictionRulesForGame(game);
   if (!Number.isInteger(input.teamAScore) || !Number.isInteger(input.teamBScore) || input.teamAScore < 0 || input.teamBScore < 0 || input.teamAScore > rules.maximumScore || input.teamBScore > rules.maximumScore || !rules.outcomes.includes(input.predictedOutcome)) return null;
   return {
-    id: `game-prediction-${crypto.randomUUID()}`,
+    id: `game-prediction-${createUuid()}`,
     gameId: game.id,
     userId: demoUser.id,
     username: demoUser.username,
@@ -261,4 +262,3 @@ export function loadGamePredictions(games: readonly GameThread[]) {
   saveGamePredictions(resolved);
   return resolved;
 }
-

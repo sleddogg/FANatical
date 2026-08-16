@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { createUuid } from "../../../lib/uuid";
 import { InternalVenueShell } from "./InternalVenueShell";
 import type { SectionException, TeamSeatingProfile, VenueEnd, VenueLevel, VenueSectionMapping, VenueSide } from "./types";
 import { useRexallVenue } from "./useRexallVenue";
@@ -13,7 +14,7 @@ const sideUses = ["Both", "Side A only", "Side B only"] as const;
 const endUses = ["Both", "End A only", "End B only"] as const;
 
 function newId(prefix: string) {
-  return `${prefix}-${typeof crypto.randomUUID === "function" ? crypto.randomUUID() : Date.now()}`;
+  return `${prefix}-${createUuid()}`;
 }
 
 function SectionGroups({ sections }: { readonly sections: readonly VenueSectionMapping[] }) {

@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { appRoutes } from "../../app/routes";
 import { followedTeamsStorageKey } from "../../data/followedTeams";
+import { navigationSideStorageKey } from "../../data/navigationSidePreference";
 
 function renderProfile() {
   window.sessionStorage.clear();
@@ -44,6 +45,15 @@ describe("Profile owner experience", () => {
     await user.type(nameInput, "Sleddogg");
     expect(within(dialog).queryByLabelText("Avatar placeholder")).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText("Banner placeholder")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByText("FANatical default")).toHaveLength(2);
+    await user.click(within(dialog).getByRole("button", { name: "Add Mobile image" }));
+    expect(within(dialog).getByRole("group", { name: "Mobile image crop area" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("group", { name: "Wide image crop area" })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Upload Mobile image")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    expect(within(dialog).getByLabelText("Upload Wide image")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    await user.click(within(dialog).getByRole("button", { name: /Back to Profile settings/ }));
+    expect(within(dialog).getByRole("radio", { name: "Left" })).toBeChecked();
+    await user.click(within(dialog).getByRole("radio", { name: "Right" }));
     await user.click(within(dialog).getByRole("radio", { name: "Game Face" }));
     await user.click(within(dialog).getByRole("button", { name: "Add sport" }));
     const sportInputs = within(dialog).getAllByLabelText("Sport");
@@ -51,6 +61,7 @@ describe("Profile owner experience", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save profile" }));
 
     expect(screen.getByRole("heading", { name: "Sleddogg", level: 1 })).toBeInTheDocument();
+    expect(window.localStorage.getItem(navigationSideStorageKey)).toBe("right");
     expect(screen.getByRole("button", { name: "Open Game Face Fan Photos" })).toHaveAttribute("aria-current", "true");
     await user.click(screen.getByRole("tab", { name: "Sports Played" }));
     expect(screen.getByRole("heading", { name: "Curling" })).toBeInTheDocument();

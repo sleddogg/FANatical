@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { appRoutes } from "./routes";
+import { navigationSideStorageKey } from "../data/navigationSidePreference";
 
 function renderRoute(route = "/") {
   const router = createMemoryRouter(appRoutes, { initialEntries: [route] });
@@ -22,6 +23,20 @@ describe("FANatical application shell", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("restores the navigation side preference with accessible shortcut names and tooltips", () => {
+    window.localStorage.setItem(navigationSideStorageKey, "right");
+    renderRoute();
+
+    const shortcuts = screen.getByRole("navigation", { name: "Feature shortcuts" });
+    expect(shortcuts).toHaveClass("home-hero__shortcuts--right");
+    for (const label of ["News", "Quiz", "FANbase", "Cheer"]) {
+      const link = screen.getByRole("link", { name: label });
+      expect(link).toBeInTheDocument();
+      expect(link.querySelector(".home-hero__shortcut-tooltip")).toHaveTextContent(label);
+      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    }
   });
 
   it.each([

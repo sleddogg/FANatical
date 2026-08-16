@@ -41,6 +41,7 @@ describe("FollowedTeamStrip", () => {
     expect(screen.getByRole("group", { name: "Followed teams" })).not.toContainElement(
       screen.getByRole("button", { name: "Add Team" }),
     );
+    expect(screen.queryByRole("button", { name: /Browse (previous|more) followed teams/ })).not.toBeInTheDocument();
   });
 
   it("updates the shared selected-team value and persistence when a team is selected", async () => {
