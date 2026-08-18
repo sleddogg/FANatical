@@ -2,20 +2,32 @@
 
 ## Production topology
 
-FANatical uses two Cloudflare Pages projects built from the same `app/` React and TypeScript source and one existing hosted Supabase project.
+FANatical uses two Cloudflare Workers Static Assets projects built by Workers Builds from the same `app/` React and TypeScript source and one existing hosted Supabase project.
 
-| Surface | Domains | Build command | Output | Purpose |
-| --- | --- | --- | --- | --- |
-| `fanatical-web` | `fanaticalpeople.com`, `app.fanaticalpeople.com` | `npm run build` | `app/dist` | The same responsive fan application for browser, mobile web, and the installable-web foundation. |
-| `fanatical-admin` | `admin.fanaticalpeople.com` | `npm run build:admin` | `app/dist-admin` | Private staff shell with no fan-facing navigation and no public account creation. |
+| Worker | Domains | Build command | Deploy command | Static assets | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `fanatical-web` | `fanaticalpeople.com`, `app.fanaticalpeople.com` | `npm run build` | `npm run deploy:web` | `app/dist` | The same responsive fan application for browser, mobile web, and the installable-web foundation. |
+| `fanatical-admin` | `admin.fanaticalpeople.com` | `npm run build:admin` | `npm run deploy:admin` | `app/dist-admin` | Private staff shell with no fan-facing navigation and no public account creation. |
 
 The two builds share the public Supabase client and authenticated account session model. Admin access additionally requires an active row in `public.staff_roles`; RLS permits a signed-in user to read only their own active assignment. Browser clients have no insert, update, or delete permission on this table. Future admin data mutations must also call RLS-protected tables or security-definer RPCs that check `public.has_staff_access(...)`.
 
 The existing `/internal/venues/rexall-place` and `/internal/venues/rexall-place/test` routes remain available in Vite development. They are not registered in the production fan build. Venue administration should move into the authorized admin surface in a later focused task without discarding the existing resolver or mapping model.
 
-## Cloudflare Pages projects
+## Cloudflare Workers Builds projects
 
-Create both Pages projects from the same repository. Set the root directory to `app` and use Node 24 (or a current Cloudflare-supported Node release compatible with the checked-in package lock).
+Import the `sleddogg/FANatical` Git repository twice in Workers & Pages. Both Workers must use `production-foundation` as their production branch and `app` as their root directory. Disable non-production branch builds so the unrelated legacy `main` branch is never built or uploaded as a preview.
+
+Use these exact project settings:
+
+| Setting | Public Worker | Admin Worker |
+| --- | --- | --- |
+| Project name | `fanatical-web` | `fanatical-admin` |
+| Production branch | `production-foundation` | `production-foundation` |
+| Root directory | `app` | `app` |
+| Build command | `npm run build` | `npm run build:admin` |
+| Deploy command | `npm run deploy:web` | `npm run deploy:admin` |
+
+Workers Builds installs dependencies before the build. Wrangler is pinned in `package.json`, and each deploy script selects its matching Wrangler configuration. The configs use Workers Static Assets with `not_found_handling: "single-page-application"`; no Worker runtime script is needed for this client-only application.
 
 For both **Production** and any intentionally enabled **Preview** environment, configure:
 
@@ -26,17 +38,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<the hosted project's publishable key>
 
 The publishable key is designed for a browser client but should still be configured through Pages environment variables. Never add a Supabase secret key, service-role key, database password, or Cloudflare API token to a Vite variable.
 
-The checked-in `wrangler.web.jsonc` and `wrangler.admin.jsonc` describe the matching Pages project/output pairs for an authorized Wrangler deployment. Git-integrated Pages builds can use the table above directly.
+The Supabase values above are build variables because Vite embeds them into the browser bundle. They are not Worker runtime bindings. Do not add Supabase secret/service-role credentials. Cloudflare's generated Workers Builds API token is used only by the build system to deploy the Worker.
 
 ### Custom domains and DNS
 
-Add custom domains from each Pages project's **Custom domains** panel:
+After both Workers deploy successfully to their `workers.dev` test addresses, add custom domains from each Worker's **Settings → Domains & Routes** panel:
 
 1. Attach `fanaticalpeople.com` and `app.fanaticalpeople.com` to `fanatical-web`.
 2. Attach `admin.fanaticalpeople.com` to `fanatical-admin`.
-3. Let Pages create/validate only the required web-host records and managed HTTPS certificates.
+3. Let Cloudflare create/validate only the required web-host records and managed HTTPS certificates.
 
-Do not modify or replace `auth.fanaticalpeople.com`, Microsoft 365/Exchange MX records, SPF, DKIM, DMARC, Resend records, or any other mail/authentication records. Web hosting DNS changes are additive only. Cloudflare Pages manages HTTPS after the custom domains become active.
+Do not modify or replace `auth.fanaticalpeople.com`, Microsoft 365/Exchange MX records, SPF, DKIM, DMARC, Resend records, or any other mail/authentication records. Web hosting DNS changes are additive only. Cloudflare manages HTTPS after the custom domains become active.
 
 ## Supabase production configuration
 
@@ -94,6 +106,8 @@ npm run typecheck
 npm run test:run
 npm run build
 npm run build:admin
+npm run deploy:web -- --dry-run
+npm run deploy:admin -- --dry-run
 ```
 
 After deployment, verify:
@@ -104,4 +118,4 @@ After deployment, verify:
 4. No service-role credential appears in either deployment's environment or JavaScript output.
 5. Existing mail delivery and `auth.fanaticalpeople.com` continue to resolve and operate unchanged.
 
-The `_redirects` files provide Cloudflare Pages SPA fallback. The `_headers` files add baseline browser security headers; the admin build additionally blocks indexing. The web manifest establishes installable-web metadata only—there is deliberately no service worker or offline cache yet.
+Workers Static Assets natively supports the copied `_headers` and `_redirects` files. The Wrangler SPA fallback also serves `index.html` for unmatched browser navigation routes. The admin headers additionally block indexing. The web manifest establishes installable-web metadata only—there is deliberately no service worker or offline cache yet.

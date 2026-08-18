@@ -24,6 +24,6 @@ The Chromium installation is intentionally not performed automatically because i
 
 ## Production surfaces
 
-The default build is the responsive fan application for `fanaticalpeople.com` and `app.fanaticalpeople.com`. The admin-mode build is a separate, private shell for `admin.fanaticalpeople.com`; it requires both Supabase authentication and an active backend `staff_roles` assignment.
+The default build is the responsive fan application for `fanaticalpeople.com` and `app.fanaticalpeople.com`. The admin-mode build is a separate, private shell for `admin.fanaticalpeople.com`; it requires both Supabase authentication and an active backend `staff_roles` assignment. Both are deployed as separate Cloudflare Workers Static Assets projects through Workers Builds.
 
 Hosted Supabase provides the current account/profile foundation. PWA metadata is present, but service-worker/offline behavior and Capacitor packaging remain deliberately deferred. See [`../docs/production-deployment.md`](../docs/production-deployment.md) for the deployment architecture, environment variables, DNS safety boundary, Auth redirects, and admin provisioning process.

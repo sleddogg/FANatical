@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:admin": "tsc -b && vite build --mode admin",
+    "deploy:web": "wrangler deploy --config wrangler.web.jsonc",
+    "deploy:admin": "wrangler deploy --config wrangler.admin.jsonc",
     "preview": "vite preview",
     "preview:admin": "vite preview --mode admin",
     "typecheck": "tsc -b --pretty false",
@@ -32,6 +34,7 @@
     "jsdom": "^30.0.1",
     "typescript": "^7.0.0",
     "vite": "^8.2.1",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "4.124.0"
   }
 }
