@@ -1,0 +1,10 @@
+{
+  "name": "FANatical",
+  "short_name": "FANatical",
+  "description": "Sports news, quizzes, community, and live fan experiences.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f2f2f0",
+  "theme_color": "#f2f2f0"
+}

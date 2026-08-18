@@ -19,6 +19,12 @@ The private `profile-media` bucket stores source and optimized display files
 under `<auth-user-id>/profile-visual/...`. PostgreSQL stores paths and crop
 metadata; the UI creates short-lived signed URLs at read time.
 
+The `staff_roles` table is the authorization source for the separate production
+admin shell. Authenticated browser clients can read only their own active role;
+role assignment is restricted to trusted database/service-role operations.
+Future admin policies and RPCs should use `has_staff_access(...)` and grant the
+minimum role or permission required by each operation.
+
 ## Portability
 
 The UI talks to account/profile repository modules rather than issuing queries

@@ -1,0 +1,9 @@
+{
+  "name": "FANatical Admin",
+  "short_name": "FANatical Admin",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#eeeeeb",
+  "theme_color": "#eeeeeb"
+}

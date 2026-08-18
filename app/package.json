@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:admin": "tsc -b && vite build --mode admin",
     "preview": "vite preview",
+    "preview:admin": "vite preview --mode admin",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest",
     "test:run": "vitest run",

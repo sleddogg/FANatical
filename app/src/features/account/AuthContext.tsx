@@ -62,7 +62,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { display_name: displayName.trim() } },
+      options: {
+        data: { display_name: displayName.trim() },
+        emailRedirectTo: new URL("/profile", window.location.origin).toString(),
+      },
     });
     if (error) throw error;
     return data.session ? "signed-in" : "confirmation-required";

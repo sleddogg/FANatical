@@ -18,14 +18,18 @@ import { RexallVenuePage } from "../features/internal/venues/RexallVenuePage";
 import { featureNavigation } from "./navigation";
 
 export const appRoutes: RouteObject[] = [
-  {
-    path: "/internal/venues/rexall-place",
-    element: <RexallVenuePage />,
-  },
-  {
-    path: "/internal/venues/rexall-place/test",
-    element: <RexallSeatResolverPage />,
-  },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: "/internal/venues/rexall-place",
+          element: <RexallVenuePage />,
+        },
+        {
+          path: "/internal/venues/rexall-place/test",
+          element: <RexallSeatResolverPage />,
+        },
+      ]
+    : []),
   {
     path: "/",
     element: <RootShell />,
