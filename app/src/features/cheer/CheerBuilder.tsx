@@ -4,6 +4,7 @@ import type { CheerAction, CheerActionSegment, CheerDraft, CheerDuration, CheerL
 import { cheerActionIcon, cheerDurationSymbol } from "./cheerPresentation";
 import { cheerAudienceImage, cheerAudienceOptions, cheerRoutingReferences, cheerSportAudienceLegend } from "./cheerRouting";
 import { CheerRecording } from "./CheerRecording";
+import { AppIcon } from "../../components/AppIcon";
 
 const durationOptions = [
   { value: "Sixteenth", beats: "¼ beat" },
@@ -218,7 +219,7 @@ function DfenceHowTo({ onClose }: { readonly onClose: (dontShowAgain: boolean) =
     <div className="cheer-dialog-layer">
       <button className="cheer-dialog-backdrop" type="button" aria-label="Close D-Fence How To" onClick={() => onClose(dontShowAgain)} />
       <section className="cheer-how-to" role="dialog" aria-modal="true" aria-labelledby="cheer-how-to-title">
-        <header><div><span className="eyebrow">How To</span><h2 id="cheer-how-to-title">One Cheer, five creator lanes</h2></div><button type="button" aria-label="Close D-Fence How To" onClick={() => onClose(dontShowAgain)}>×</button></header>
+        <header><div><span className="eyebrow">How To</span><h2 id="cheer-how-to-title">One Cheer, five creator lanes</h2></div><button type="button" aria-label="Close D-Fence How To" onClick={() => onClose(dontShowAgain)}><AppIcon name="x-mark" /></button></header>
         <p>Click any empty rhythmic position to place an Action or Lyric. New events use a ½ beat (eighth note). Action and Lyrics are independent timelines, and events can continue into the next measure.</p>
         <div className="cheer-how-to__lanes" aria-label="D FENCE five lane teaching example">
           <span>Who · Action</span>{cells(["", "", "All", "All"])}
@@ -284,7 +285,7 @@ function PlacementCells({ measure, track, copyBuffer, targetMode, targetTrack, o
     const operationMatches = targetMode === "delete" || (targetMode === "insert" && targetTrack === track);
     const available = operationMatches || (copyMatches && canPlaceSegment(measure, track, unit, units));
     const verb = targetMode === "delete" ? "Delete timing from" : targetMode === "insert" ? "Insert at" : copyBuffer && copyMatches ? "Paste copied" : "Place";
-    return <button className="cheer-placement-cell" key={unit} type="button" disabled={!available} style={laneStyle(unit, 1)} aria-label={`${verb} ${track === "action" ? "Action" : "Lyric"} at ${beatPositionLabel(unit)}`} onClick={() => onPlace(unit)}><span aria-hidden="true">+</span></button>;
+    return <button className="cheer-placement-cell" key={unit} type="button" disabled={!available} style={laneStyle(unit, 1)} aria-label={`${verb} ${track === "action" ? "Action" : "Lyric"} at ${beatPositionLabel(unit)}`} onClick={() => onPlace(unit)}><AppIcon name="plus" /></button>;
   })}</>;
 }
 
@@ -858,7 +859,7 @@ export function CheerBuilder({ draft, onChange, onFinish }: { readonly draft: Ch
             <button type="button" aria-pressed={deleteTimingState ? "true" : "false"} onClick={() => { if (deleteTimingState) cancelTimelineMode(); else { setDeleteTimingState({ phase: "duration" }); setInsertState(null); setCopyBuffer(null); setSelection(null); setMessage("Choose the amount of empty timing to delete."); } }}>{deleteTimingState ? "Cancel Delete Timing" : "Delete Timing"}</button>
             <button type="button" disabled={!undoHistory.length} onClick={undo}>Undo</button>
             <button type="button" disabled={!redoHistory.length} onClick={redo}>Redo</button>
-            <button type="button" aria-expanded={drawerOpen} aria-controls="cheer-original-lyrics" onClick={() => setDrawerOpen((current) => !current)}>Original Lyrics <span aria-hidden="true">{drawerOpen ? "⌃" : "⌄"}</span></button>
+            <button type="button" aria-expanded={drawerOpen} aria-controls="cheer-original-lyrics" onClick={() => setDrawerOpen((current) => !current)}>Original Lyrics <AppIcon className={drawerOpen ? "cheer-disclosure-icon cheer-disclosure-icon--open" : "cheer-disclosure-icon"} name="chevron-down" /></button>
           </div>
           {drawerOpen ? <div className="cheer-original-lyrics" id="cheer-original-lyrics">{lines.map((line, index) => <button type="button" key={`${line}-${index}`} onClick={() => addLyricSuggestion(line)}><small>{estimateSyllables(line, draft.language) ?? "—"}</small><span>{line}</span><b>Use line</b></button>)}</div> : null}
           {insertState?.phase === "track" ? <div className="cheer-operation-step"><strong>Insert</strong><div><button type="button" onClick={() => setInsertState({ phase: "duration", track: "lyrics" })}>Lyric</button><button type="button" onClick={() => setInsertState({ phase: "duration", track: "action" })}>Action</button></div></div> : null}

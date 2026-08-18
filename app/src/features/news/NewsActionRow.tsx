@@ -1,3 +1,4 @@
+import { AppIcon } from "../../components/AppIcon";
 import { formatCount } from "./newsFiltering";
 import type { NewsItem } from "./types";
 
@@ -25,19 +26,19 @@ export function NewsActionRow({
   return (
     <div className={`news-actions news-actions--${variant}`} aria-label={`Actions for ${item.headline}`}>
       <button type="button" aria-label={reacted ? "Remove reaction" : "React"} aria-pressed={reacted} onClick={onReaction}>
-        <span aria-hidden="true">{reacted ? "♥" : "♡"}</span>
+        <AppIcon name={reacted ? "heart-solid" : "heart"} />
         <small>{formatCount(reactionCount)}</small>
       </button>
       <button type="button" aria-label="Open FANbase Article Discussion" onClick={onDiscussion}>
-        <span aria-hidden="true">◯</span>
+        <AppIcon name="chat-bubble-left-right" />
         <small>{formatCount(discussionCount)}</small>
       </button>
       <button type="button" aria-label="Share News item" onClick={onShare}>
-        <span aria-hidden="true">↗</span>
+        <AppIcon name="share" />
         <small>Share</small>
       </button>
       <span className="news-actions__views" aria-label={`${item.viewCount} views`}>
-        <span aria-hidden="true">◉</span>
+        <AppIcon name="eye" />
         <small>{formatCount(item.viewCount)}</small>
       </span>
     </div>

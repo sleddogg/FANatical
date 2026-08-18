@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatEventDate } from "./fanbaseFormatting";
 import type { DiscussionThread, GameThread, GameThreadStatus } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type GameThreadContextCardProps = {
   readonly game: GameThread;
@@ -30,7 +31,7 @@ export function GameThreadContextCard({ game, thread, teamName, status, onReport
         </dl>
       </div>
       <div className="game-context-card__actions">
-        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><span aria-hidden="true">↗</span><span>Share</span></button>
+        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><AppIcon name="share" /><span>Share</span></button>
         <button type="button" onClick={onReport}>{thread.reported ? "Reported" : "Report"}</button>
       </div>
       <div className="game-context-card__notice" role="status" aria-live="polite">{shareNotice}</div>

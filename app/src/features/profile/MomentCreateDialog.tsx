@@ -1,6 +1,7 @@
 import { useEffect, useRef, type FormEvent } from "react";
 import type { FanPhoto } from "../fanbase/types";
 import type { CreateFanMomentInput } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 function formValue(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -52,7 +53,7 @@ export function MomentCreateDialog({
       <section className="profile-edit-dialog profile-moment-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-moment-create-title">
         <header>
           <div><span className="eyebrow">Profile story</span><h2 id="profile-moment-create-title">Add Moment</h2><p>Capture when the memory happened—not just when it was added.</p></div>
-          <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close Add Moment" onClick={onClose}>×</button>
+          <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close Add Moment" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
         <form onSubmit={submit}>
           <fieldset>

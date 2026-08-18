@@ -132,6 +132,13 @@
   font-size: clamp(1.7rem, 3vw, 2.6rem);
 }
 
+.fanbase-hub-card__icon > .app-icon,
+.fanbase-entry-card__glyph > .app-icon,
+.fanbase-detail-card__glyph > .app-icon {
+  width: 1em;
+  height: 1em;
+}
+
 .fanbase-hub-card__copy {
   display: grid;
   gap: var(--space-2);

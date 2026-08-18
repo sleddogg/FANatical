@@ -4,6 +4,7 @@ import { NewsActionRow } from "./NewsActionRow";
 import type { NewsItem, NewsSource } from "./types";
 import { TeamBadge } from "../../components/TeamBadge";
 import { findFollowedTeam } from "../../data/followedTeams";
+import { AppIcon } from "../../components/AppIcon";
 
 type NewsItemOverlayProps = {
   readonly item: NewsItem;
@@ -62,10 +63,10 @@ export function NewsItemOverlay({
         </div>
         <div className="news-item-overlay__controls">
           <button className="news-item-overlay__discussion" type="button" onClick={onContextAction}>
-            <span aria-hidden="true">◯</span><span>{contextActionLabel}</span>
+            <AppIcon name="chat-bubble-left-right" /><span>{contextActionLabel}</span>
           </button>
           <button ref={closeButtonRef} className="news-item-overlay__close" type="button" aria-label="Close News item" onClick={onClose}>
-            ×
+            <AppIcon name="x-mark" />
           </button>
         </div>
       </header>
@@ -93,7 +94,7 @@ export function NewsItemOverlay({
             </div>
           ) : (
             <div className="news-item-detail__external surface">
-              <span aria-hidden="true">↗</span>
+              <AppIcon name="arrow-top-right-on-square" />
               <h2>This item stays with its source</h2>
               <p>
                 Podcasts, videos, paywalled stories, and other source-controlled formats open at their original destination.

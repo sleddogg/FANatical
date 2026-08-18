@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StatDashboard } from "../../components/StatDashboard";
+import { AppIcon } from "../../components/AppIcon";
 import { TeamBadge } from "../../components/TeamBadge";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseCreateDialog } from "../fanbase/FanbaseCreateDialog";
@@ -38,13 +39,13 @@ const profileTabs: readonly { id: ProfileTabId; label: string }[] = [
 type PhotoOrder = Record<FanPhotoCategory, string[]>;
 let localMomentSequence = 0;
 
-const profileStatIcons: Readonly<Record<(typeof profileStats)[number]["label"], string>> = {
-  Streak: "🔥",
-  Tier: "◆",
-  "Fan Score": "★",
+const profileStatIcons: Readonly<Record<(typeof profileStats)[number]["label"], ReactNode>> = {
+  Streak: <AppIcon name="fire" />,
+  Tier: <AppIcon name="trophy" />,
+  "Fan Score": <AppIcon name="star" />,
   "Fan Coins": "●",
-  Rank: "↗",
-  "Sport IQ": "◎",
+  Rank: <AppIcon name="chart-bar" />,
+  "Sport IQ": <AppIcon name="chart-bar" />,
 };
 
 function formatMomentDate(value: string) {
@@ -109,9 +110,9 @@ function ProfilePhotoCategoryScreen({
   return (
     <div className="profile-page profile-page--photo-category">
       <header className="profile-topbar">
-        <button className="profile-back-button" type="button" aria-label="Back to Profile" onClick={onBack}><span aria-hidden="true">←</span><span>Back to Profile</span></button>
+        <button className="profile-back-button" type="button" aria-label="Back to Profile" onClick={onBack}><AppIcon name="arrow-left" /><span>Back to Profile</span></button>
         <div><span className="eyebrow">Profile FANfotos</span><h1>{category}</h1><p>Owner-curated display order</p></div>
-        <button className="profile-edit-button" type="button" aria-label={`Add ${category} FANfoto`} onClick={onAddPhoto}><span aria-hidden="true">+</span><span>Add FANfoto</span></button>
+        <button className="profile-edit-button" type="button" aria-label={`Add ${category} FANfoto`} onClick={onAddPhoto}><AppIcon name="plus" /><span>Add FANfoto</span></button>
       </header>
       <section className="fan-photo-rankings profile-photo-order" aria-labelledby="profile-photo-order-title">
         <header className="fan-photo-rankings__intro">
@@ -129,11 +130,11 @@ function ProfilePhotoCategoryScreen({
                     <td className="fan-photo-ranking-table__identity">
                       <button type="button" aria-label={`Open ${photo.title}`} onClick={() => onOpenPhoto(photo)}>
                         <img src={photo.images[0]?.url} alt="" />
-                        <span><strong>{photo.title}</strong><small>@{photo.owner.username}{photo.images.length > 1 ? ` · ${photo.images.length} images` : ""}</small><small>★ {formatRating(photo.ratingTotal, photo.ratingCount)} · {photo.ratingCount} ratings</small></span>
+                        <span><strong>{photo.title}</strong><small>@{photo.owner.username}{photo.images.length > 1 ? ` · ${photo.images.length} images` : ""}</small><small><AppIcon name="star-solid" /> {formatRating(photo.ratingTotal, photo.ratingCount)} · {photo.ratingCount} ratings</small></span>
                       </button>
                     </td>
                     <td className="profile-photo-order-table__recognition">{photo.rankingBadge ? <span>{photo.rankingBadge}</span> : <small>Not ranked</small>}</td>
-                    <td className="profile-photo-order-table__move"><div><button type="button" aria-label={`Move ${photo.title} up`} disabled={index === 0} onClick={() => onMovePhoto(category, photo.id, -1)}>↑</button><button type="button" aria-label={`Move ${photo.title} down`} disabled={index === photos.length - 1} onClick={() => onMovePhoto(category, photo.id, 1)}>↓</button></div></td>
+                    <td className="profile-photo-order-table__move"><div><button type="button" aria-label={`Move ${photo.title} up`} disabled={index === 0} onClick={() => onMovePhoto(category, photo.id, -1)}><AppIcon name="arrow-up" /></button><button type="button" aria-label={`Move ${photo.title} down`} disabled={index === photos.length - 1} onClick={() => onMovePhoto(category, photo.id, 1)}><AppIcon name="arrow-down" /></button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -149,7 +150,7 @@ function MomentDetailScreen({ moment, photo, onBack, onOpenPhoto }: { readonly m
   return (
     <div className="profile-page profile-page--moment-detail">
       <header className="profile-topbar">
-        <button className="profile-back-button" type="button" aria-label="Back to Moments" onClick={onBack}><span aria-hidden="true">←</span><span>Back to Moments</span></button>
+        <button className="profile-back-button" type="button" aria-label="Back to Moments" onClick={onBack}><AppIcon name="arrow-left" /><span>Back to Moments</span></button>
         <div><span className="eyebrow">Moment</span><h1>{moment.title}</h1><p>{moment.type} · {formatMomentDate(moment.dateOccurred)}</p></div>
         <span />
       </header>
@@ -157,7 +158,7 @@ function MomentDetailScreen({ moment, photo, onBack, onOpenPhoto }: { readonly m
         <header><span className="profile-moment-detail__type">{moment.type}</span><h2>{moment.title}</h2><time dateTime={moment.dateOccurred}>{formatMomentDate(moment.dateOccurred)}</time></header>
         <p className="profile-moment-detail__story">{moment.story}</p>
         {moment.location || moment.eventContext ? <dl>{moment.location ? <div><dt>Location</dt><dd>{moment.location}</dd></div> : null}{moment.eventContext ? <div><dt>Event context</dt><dd>{moment.eventContext}</dd></div> : null}</dl> : null}
-        {photo ? <section className="profile-moment-detail__photo"><div><span className="eyebrow">Connected FANfoto</span><h3>{photo.title}</h3><p>{photo.category} · {photo.images.length > 1 ? `${photo.images.length} images` : "1 image"}</p></div><button type="button" aria-label={`Open connected FANfoto: ${photo.title}`} onClick={() => onOpenPhoto(photo)}><img src={photo.images[0]?.url} alt={photo.images[0]?.alt ?? ""} /><span>View FANfoto <b aria-hidden="true">→</b></span></button></section> : null}
+        {photo ? <section className="profile-moment-detail__photo"><div><span className="eyebrow">Connected FANfoto</span><h3>{photo.title}</h3><p>{photo.category} · {photo.images.length > 1 ? `${photo.images.length} images` : "1 image"}</p></div><button type="button" aria-label={`Open connected FANfoto: ${photo.title}`} onClick={() => onOpenPhoto(photo)}><img src={photo.images[0]?.url} alt={photo.images[0]?.alt ?? ""} /><span>View FANfoto <AppIcon name="arrow-right" /></span></button></section> : null}
       </article>
     </div>
   );
@@ -171,7 +172,7 @@ function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpe
 
   if (tab === "fan-identity") {
     const fields = profile.fanIdentity.filter((field) => field.value.trim() && field.id !== "primary-team" && field.id !== "secondary-teams");
-    return <section className="profile-details profile-details--fan-identity" aria-labelledby="profile-fan-identity-title"><header className="profile-fan-identity-heading"><div><span className="eyebrow">Teams, traditions, and loyalties</span><h2 id="profile-fan-identity-title">Fan Identity</h2></div><button type="button" onClick={onAddTeam}><span aria-hidden="true">+</span> Add Team</button></header><div className="profile-followed-teams" aria-label="Profile followed teams">{followedTeams.map((team, index) => <article key={team.id}><TeamBadge team={team} /><div><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></div>{index === 0 ? <span>Primary</span> : null}</article>)}</div><dl>{fields.map((field) => <div key={field.id}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>;
+    return <section className="profile-details profile-details--fan-identity" aria-labelledby="profile-fan-identity-title"><header className="profile-fan-identity-heading"><div><span className="eyebrow">Teams, traditions, and loyalties</span><h2 id="profile-fan-identity-title">Fan Identity</h2></div><button type="button" onClick={onAddTeam}><AppIcon name="plus" /> Add Team</button></header><div className="profile-followed-teams" aria-label="Profile followed teams">{followedTeams.map((team, index) => <article key={team.id}><TeamBadge team={team} /><div><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></div>{index === 0 ? <span>Primary</span> : null}</article>)}</div><dl>{fields.map((field) => <div key={field.id}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl></section>;
   }
 
   if (tab === "sports-played") {
@@ -183,7 +184,7 @@ function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpe
   }
 
   const photoById = new Map(photos.map((photo) => [photo.id, photo]));
-  return <section className="profile-details profile-details--moments" aria-labelledby="profile-moments-title"><header className="profile-moments-header"><h2 id="profile-moments-title">Moments <span>· The stories behind the score</span></h2><button type="button" onClick={onAddMoment}><span aria-hidden="true">+</span> Add Moment</button></header><div className="profile-moment-list">{moments.map((moment) => { const photo = moment.fanPhotoId ? photoById.get(moment.fanPhotoId) : undefined; return <article className="profile-moment-card" key={moment.id}>{photo ? <button className="profile-moment-card__thumbnail" type="button" aria-label={`Open connected FANfoto: ${photo.title}`} onClick={() => onOpenPhoto(photo)}><img src={photo.images[0]?.url} alt={photo.images[0]?.alt ?? ""} /></button> : <div className="profile-moment-card__thumbnail profile-moment-card__thumbnail--empty" aria-hidden="true">F</div>}<button className="profile-moment-card__story" type="button" aria-label={`Open Moment: ${moment.title}`} onClick={() => onOpenMoment(moment.id)}><span>{moment.type}</span><h3>{moment.title}</h3><time dateTime={moment.dateOccurred}>{formatMomentDate(moment.dateOccurred)}</time><p>{moment.story}</p>{moment.location || moment.eventContext ? <small>{[moment.location, moment.eventContext].filter(Boolean).join(" · ")}</small> : null}</button></article>; })}</div></section>;
+  return <section className="profile-details profile-details--moments" aria-labelledby="profile-moments-title"><header className="profile-moments-header"><h2 id="profile-moments-title">Moments <span>· The stories behind the score</span></h2><button type="button" onClick={onAddMoment}><AppIcon name="plus" /> Add Moment</button></header><div className="profile-moment-list">{moments.map((moment) => { const photo = moment.fanPhotoId ? photoById.get(moment.fanPhotoId) : undefined; return <article className="profile-moment-card" key={moment.id}>{photo ? <button className="profile-moment-card__thumbnail" type="button" aria-label={`Open connected FANfoto: ${photo.title}`} onClick={() => onOpenPhoto(photo)}><img src={photo.images[0]?.url} alt={photo.images[0]?.alt ?? ""} /></button> : <div className="profile-moment-card__thumbnail profile-moment-card__thumbnail--empty" aria-hidden="true">F</div>}<button className="profile-moment-card__story" type="button" aria-label={`Open Moment: ${moment.title}`} onClick={() => onOpenMoment(moment.id)}><span>{moment.type}</span><h3>{moment.title}</h3><time dateTime={moment.dateOccurred}>{formatMomentDate(moment.dateOccurred)}</time><p>{moment.story}</p>{moment.location || moment.eventContext ? <small>{[moment.location, moment.eventContext].filter(Boolean).join(" · ")}</small> : null}</button></article>; })}</div></section>;
 }
 
 export function ProfilePage() {
@@ -347,9 +348,9 @@ export function ProfilePage() {
   return (
     <div className="profile-page">
       <header className="profile-topbar">
-        <button className="profile-back-button" type="button" onClick={goBack}><span aria-hidden="true">←</span><span>Back</span></button>
+        <button className="profile-back-button" type="button" onClick={goBack}><AppIcon name="arrow-left" /><span>Back</span></button>
         <div><span className="eyebrow">Profile</span><h1>{profile.displayName}</h1><p>{profile.tagline}</p></div>
-        {authLoading ? <span aria-hidden="true" /> : isOwner ? <button className="profile-edit-button" type="button" onClick={() => setEditing(true)} aria-label="Edit profile"><span aria-hidden="true">✎</span><span>Edit</span></button> : <button className="profile-edit-button" type="button" onClick={() => setAccountDialogMode("sign-in")} aria-label="Sign in to FANatical"><span aria-hidden="true">→</span><span>Sign In</span></button>}
+        {authLoading ? <span aria-hidden="true" /> : isOwner ? <button className="profile-edit-button" type="button" onClick={() => setEditing(true)} aria-label="Edit profile"><AppIcon name="pencil-square" /><span>Edit</span></button> : <button className="profile-edit-button" type="button" onClick={() => setAccountDialogMode("sign-in")} aria-label="Sign in to FANatical"><AppIcon name="arrow-right" /><span>Sign In</span></button>}
       </header>
 
       {configured ? (
@@ -391,7 +392,7 @@ export function ProfilePage() {
 
       <section className="profile-stats-section" aria-labelledby="profile-stats-title">
         <header className="profile-section-heading"><div><h2 id="profile-stats-title">At a glance</h2></div></header>
-        <StatDashboard label="Profile at a glance" primary={displayProfileStats.slice(0, 2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆" }))} secondary={displayProfileStats.slice(2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? "◆", ...((stat.label === "Fan Score" || stat.label === "Sport IQ") ? { to: "/profile/stats" } : {}) }))} />
+        <StatDashboard label="Profile at a glance" primary={displayProfileStats.slice(0, 2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? <AppIcon name="information-circle" /> }))} secondary={displayProfileStats.slice(2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? <AppIcon name="information-circle" />, ...((stat.label === "Fan Score" || stat.label === "Sport IQ") ? { to: "/profile/stats" } : {}) }))} />
       </section>
 
       <section className="profile-tab-section">

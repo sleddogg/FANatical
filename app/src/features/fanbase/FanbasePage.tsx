@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { TeamBadge } from "../../components/TeamBadge";
+import { AppIcon } from "../../components/AppIcon";
 import { useTeamContext } from "../../state/TeamContext";
 import { FanbaseAreaView } from "./FanbaseAreaViews";
 import { FanbaseCreateDialog, type FanbaseCreationType } from "./FanbaseCreateDialog";
@@ -159,10 +160,10 @@ export function FanbasePage() {
     <div className="fanbase-page">
       <header className={area ? "fanbase-topbar fanbase-topbar--subpage" : "fanbase-topbar"}>
         {area ? (
-          <button className="fanbase-back-trigger" type="button" aria-label={`Back to ${backTarget}`} onClick={back}><span aria-hidden="true">←</span><span className="fanbase-back-trigger__full">Back to {backTarget}</span><span className="fanbase-back-trigger__short">Back</span></button>
+          <button className="fanbase-back-trigger" type="button" aria-label={`Back to ${backTarget}`} onClick={back}><AppIcon name="arrow-left" /><span className="fanbase-back-trigger__full">Back to {backTarget}</span><span className="fanbase-back-trigger__short">Back</span></button>
         ) : (
           <button className="fanbase-team-trigger" type="button" aria-label="Choose FANbase team" aria-expanded={teamFilterOpen} onClick={() => setTeamFilterOpen(true)}>
-            <span aria-hidden="true">☰</span><TeamBadge team={selectedTeam} /><span>{selectedTeam.shortName}</span>
+            <AppIcon name="bars-3" /><TeamBadge team={selectedTeam} /><span>{selectedTeam.shortName}</span>
           </button>
         )}
         <div className="fanbase-topbar__title">
@@ -179,10 +180,10 @@ export function FanbasePage() {
             disabled={!contextualCreationType && !selectedGroup && !selectedEvent && area !== "polls"}
             onClick={() => selectedEvent ? setEventInviteOpen(true) : selectedGroup ? setGroupMembershipOpen(true) : area === "polls" ? setPollCreateOpen(true) : contextualCreationType && setCreateOpen(true)}
           >
-            <span aria-hidden="true">＋</span><span>{contextualAction?.visible}</span>
+            <AppIcon name="plus" /><span>{contextualAction?.visible}</span>
           </button>
         ) : (
-          <button className="fanbase-create-trigger" type="button" aria-label="Create in FANbase" aria-expanded={createOpen} onClick={() => setCreateOpen(true)}><span aria-hidden="true">＋</span><span>Create</span></button>
+          <button className="fanbase-create-trigger" type="button" aria-label="Create in FANbase" aria-expanded={createOpen} onClick={() => setCreateOpen(true)}><AppIcon name="plus" /><span>Create</span></button>
         )}
       </header>
 

@@ -35,7 +35,7 @@ describe("FANatical application shell", () => {
       const link = screen.getByRole("link", { name: label });
       expect(link).toBeInTheDocument();
       expect(link.querySelector(".home-hero__shortcut-tooltip")).toHaveTextContent(label);
-      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(link.querySelector(".app-icon")).toHaveAttribute("aria-hidden", "true");
     }
   });
 

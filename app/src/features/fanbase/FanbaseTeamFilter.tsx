@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FollowedTeam, TeamId } from "../../domain/team";
 import { TeamBadge } from "../../components/TeamBadge";
+import { AppIcon } from "../../components/AppIcon";
 
 type FanbaseTeamFilterProps = {
   readonly teams: readonly FollowedTeam[];
@@ -29,14 +30,14 @@ export function FanbaseTeamFilter({ teams, selectedTeamId, onSelect, onClose }: 
       <section className="fanbase-team-filter" role="dialog" aria-modal="true" aria-labelledby="fanbase-team-filter-title" ref={dialogRef} tabIndex={-1}>
         <header>
           <div><span className="eyebrow">FANbase context</span><h2 id="fanbase-team-filter-title">Choose a followed team</h2></div>
-          <button className="fanbase-icon-button" type="button" aria-label="Close team filter" onClick={onClose}>×</button>
+          <button className="fanbase-icon-button" type="button" aria-label="Close team filter" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
         <div className="fanbase-team-filter__list">
           {teams.map((team) => (
             <button key={team.id} type="button" aria-pressed={team.id === selectedTeamId} onClick={() => onSelect(team.id)}>
               <TeamBadge team={team} />
               <span><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></span>
-              <span aria-hidden="true">{team.id === selectedTeamId ? "✓" : "›"}</span>
+              <AppIcon name={team.id === selectedTeamId ? "check" : "chevron-right"} />
             </button>
           ))}
         </div>

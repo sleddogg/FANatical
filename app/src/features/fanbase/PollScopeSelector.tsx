@@ -10,6 +10,7 @@ import {
 } from "../../data/officialSportsDatabase";
 import { pollScopeLabel } from "./polls";
 import type { PollScope } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type ScopeStage = "sport" | "league" | "team";
 
@@ -41,7 +42,7 @@ export function PollScopeSelector({ currentScope, onSelect, onClose }: {
         <header>
           <div><span className="eyebrow">Currently viewing</span><small>{pollScopeLabel(currentScope)}</small></div>
           <h2 id="poll-scope-title">{stage === "sport" ? "Pick a Sport" : stage === "league" ? "Pick a League" : "Pick a Team"}</h2>
-          <button type="button" aria-label="Close Poll filter" onClick={onClose}>×</button>
+          <button type="button" aria-label="Close Poll filter" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
 
         {stage === "sport" ? (
@@ -54,7 +55,7 @@ export function PollScopeSelector({ currentScope, onSelect, onClose }: {
 
         {stage === "league" ? (
           <>
-            <button className="poll-dialog__back" type="button" onClick={() => setStage("sport")}>← Sports</button>
+            <button className="poll-dialog__back" type="button" onClick={() => setStage("sport")}><AppIcon name="arrow-left" /> Sports</button>
             <button className="poll-scope-primary" type="button" onClick={() => onSelect({ kind: "sport", sportId, leagueId: null, teamId: null })}>Show {sport?.displayName} polls</button>
             {leagues.length ? <><span className="poll-dialog__divider">Or narrow by league</span><div className="poll-scope-grid" aria-label={`${sport?.displayName ?? "Sport"} leagues`}>{leagues.map((candidate) => <button key={candidate.id} type="button" onClick={() => { setLeagueId(candidate.id); setStage("team"); }}><strong>{candidate.displayName}</strong><span>League or team polls</span></button>)}</div></> : <p className="poll-dialog__empty">No official leagues are configured for this sport yet. Sport-wide polls are available.</p>}
           </>
@@ -62,7 +63,7 @@ export function PollScopeSelector({ currentScope, onSelect, onClose }: {
 
         {stage === "team" && leagueId ? (
           <>
-            <button className="poll-dialog__back" type="button" onClick={() => setStage("league")}>← Leagues</button>
+            <button className="poll-dialog__back" type="button" onClick={() => setStage("league")}><AppIcon name="arrow-left" /> Leagues</button>
             <button className="poll-scope-primary" type="button" onClick={() => onSelect({ kind: "league", sportId, leagueId, teamId: null })}>Show {league?.displayName} polls</button>
             <label className="poll-team-search"><span>Or choose a team</span><input type="search" value={teamQuery} placeholder={`Search ${league?.displayName ?? "league"} teams`} onChange={(event) => setTeamQuery(event.target.value)} /></label>
             <div className="poll-team-results" aria-live="polite">
@@ -75,4 +76,3 @@ export function PollScopeSelector({ currentScope, onSelect, onClose }: {
     </div>
   );
 }
-

@@ -4,6 +4,7 @@ import { useTeamContext } from "../state/TeamContext";
 import { ProfileAddTeamDialog } from "../features/profile/ProfileAddTeamDialog";
 import type { OfficialTeamId } from "../data/officialSportsDatabase";
 import { TeamBadge } from "./TeamBadge";
+import { AppIcon } from "./AppIcon";
 
 type ScrollState = Readonly<{
   canScrollBackward: boolean;
@@ -118,7 +119,7 @@ export function FollowedTeamStrip() {
                 onClick={() => handleTeamSelection(team.id)}
               >
                 <TeamBadge team={team} />
-                {isSelected ? <span className="team-strip__selected-marker" aria-hidden="true">✓</span> : null}
+                {isSelected ? <span className="team-strip__selected-marker"><AppIcon name="check" /></span> : null}
               </button>
             );
           })}
@@ -132,7 +133,7 @@ export function FollowedTeamStrip() {
         title="Add a followed team"
         onClick={() => setAddTeamOpen(true)}
       >
-        <span aria-hidden="true">+</span>
+        <AppIcon name="plus" />
       </button>
 
       <span className="visually-hidden" aria-live="polite">

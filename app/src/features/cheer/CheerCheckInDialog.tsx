@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { AppIcon } from "../../components/AppIcon";
 import {
   configuredTeamEvents,
   configuredVenueSports,
@@ -157,22 +158,22 @@ export function CheerCheckInDialog({ initial, onSave, onClear, onClose }: {
     <div className="cheer-dialog-layer">
       <button className="cheer-dialog-backdrop" type="button" aria-label="Close Check In" onClick={onClose} />
       <section className="cheer-check-in" role="dialog" aria-modal="true" aria-labelledby="cheer-check-in-title">
-        <header><div><span className="eyebrow">Shared Cheer context</span><h2 id="cheer-check-in-title">Check In</h2></div><button type="button" aria-label="Close Check In" onClick={onClose}>×</button></header>
+        <header><div><span className="eyebrow">Shared Cheer context</span><h2 id="cheer-check-in-title">Check In</h2></div><button type="button" aria-label="Close Check In" onClick={onClose}><AppIcon name="x-mark" /></button></header>
 
         {stage === "choice" ? <div className="cheer-check-in__choice">
           <p>Check into a mapped venue seat or a shared named location.</p>
           <div className="cheer-check-in__choice-label"><strong>Mapped sports venue</strong><small>Uses the venue’s saved seating and routing rules</small></div>
-          <button className="cheer-check-in__method cheer-check-in__method--primary" type="button" aria-label="Take Photo / Upload Screenshot" onClick={() => chooseMappedMethod("Image")}><span aria-hidden="true">▣</span><strong>Take Photo / Upload Screenshot</strong><small>Ticket screenshot, digital-ticket image, PDF, or physical-ticket photo</small></button>
-          <button className="cheer-check-in__method" type="button" aria-label="Enter Manually" onClick={() => chooseMappedMethod("Manual")}><span aria-hidden="true">⌨</span><strong>Enter Manually</strong><small>Choose venue, sport, event, section, row, and seat</small></button>
+          <button className="cheer-check-in__method cheer-check-in__method--primary" type="button" aria-label="Take Photo / Upload Screenshot" onClick={() => chooseMappedMethod("Image")}><AppIcon name="camera" /><strong>Take Photo / Upload Screenshot</strong><small>Ticket screenshot, digital-ticket image, PDF, or physical-ticket photo</small></button>
+          <button className="cheer-check-in__method" type="button" aria-label="Enter Manually" onClick={() => chooseMappedMethod("Manual")}><AppIcon name="pencil-square" /><strong>Enter Manually</strong><small>Choose venue, sport, event, section, row, and seat</small></button>
           <div className="cheer-check-in__choice-label"><strong>General location</strong><small>For parks, rallies, watch parties, fields, and community events</small></div>
-          <button className="cheer-check-in__method" type="button" aria-label="Choose General Location" onClick={() => { setError(""); setStage("generalDetails"); }}><span aria-hidden="true">◎</span><strong>Choose General Location</strong><small>Join a shared named place with All-only Cheer routing</small></button>
+          <button className="cheer-check-in__method" type="button" aria-label="Choose General Location" onClick={() => { setError(""); setStage("generalDetails"); }}><AppIcon name="map-pin" /><strong>Choose General Location</strong><small>Join a shared named place with All-only Cheer routing</small></button>
           {initial ? <button className="cheer-check-in__checkout" type="button" onClick={onClear}>Check Out</button> : null}
         </div> : null}
 
-        {stage === "upload" ? <div className="cheer-check-in__upload"><button className="cheer-check-in__back" type="button" onClick={back}>← Check-In options</button><h3>Take Photo / Upload Screenshot</h3><p>Choose a screenshot, digital-ticket image, PDF, or photo of a physical ticket.</p><label><span>Ticket file</span><input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => { const file = event.target.files?.[0]; setCapture(file ? { kind: "ticket-file", fileName: file.name, mediaType: file.type || "application/octet-stream" } : null); }} /></label>{capture ? <div className="cheer-check-in__file"><strong>{capture.fileName}</strong><small>{capture.mediaType}</small></div> : null}<aside><strong>Ticket recognition is not enabled yet.</strong><span>This file is ready for a future provider-agnostic extraction layer. For now, continue and confirm or enter the ticket details yourself.</span></aside><button className="cheer-primary-button" type="button" disabled={!capture} onClick={() => { setDraft(emptyMappedCheckInDraft("Image")); setStage("mappedDetails"); }}>Continue to Confirm / Edit</button></div> : null}
+        {stage === "upload" ? <div className="cheer-check-in__upload"><button className="cheer-check-in__back" type="button" onClick={back}><AppIcon name="arrow-left" /> Check-In options</button><h3>Take Photo / Upload Screenshot</h3><p>Choose a screenshot, digital-ticket image, PDF, or photo of a physical ticket.</p><label><span>Ticket file</span><input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => { const file = event.target.files?.[0]; setCapture(file ? { kind: "ticket-file", fileName: file.name, mediaType: file.type || "application/octet-stream" } : null); }} /></label>{capture ? <div className="cheer-check-in__file"><strong>{capture.fileName}</strong><small>{capture.mediaType}</small></div> : null}<aside><strong>Ticket recognition is not enabled yet.</strong><span>This file is ready for a future provider-agnostic extraction layer. For now, continue and confirm or enter the ticket details yourself.</span></aside><button className="cheer-primary-button" type="button" disabled={!capture} onClick={() => { setDraft(emptyMappedCheckInDraft("Image")); setStage("mappedDetails"); }}>Continue to Confirm / Edit</button></div> : null}
 
         {stage === "mappedDetails" ? <form className="cheer-check-in__details" onSubmit={reviewMapped}>
-          <button className="cheer-check-in__back" type="button" onClick={back}>← {draft.method === "Image" ? "Ticket file" : "Check-In options"}</button>
+          <button className="cheer-check-in__back" type="button" onClick={back}><AppIcon name="arrow-left" /> {draft.method === "Image" ? "Ticket file" : "Check-In options"}</button>
           <div><h3>{draft.method === "Image" ? "Confirm / Edit ticket details" : "Enter Manually"}</h3><p>Seat information is validated against the selected venue configuration.</p></div>
           <label>Venue<input required list="check-in-venues" value={draft.venueName} placeholder="Search venues" autoComplete="off" onChange={(event) => updateVenue(event.target.value)} /><datalist id="check-in-venues">{venues.map(({ venue }) => <option key={venue.id} value={venue.name}>{venue.location}</option>)}</datalist><small>{selectedVenue ? selectedVenue.location : "Nearby sorting can be added to this venue search later."}</small></label>
           <label>Sport<select required disabled={!selectedVenue} value={sports.includes(draft.sport) ? draft.sport : ""} onChange={(event) => setDraft((current) => ({ ...current, sport: event.target.value as CheerSport, eventId: "", teamEvent: "" }))}><option value="" disabled>Choose sport</option>{sports.map((sport) => <option key={sport}>{sport}</option>)}</select></label>
@@ -186,14 +187,14 @@ export function CheerCheckInDialog({ initial, onSave, onClear, onClose }: {
         </form> : null}
 
         {stage === "mappedReview" && mappedCandidate ? <div className="cheer-check-in__review">
-          <button className="cheer-check-in__back" type="button" onClick={back}>← Edit details</button>
+          <button className="cheer-check-in__back" type="button" onClick={back}><AppIcon name="arrow-left" /> Edit details</button>
           <div><span className="eyebrow">Confirm before checking in</span><h3>Review Check-In</h3></div>
           <dl><div><dt>Venue</dt><dd>{mappedCandidate.raw.venueName}</dd></div><div><dt>Sport / Team/Event</dt><dd>{mappedCandidate.raw.sport}{mappedCandidate.raw.teamEvent ? ` · ${mappedCandidate.raw.teamEvent}` : ""}</dd></div><div><dt>Seat</dt><dd>Section {mappedCandidate.raw.section} · Row {mappedCandidate.raw.row} · Seat {mappedCandidate.raw.seat}</dd></div></dl>
           <div className="cheer-check-in__actions">{initial ? <button type="button" onClick={onClear}>Check Out</button> : null}<button type="button" onClick={() => setStage("mappedDetails")}>Edit</button><button className="cheer-primary-button" type="button" onClick={() => onSave(mappedCandidate)}>Confirm Check-In</button></div>
         </div> : null}
 
         {stage === "generalDetails" ? <form className="cheer-check-in__details" onSubmit={reviewGeneral}>
-          <button className="cheer-check-in__back" type="button" onClick={back}>← Check-In options</button>
+          <button className="cheer-check-in__back" type="button" onClick={back}><AppIcon name="arrow-left" /> Check-In options</button>
           <div><h3>Choose General Location</h3><p>Select the shared named place where your crowd is gathering. Physical presence verification can be added later.</p></div>
           <label>Named location<input aria-label="Named location" required list="check-in-general-locations" value={generalLocationName} placeholder="Search shared locations" autoComplete="off" onChange={(event) => { setGeneralLocationName(event.target.value); setError(""); }} /><datalist id="check-in-general-locations">{generalLocations.map((location) => <option key={location.id} value={location.name}>{location.locality} · {location.category}</option>)}</datalist><small>{matchedGeneralLocation ? `${matchedGeneralLocation.locality} · ${matchedGeneralLocation.category}` : "Nearby sorting and geolocation can be added later."}</small></label>
           {error ? <p className="cheer-check-in__error" role="alert">{error}</p> : null}
@@ -201,7 +202,7 @@ export function CheerCheckInDialog({ initial, onSave, onClear, onClose }: {
         </form> : null}
 
         {stage === "generalReview" && (generalCandidate || initialGeneral) ? <div className="cheer-check-in__review">
-          <button className="cheer-check-in__back" type="button" onClick={back}>← Change location</button>
+          <button className="cheer-check-in__back" type="button" onClick={back}><AppIcon name="arrow-left" /> Change location</button>
           <div><span className="eyebrow">Confirm shared location</span><h3>Review Location</h3><p>{generalCandidate?.locality ?? initialGeneral?.location.locality}</p></div>
           <dl><div><dt>Location</dt><dd>{generalCandidate?.name ?? initialGeneral?.location.name}</dd></div><div><dt>Cheer routing</dt><dd>Whole crowd</dd></div></dl>
           <div className="cheer-check-in__actions">{initial ? <button type="button" onClick={onClear}>Check Out</button> : null}<button type="button" onClick={() => setStage("generalDetails")}>Edit</button>{generalCandidate ? <button className="cheer-primary-button" type="button" onClick={() => onSave(resolveGeneralLocationCheckIn(generalCandidate))}>Confirm Check-In</button> : null}</div>

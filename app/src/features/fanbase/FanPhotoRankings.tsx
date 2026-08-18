@@ -4,6 +4,7 @@ import type { TeamId } from "../../domain/team";
 import { demoUser } from "./mockFanbaseData";
 import { formatRating } from "./fanbaseFormatting";
 import type { FanPhoto } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type RankingScope = "personal" | "team" | "league" | "sport" | "global";
 
@@ -121,7 +122,7 @@ export function FanPhotoRankings({ photos, teamId, eligibilityThreshold, onOpenI
               <tr>
                 <th className="fan-photo-ranking-table__rated" scope="col">Rated</th>
                 <th className="fan-photo-ranking-table__identity" scope="col">
-                  {showJumpToTop ? <button className="fan-photo-ranking-table__jump" type="button" aria-label={`Jump to ${scopeLabels[activeScope]} rank 1`} onClick={jumpToTop}><span aria-hidden="true">↑</span><small>Rank #1</small></button> : <span>FANfoto</span>}
+                  {showJumpToTop ? <button className="fan-photo-ranking-table__jump" type="button" aria-label={`Jump to ${scopeLabels[activeScope]} rank 1`} onClick={jumpToTop}><AppIcon name="arrow-up" /><small>Rank #1</small></button> : <span>FANfoto</span>}
                 </th>
                 {rankingScopes.map((scope) => (
                   <th key={scope} scope="col" data-active={activeScope === scope ? "true" : undefined}>
@@ -133,11 +134,11 @@ export function FanPhotoRankings({ photos, teamId, eligibilityThreshold, onOpenI
             <tbody>
               {activePhotos.map((photo) => (
                 <tr key={photo.id} data-fan-photo-id={photo.id} data-focused={focusedPhotoId === photo.id ? "true" : undefined} onFocus={() => setFocusedPhotoId(photo.id)}>
-                  <td className="fan-photo-ranking-table__rated"><span aria-label={photo.viewerRating !== null ? `Rated ${photo.viewerRating} out of 5` : "Not yet rated"}>{photo.viewerRating !== null ? "✓" : ""}</span></td>
+                  <td className="fan-photo-ranking-table__rated"><span aria-label={photo.viewerRating !== null ? `Rated ${photo.viewerRating} out of 5` : "Not yet rated"}>{photo.viewerRating !== null ? <AppIcon name="check" /> : null}</span></td>
                   <td className="fan-photo-ranking-table__identity">
                     <button type="button" aria-label={`Open ${photo.title}`} onClick={() => onOpenItem(photo.id)}>
                       <img src={photo.images[0]?.url} alt="" />
-                      <span><strong>{photo.title}</strong><small>@{photo.owner.username}</small><small>★ {formatRating(photo.ratingTotal, photo.ratingCount)} · {photo.ratingCount} ratings</small></span>
+                      <span><strong>{photo.title}</strong><small>@{photo.owner.username}</small><small><AppIcon name="star-solid" /> {formatRating(photo.ratingTotal, photo.ratingCount)} · {photo.ratingCount} ratings</small></span>
                     </button>
                   </td>
                   {rankingScopes.map((scope) => {

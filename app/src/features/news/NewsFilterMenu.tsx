@@ -3,6 +3,7 @@ import { TeamBadge } from "../../components/TeamBadge";
 import type { FollowedTeam } from "../../domain/team";
 import { leagueOptions, sportOptions } from "./mockNewsData";
 import type { NewsFeedContext } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type FilterPanel = "root" | "team" | "league" | "sport";
 
@@ -52,28 +53,28 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
             <span className="news-filter-menu__spacer" />
           ) : (
             <button className="news-text-button" type="button" onClick={() => setPanel("root")}>
-              ← Back
+              <AppIcon name="arrow-left" /> Back
             </button>
           )}
           <h2 id="news-filter-title">{panelTitles[panel]}</h2>
           <button className="news-icon-button news-icon-button--small" type="button" aria-label="Close filters" onClick={onClose}>
-            ×
+            <AppIcon name="x-mark" />
           </button>
         </header>
 
         {panel === "root" ? (
           <div className="news-filter-menu__options">
             <button type="button" onClick={() => setPanel("team")}>
-              <span><strong>Selected Team</strong><small>Choose from your followed teams</small></span><span aria-hidden="true">›</span>
+              <span><strong>Selected Team</strong><small>Choose from your followed teams</small></span><AppIcon name="chevron-right" />
             </button>
             <button type="button" onClick={() => setPanel("league")}>
-              <span><strong>League</strong><small>View one competition</small></span><span aria-hidden="true">›</span>
+              <span><strong>League</strong><small>View one competition</small></span><AppIcon name="chevron-right" />
             </button>
             <button type="button" onClick={() => setPanel("sport")}>
-              <span><strong>Sport</strong><small>Combine all leagues in a sport</small></span><span aria-hidden="true">›</span>
+              <span><strong>Sport</strong><small>Combine all leagues in a sport</small></span><AppIcon name="chevron-right" />
             </button>
             <button type="button" onClick={() => onApply({ kind: "all" })}>
-              <span><strong>All Followed News</strong><small>Everything you follow, newest first</small></span><span aria-hidden="true">✓</span>
+              <span><strong>All Followed News</strong><small>Everything you follow, newest first</small></span><AppIcon name="check" />
             </button>
           </div>
         ) : null}
@@ -86,7 +87,7 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
                   <TeamBadge team={team} />
                   <span><strong>{team.name}</strong><small>{team.league} · {team.sport}</small></span>
                 </span>
-                <span aria-hidden="true">›</span>
+                <AppIcon name="chevron-right" />
               </button>
             ))}
           </div>
@@ -114,7 +115,7 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
             {sportOptions.map((sport) => (
               <button key={sport.id} type="button" onClick={() => onApply({ kind: "sport", sportId: sport.id })}>
                 <span><strong>{sport.label}</strong><small>All included {sport.label.toLowerCase()} leagues</small></span>
-                <span aria-hidden="true">›</span>
+                <AppIcon name="chevron-right" />
               </button>
             ))}
           </div>

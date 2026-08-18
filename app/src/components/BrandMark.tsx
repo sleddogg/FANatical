@@ -1,7 +1,5 @@
+import fanaticalMark from "../assets/branding/fanatical.png";
+
 export function BrandMark() {
-  return (
-    <span className="brand-mark" aria-hidden="true">
-      F
-    </span>
-  );
+  return <img className="brand-mark" src={fanaticalMark} alt="" aria-hidden="true" />;
 }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { AppIcon } from "../../components/AppIcon";
 import { getThreadCommentCount } from "./FanbaseContext";
 import { formatFanbaseTime } from "./fanbaseFormatting";
 import { ReactionPicker } from "./ReactionPicker";
@@ -100,7 +101,7 @@ export function CommunityThreadView({
             </div>
           </article>
         )) : (
-          <div className="community-comments__empty"><span aria-hidden="true">◌</span><p>{emptyMessage}</p></div>
+          <div className="community-comments__empty"><AppIcon name="information-circle" /><p>{emptyMessage}</p></div>
         )}
 
         {!compactTopicMode || compactComposerPosition === "bottom" ? composer : null}

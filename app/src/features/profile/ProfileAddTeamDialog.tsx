@@ -12,6 +12,7 @@ import {
   type OfficialTeamId,
 } from "../../data/officialSportsDatabase";
 import type { FollowedTeam } from "../../domain/team";
+import { AppIcon } from "../../components/AppIcon";
 
 type AddTeamStage = "sport" | "league" | "team" | "confirm";
 
@@ -70,9 +71,9 @@ export function ProfileAddTeamDialog({ followedTeams, onAdd, onClose, placement 
       <button className="profile-dialog-backdrop" type="button" aria-label="Cancel adding team" onClick={onClose} />
       <section className="profile-add-team-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-add-team-title" ref={dialogRef} tabIndex={-1}>
         <header>
-          {stage === "sport" ? <span /> : <button className="profile-add-team-dialog__back" type="button" onClick={back}>← Back</button>}
+          {stage === "sport" ? <span /> : <button className="profile-add-team-dialog__back" type="button" onClick={back}><AppIcon name="arrow-left" /> Back</button>}
           <div><span className="eyebrow">Followed teams</span><h2 id="profile-add-team-title">{title}</h2><p>{[sport?.displayName, league?.displayName].filter(Boolean).join(" · ") || "Add a team to this Profile"}</p></div>
-          <button className="profile-icon-button" type="button" aria-label="Cancel adding team" onClick={onClose}>×</button>
+          <button className="profile-icon-button" type="button" aria-label="Cancel adding team" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
 
         {stage === "sport" ? <div className="profile-add-team-dialog__grid" aria-label="Sports">

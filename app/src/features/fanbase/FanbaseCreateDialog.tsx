@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TeamBadge } from "../../components/TeamBadge";
+import { AppIcon } from "../../components/AppIcon";
 import type { FollowedTeam } from "../../domain/team";
 import type {
   CreateEventInput,
@@ -50,7 +51,7 @@ function ConnectionInvitePicker({ selectedIds, onToggle }: { readonly selectedId
         <div className="fanbase-invite-picker__selected" aria-label="Selected invitees">
           {selectedIds.map((userId) => {
             const connection = mockFanConnections.find((candidate) => candidate.id === userId);
-            return connection ? <button key={userId} type="button" aria-label={`Remove ${connection.username} from invites`} onClick={() => onToggle(userId)}><span className="community-avatar" aria-hidden="true">{connection.initials}</span>@{connection.username}<span aria-hidden="true">×</span></button> : null;
+            return connection ? <button key={userId} type="button" aria-label={`Remove ${connection.username} from invites`} onClick={() => onToggle(userId)}><span className="community-avatar" aria-hidden="true">{connection.initials}</span>@{connection.username}<AppIcon name="x-mark" /></button> : null;
           })}
         </div>
       ) : <p className="fanbase-invite-picker__empty">No fans selected.</p>}
@@ -163,19 +164,19 @@ export function FanbaseCreateDialog({
             <span className="eyebrow">Creating for {team.shortName}</span>
             <h2 id="fanbase-create-title">{creationType ? creationLabels[creationType] : "Create in FANbase"}</h2>
           </div>
-          <button ref={closeButtonRef} className="fanbase-icon-button" type="button" aria-label="Close Create" onClick={onClose}>×</button>
+          <button ref={closeButtonRef} className="fanbase-icon-button" type="button" aria-label="Close Create" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
 
         {!creationType ? (
           <div className="fanbase-create__options">
-            <button type="button" onClick={() => setCreationType("locker")}><span aria-hidden="true">▤</span><span><strong>Locker Room thread</strong><small>Start standalone team talk</small></span></button>
-            <button type="button" onClick={() => setCreationType("photo")}><span aria-hidden="true">▧</span><span><strong>Fan Photo</strong><small>Share Game Face, Fan Cave, or Memorabilia</small></span></button>
-            <button type="button" onClick={() => setCreationType("event")}><span aria-hidden="true">◫</span><span><strong>Event</strong><small>Organize a watch party or meetup</small></span></button>
-            <button type="button" onClick={() => setCreationType("group")}><span aria-hidden="true">◉</span><span><strong>Group</strong><small>Create a smaller fan community</small></span></button>
+            <button type="button" onClick={() => setCreationType("locker")}><AppIcon name="chat-bubble-left-right" /><span><strong>Locker Room thread</strong><small>Start standalone team talk</small></span></button>
+            <button type="button" onClick={() => setCreationType("photo")}><AppIcon name="photo" /><span><strong>Fan Photo</strong><small>Share Game Face, Fan Cave, or Memorabilia</small></span></button>
+            <button type="button" onClick={() => setCreationType("event")}><AppIcon name="calendar-days" /><span><strong>Event</strong><small>Organize a watch party or meetup</small></span></button>
+            <button type="button" onClick={() => setCreationType("group")}><AppIcon name="user-group" /><span><strong>Group</strong><small>Create a smaller fan community</small></span></button>
           </div>
         ) : (
           <form className="fanbase-create__form" onSubmit={submit}>
-            {!initialCreationType ? <button className="fanbase-text-button" type="button" onClick={() => setCreationType(null)}>← Creation options</button> : null}
+            {!initialCreationType ? <button className="fanbase-text-button" type="button" onClick={() => setCreationType(null)}><AppIcon name="arrow-left" /> Creation options</button> : null}
 
             {creationType === "locker" ? (
               <>

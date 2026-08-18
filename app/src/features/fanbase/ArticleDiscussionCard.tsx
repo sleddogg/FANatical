@@ -6,6 +6,7 @@ import { getThreadCommentCount } from "./FanbaseContext";
 import { formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
 import { reactionTypes } from "./ReactionPicker";
 import type { DiscussionThread, ReactionType } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type ArticleDiscussionCardProps = {
   readonly item: NewsItem;
@@ -90,8 +91,8 @@ export function ArticleDiscussionCard({
             </div>
           ) : null}
         </div>
-        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><span aria-hidden="true">↗</span><small>Share</small></button>
-        <Link to={`/news?item=${item.id}`} state={{ articleDiscussionPath: discussionPath }}><span aria-hidden="true">▤</span><small>View News Item</small></Link>
+        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><AppIcon name="share" /><small>Share</small></button>
+        <Link to={`/news?item=${item.id}`} state={{ articleDiscussionPath: discussionPath }}><AppIcon name="newspaper" /><small>View News Item</small></Link>
       </div>
       <div className="article-discussion-card__notice" role="status" aria-live="polite">{shareNotice}</div>
     </article>

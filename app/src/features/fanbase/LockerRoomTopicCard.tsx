@@ -3,6 +3,7 @@ import { getThreadCommentCount } from "./FanbaseContext";
 import { formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
 import { reactionTypes } from "./ReactionPicker";
 import type { DiscussionThread, ReactionType } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type LockerRoomTopicCardProps = {
   readonly thread: DiscussionThread;
@@ -40,7 +41,7 @@ export function LockerRoomTopicCard({ thread, onReact, onReport }: LockerRoomTop
     <article className="article-discussion-card locker-room-topic-card surface">
       <div className="article-discussion-card__content">
         <div className="locker-room-topic-card__context">
-          <span className="fanbase-entry-card__glyph" aria-hidden="true">▤</span>
+          <span className="fanbase-entry-card__glyph"><AppIcon name="chat-bubble-left-right" /></span>
           <span><strong>{thread.category ?? "Team Talk"}</strong><small>Started by @{thread.creator?.username ?? "fan"}</small></span>
         </div>
         <h2>{thread.title ?? "Locker Room topic"}</h2>
@@ -68,7 +69,7 @@ export function LockerRoomTopicCard({ thread, onReact, onReport }: LockerRoomTop
             </div>
           ) : null}
         </div>
-        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><span aria-hidden="true">↗</span><small>Share</small></button>
+        <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><AppIcon name="share" /><small>Share</small></button>
       </div>
       <div className="article-discussion-card__notice" role="status" aria-live="polite">{shareNotice}</div>
     </article>

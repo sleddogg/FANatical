@@ -440,7 +440,7 @@ describe("FANbase frontend", () => {
     await user.click(within(rankings).getByRole("button", { name: "Show Team rankings for Patriots" }));
     const ratedRow = within(rankings).getByRole("button", { name: "Open Ready before sunrise" }).closest("tr");
     expect(ratedRow).not.toBeNull();
-    expect(within(ratedRow as HTMLElement).getByLabelText("Rated 4.5 out of 5")).toHaveTextContent("✓");
+    expect(within(ratedRow as HTMLElement).getByLabelText("Rated 4.5 out of 5").querySelector(".app-icon")).toBeInTheDocument();
   });
 
   it("moves across ranking columns around the same FANfoto and jumps to the active rank 1", async () => {

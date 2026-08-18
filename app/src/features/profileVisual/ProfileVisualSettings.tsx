@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type
 import { useProfileVisual } from "./ProfileVisualContext";
 import { cropImageStyle, useProfileVisualUrl } from "./ProfileVisualMedia";
 import { clampProfileVisualCrop, defaultProfileVisualCrop, type ProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualVariant } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 function cropsMatch(first: ProfileVisualCrop, second: ProfileVisualCrop) {
   return first.focalX === second.focalX && first.focalY === second.focalY && first.zoom === second.zoom;
@@ -107,7 +108,7 @@ function ProfileVisualEditor({ variant, record }: { readonly variant: ProfileVis
       {record ? <label className="profile-visual-editor__zoom">Zoom <input type="range" min="1" max="3" step="0.01" value={crop.zoom} aria-label={`${title} Zoom`} onChange={(event) => updateCrop({ ...crop, zoom: Number(event.target.value) })} /><output>{Math.round(crop.zoom * 100)}%</output></label> : null}
       {error ? <p className="profile-visual-editor__error" role="alert">{error}</p> : null}
       <div className="profile-visual-editor__controls">
-        <label className="profile-visual-editor__upload"><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-label={`${record ? "Replace" : "Upload"} ${title}`} disabled={busy} onChange={upload} /><span>{busy ? "Processing…" : record ? "Replace image" : "Upload image"}</span></label>
+        <label className="profile-visual-editor__upload"><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-label={`${record ? "Replace" : "Upload"} ${title}`} disabled={busy} onChange={upload} /><span><AppIcon name="arrow-up-tray" />{busy ? "Processing…" : record ? "Replace image" : "Upload image"}</span></label>
         {record ? <><button type="button" disabled={busy} onClick={() => setCrop(defaultProfileVisualCrop)}>Reset crop</button><button type="button" disabled={busy || cropsMatch(crop, record.crop)} onClick={() => void persistCrop()}>Save crop</button><button className="profile-visual-editor__remove" type="button" disabled={busy} onClick={() => void remove()}>Remove image</button></> : null}
       </div>
     </section>

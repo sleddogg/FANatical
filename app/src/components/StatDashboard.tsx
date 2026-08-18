@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import "./stat-dashboard.css";
 
 export type DashboardStat = Readonly<{
   label: string;
   value: string;
-  icon: string;
+  icon: ReactNode;
   detail?: string;
   to?: string;
 }>;

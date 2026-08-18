@@ -10,6 +10,7 @@ import {
 } from "./gamePredictor";
 import { demoUser, initialGameThreads } from "./mockFanbaseData";
 import type { GamePredictionOutcome, GameThread } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 function formatPredictionTime(value: string) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
@@ -62,7 +63,7 @@ export function GameDayPredictor({ game, teamName }: { readonly game: GameThread
           {prediction?.resolution ? (
             <>
               <div className="game-predictor__prediction-line"><span>Your prediction</span><strong>{teamName} {prediction.teamAScore}–{prediction.teamBScore} {opposingTeam}</strong><small>{prediction.predictedOutcome} · Submitted {formatPredictionTime(prediction.submittedAt)}</small></div>
-              {prediction.resolution.exactScore ? <div className="game-predictor-called-it"><span aria-hidden="true">✓</span><strong>CALLED IT</strong><small>Exact final score</small></div> : null}
+              {prediction.resolution.exactScore ? <div className="game-predictor-called-it"><AppIcon name="check-circle" /><strong>CALLED IT</strong><small>Exact final score</small></div> : null}
               <div className="game-predictor-metrics">
                 <div><span>Correct winner</span><strong>{formatMetric(prediction.resolution.correctWinner)}</strong></div>
                 <div><span>{teamName} error</span><strong>{prediction.resolution.teamAScoreError}</strong></div>
@@ -82,7 +83,7 @@ export function GameDayPredictor({ game, teamName }: { readonly game: GameThread
           {exactPredictors.length ? <div className="game-predictor-recognition"><span className="eyebrow">Exact-score predictors</span><h3>CALLED IT</h3><div>{exactPredictors.map((record) => <span key={record.id}><b>{record.username}</b><small>{record.teamAScore}–{record.teamBScore}</small></span>)}</div></div> : null}
         </div>
       ) : prediction ? (
-        <div className="game-predictor-locked"><span aria-hidden="true">✓</span><div><strong>Your prediction is locked</strong><p>{teamName} {prediction.teamAScore}–{prediction.teamBScore} {opposingTeam} · {prediction.predictedOutcome}</p><small>Submitted {formatPredictionTime(prediction.submittedAt)} · Resolves automatically when the game is final.</small></div></div>
+        <div className="game-predictor-locked"><AppIcon name="lock-closed" /><div><strong>Your prediction is locked</strong><p>{teamName} {prediction.teamAScore}–{prediction.teamBScore} {opposingTeam} · {prediction.predictedOutcome}</p><small>Submitted {formatPredictionTime(prediction.submittedAt)} · Resolves automatically when the game is final.</small></div></div>
       ) : beforeCutoff ? (
         <div className="game-predictor-form">
           <div className="game-predictor-score-inputs"><label><span>{teamName}</span><input type="number" inputMode="numeric" min="0" max={rules.maximumScore} value={teamAScore} placeholder="0" onChange={(event) => setTeamAScore(event.target.value)} /></label><span aria-hidden="true">–</span><label><span>{opposingTeam}</span><input type="number" inputMode="numeric" min="0" max={rules.maximumScore} value={teamBScore} placeholder="0" onChange={(event) => setTeamBScore(event.target.value)} /></label></div>

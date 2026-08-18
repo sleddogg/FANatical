@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { AppIcon } from "../../../components/AppIcon";
 import { InternalVenueShell } from "./InternalVenueShell";
 import { resolveRexallSeat } from "./rexallVenueData";
 import type { SeatResolution } from "./types";
@@ -28,7 +29,7 @@ export function RexallSeatResolverPage() {
   return (
     <InternalVenueShell mode="tester">
       <main className="resolver-main">
-        <header className="resolver-heading"><div><span className="internal-kicker">Physical Cheer routing</span><h1>{venue.name} Seat Resolver Tester</h1><p>Enter any section, row, and seat. This explains physical routing only—it does not validate a ticket or event configuration.</p></div><Link to="/internal/venues/rexall-place">← Edit Venue Mapping</Link></header>
+        <header className="resolver-heading"><div><span className="internal-kicker">Physical Cheer routing</span><h1>{venue.name} Seat Resolver Tester</h1><p>Enter any section, row, and seat. This explains physical routing only—it does not validate a ticket or event configuration.</p></div><Link to="/internal/venues/rexall-place"><AppIcon name="arrow-left" /> Edit Venue Mapping</Link></header>
         <div className="resolver-layout">
           <form className="internal-panel resolver-form" onSubmit={resolve}>
             <header><span className="internal-kicker">Test input</span><h2>Resolve a seat</h2></header>
@@ -39,8 +40,8 @@ export function RexallSeatResolverPage() {
           </form>
 
           <section className="internal-panel resolver-result" aria-live="polite">
-            {!testedInput ? <div className="resolver-placeholder"><span aria-hidden="true">◎</span><h2>Ready to resolve</h2><p>The seeded example is Section 114 · Row 12 · Seat 8.</p></div> : null}
-            {error ? <div className="resolver-placeholder resolver-placeholder--error"><span aria-hidden="true">!</span><h2>No mapping found</h2><p>{error}</p></div> : null}
+            {!testedInput ? <div className="resolver-placeholder"><AppIcon name="information-circle" /><h2>Ready to resolve</h2><p>The seeded example is Section 114 · Row 12 · Seat 8.</p></div> : null}
+            {error ? <div className="resolver-placeholder resolver-placeholder--error"><AppIcon name="exclamation-triangle" /><h2>No mapping found</h2><p>{error}</p></div> : null}
             {resolution && testedInput ? <>
               <header><span className="internal-kicker">Seat</span><h2>Section {resolution.section.section} · Row {testedInput.row} · Seat {testedInput.seat}</h2></header>
               <div className="resolved-location"><span>Resolved location</span><strong>{resolution.level.value} · {resolution.side.value} · {resolution.end.value}</strong></div>

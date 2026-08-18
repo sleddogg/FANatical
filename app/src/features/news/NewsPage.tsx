@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTeamContext } from "../../state/TeamContext";
+import { AppIcon } from "../../components/AppIcon";
 import { useFanbaseContext } from "../fanbase/FanbaseContext";
 import { NewsCard } from "./NewsCard";
 import { NewsFilterMenu } from "./NewsFilterMenu";
@@ -139,7 +140,7 @@ export function NewsPage() {
     <div className="news-page">
       <header className="news-header">
         <button className="news-filter-trigger" type="button" aria-label="Open News filters" aria-expanded={filterOpen} onClick={() => setFilterOpen(true)}>
-          <span className="news-filter-trigger__icon" aria-hidden="true">☰</span>
+          <AppIcon className="news-filter-trigger__icon" name="bars-3" />
           <span>Filter</span>
         </button>
         <div className="news-header__title">
@@ -148,7 +149,7 @@ export function NewsPage() {
           <p>{getFeedContextLabel(feedContext)}</p>
         </div>
         <button className="news-add-feed" type="button" onClick={() => setSourceManagerOpen(true)}>
-          <span aria-hidden="true">＋</span><span>Add Feed</span>
+          <AppIcon name="plus" /><span>Add Feed</span>
         </button>
       </header>
 
@@ -184,7 +185,7 @@ export function NewsPage() {
         </div>
       ) : (
         <div className="news-empty-state surface">
-          <span aria-hidden="true">⌁</span>
+          <AppIcon name="information-circle" />
           <h2>No News in this view</h2>
           <p>Try another context or manage your followed sources and content types.</p>
         </div>
@@ -192,7 +193,7 @@ export function NewsPage() {
 
       <div className={notice ? "news-notice news-notice--visible" : "news-notice"} role="status" aria-live="polite">
         {notice}
-        {notice ? <button type="button" aria-label="Dismiss message" onClick={() => setNotice("")}>×</button> : null}
+        {notice ? <button type="button" aria-label="Dismiss message" onClick={() => setNotice("")}><AppIcon name="x-mark" /></button> : null}
       </div>
 
       {filterOpen ? (

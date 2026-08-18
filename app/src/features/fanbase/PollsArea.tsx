@@ -13,6 +13,7 @@ import {
   searchPolls,
 } from "./polls";
 import type { FanPoll, PollScope } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type PollView = "active" | "browse";
 
@@ -39,14 +40,14 @@ function PollCard({ poll, resultsVisible, onVote, onShare, onOpenPrevious }: {
       {resultsVisible || poll.viewerOptionId ? <PollResults poll={poll} /> : <div className="poll-options" aria-label="Poll answers">{poll.options.map((option) => <button key={option.id} type="button" onClick={() => onVote(option.id)}>{option.label}</button>)}</div>}
       <footer>
         <div className="poll-topics" aria-label="Poll topics">{poll.topics.slice(0, 4).map((topic) => <span key={topic}>{topic}</span>)}</div>
-        <div className="poll-actions">{poll.linkedPreviousPollId ? <button type="button" onClick={() => onOpenPrevious(poll.linkedPreviousPollId!)}>Previous Poll</button> : null}<button type="button" onClick={onShare}>Share</button></div>
+        <div className="poll-actions">{poll.linkedPreviousPollId ? <button type="button" onClick={() => onOpenPrevious(poll.linkedPreviousPollId!)}>Previous Poll</button> : null}<button type="button" onClick={onShare}><AppIcon name="share" /> Share</button></div>
       </footer>
     </article>
   );
 }
 
 function RelatedPollDialog({ poll, onClose }: { readonly poll: FanPoll; readonly onClose: () => void }) {
-  return <div className="fanbase-dialog-layer poll-dialog-layer" role="presentation"><button className="fanbase-backdrop" type="button" aria-label="Close previous Poll results" onClick={onClose} /><section className="poll-dialog poll-related-dialog" role="dialog" aria-modal="true" aria-labelledby="related-poll-title"><header><div><span className="eyebrow">Previous Poll</span><small>{pollScopeLabel(poll.scope)}</small></div><h2 id="related-poll-title">Compare results</h2><button type="button" aria-label="Close previous Poll results" onClick={onClose}>×</button></header><div className="poll-related-dialog__body"><h3>{poll.question}</h3><PollResults poll={poll} /></div></section></div>;
+  return <div className="fanbase-dialog-layer poll-dialog-layer" role="presentation"><button className="fanbase-backdrop" type="button" aria-label="Close previous Poll results" onClick={onClose} /><section className="poll-dialog poll-related-dialog" role="dialog" aria-modal="true" aria-labelledby="related-poll-title"><header><div><span className="eyebrow">Previous Poll</span><small>{pollScopeLabel(poll.scope)}</small></div><h2 id="related-poll-title">Compare results</h2><button type="button" aria-label="Close previous Poll results" onClick={onClose}><AppIcon name="x-mark" /></button></header><div className="poll-related-dialog__body"><h3>{poll.question}</h3><PollResults poll={poll} /></div></section></div>;
 }
 
 export function PollsArea({ teamId, itemId }: { readonly teamId: TeamId; readonly itemId: string | null }) {
@@ -111,15 +112,14 @@ export function PollsArea({ teamId, itemId }: { readonly teamId: TeamId; readonl
     <section className="polls-area">
       <div className="polls-toolbar surface">
         <div><span className="eyebrow">Poll scope</span><h2>{pollScopeLabel(scope)}</h2><p>{scope.kind === "team" ? "Team-specific Polls" : scope.kind === "league" ? "League-wide Polls" : "Sport-wide Polls"}</p></div>
-        <button type="button" onClick={() => setScopeOpen(true)}>Change Poll scope <span aria-hidden="true">⌄</span></button>
+        <button type="button" onClick={() => setScopeOpen(true)}>Change Poll scope <AppIcon name="chevron-down" /></button>
       </div>
       <div className="poll-view-tabs" role="tablist" aria-label="Poll views"><button type="button" role="tab" aria-selected={view === "active"} onClick={() => setView("active")}>Active</button><button type="button" role="tab" aria-selected={view === "browse"} onClick={() => setView("browse")}>Browse</button></div>
       {view === "active" ? <div className="poll-view-intro"><div><span className="eyebrow">Trending now</span><h2>Unanswered Polls</h2></div><p>Recent questions with active voting rise to the top. Vote to reveal results and bring another Poll into your queue.</p></div> : <label className="poll-browse-search"><span>Search Polls</span><input type="search" value={browseQuery} placeholder={`Search ${pollScopeLabel(scope)} Polls`} onChange={(event) => setBrowseQuery(event.target.value)} /></label>}
-      <div className="poll-list" aria-live="polite">{visiblePolls.map((poll) => <PollCard key={poll.id} poll={poll} resultsVisible={poll.viewerOptionId !== null || revealedPollId === poll.id} onVote={(optionId) => vote(poll.id, optionId)} onShare={() => void share(poll)} onOpenPrevious={setRelatedPollId} />)}{!visiblePolls.length ? <div className="fanbase-empty surface"><span aria-hidden="true">◌</span><p>{view === "active" ? "You’re caught up for this scope. Browse the Poll history or try another team, league, or sport." : "No Polls match that search in this scope."}</p></div> : null}</div>
+      <div className="poll-list" aria-live="polite">{visiblePolls.map((poll) => <PollCard key={poll.id} poll={poll} resultsVisible={poll.viewerOptionId !== null || revealedPollId === poll.id} onVote={(optionId) => vote(poll.id, optionId)} onShare={() => void share(poll)} onOpenPrevious={setRelatedPollId} />)}{!visiblePolls.length ? <div className="fanbase-empty surface"><AppIcon name="information-circle" /><p>{view === "active" ? "You’re caught up for this scope. Browse the Poll history or try another team, league, or sport." : "No Polls match that search in this scope."}</p></div> : null}</div>
       <p className="poll-share-notice" role="status">{notice}</p>
       {scopeOpen ? <PollScopeSelector currentScope={scope} onSelect={(nextScope) => { setScope(nextScope); setBrowseQuery(""); setRevealedPollId(null); setScopeOpen(false); }} onClose={() => setScopeOpen(false)} /> : null}
       {relatedPoll ? <RelatedPollDialog poll={relatedPoll} onClose={() => setRelatedPollId(null)} /> : null}
     </section>
   );
 }
-

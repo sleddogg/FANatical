@@ -9,6 +9,7 @@ import {
   sportsStatsUser,
 } from "../stats/sportsStats";
 import type { OfficialSportId } from "../../data/officialSportsDatabase";
+import { AppIcon } from "../../components/AppIcon";
 import "./profile.css";
 import "./personalSportsStats.css";
 
@@ -37,7 +38,7 @@ export function PersonalSportsStatsPage() {
   return (
     <div className="personal-stats-page">
       <header className="profile-topbar personal-stats-topbar">
-        <button className="profile-back-button" type="button" onClick={back}><span aria-hidden="true">←</span><span>Back</span></button>
+        <button className="profile-back-button" type="button" onClick={back}><AppIcon name="arrow-left" /><span>Back</span></button>
         <div><span className="eyebrow">{isOwner ? "Your sports intelligence" : "Public sports intelligence"}</span><h1>{user.username} Sports Stats</h1><p>Quiz, Predictor, and Team-specific fandom performance</p></div>
         <span />
       </header>

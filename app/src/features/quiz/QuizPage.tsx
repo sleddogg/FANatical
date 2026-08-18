@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StatDashboard } from "../../components/StatDashboard";
+import { AppIcon, type AppIconName } from "../../components/AppIcon";
 import { ActiveQuiz } from "./ActiveQuiz";
 import { CreateQuizFlow } from "./CreateQuizFlow";
 import { MOCK_RETAKE_COOLDOWN_DAYS, mockQuizAttempts, mockQuizCatalog, mockQuizStats, quizLeagues } from "./mockQuizData";
@@ -26,10 +27,10 @@ const difficultyDescriptions: Readonly<Record<QuizDifficulty, string>> = {
   Rookie: "A welcoming place to build your knowledge",
 };
 
-const pathDetails: Readonly<Record<QuizSelectionPath, { title: string; icon: string; description: string }>> = {
-  random: { title: "Random Quiz", icon: "↝", description: "Let FANatical choose an available match for you." },
-  browse: { title: "Browse Category", icon: "▦", description: "Explore matching topics and choose your quiz." },
-  retake: { title: "Retake Quiz", icon: "↻", description: "Replay an eligible completed quiz after cooldown." },
+const pathDetails: Readonly<Record<QuizSelectionPath, { title: string; icon: AppIconName; description: string }>> = {
+  random: { title: "Random Quiz", icon: "sparkles", description: "Let FANatical choose an available match for you." },
+  browse: { title: "Browse Category", icon: "squares-2x2", description: "Explore matching topics and choose your quiz." },
+  retake: { title: "Retake Quiz", icon: "arrow-path", description: "Replay an eligible completed quiz after cooldown." },
 };
 
 function daysSince(value: string) {
@@ -40,8 +41,8 @@ function QuizStatsDashboard() {
   return (
     <StatDashboard
       label="Quiz dashboard"
-      primary={[{ label: "Streak", value: mockQuizStats.streak, icon: "🔥" }, { label: "Today", value: mockQuizStats.today, icon: "▣" }]}
-      secondary={[{ label: "Fan Score", value: mockQuizStats.fanScore, icon: "★" }, { label: "Fan Coins", value: mockQuizStats.fanCoins, icon: "●" }, { label: "Completed", value: mockQuizStats.completed, icon: "◉" }, { label: "Average Score", value: mockQuizStats.averageScore, icon: "▥" }]}
+      primary={[{ label: "Streak", value: mockQuizStats.streak, icon: <AppIcon name="fire" /> }, { label: "Today", value: mockQuizStats.today, icon: <AppIcon name="calendar-days" /> }]}
+      secondary={[{ label: "Fan Score", value: mockQuizStats.fanScore, icon: <AppIcon name="star" /> }, { label: "Fan Coins", value: mockQuizStats.fanCoins, icon: "●" }, { label: "Completed", value: mockQuizStats.completed, icon: <AppIcon name="check-circle" /> }, { label: "Average Score", value: mockQuizStats.averageScore, icon: <AppIcon name="chart-bar" /> }]}
     />
   );
 }
@@ -54,7 +55,7 @@ function QuizSelectionHeader({ title, context, backLabel, onBack }: {
 }) {
   return (
     <header className="quiz-selection-header">
-      <div>{onBack ? <button type="button" aria-label={backLabel ?? "Back one quiz selection level"} onClick={onBack}><span aria-hidden="true">←</span><span>Back</span></button> : null}</div>
+      <div>{onBack ? <button type="button" aria-label={backLabel ?? "Back one quiz selection level"} onClick={onBack}><AppIcon name="arrow-left" /><span>Back</span></button> : null}</div>
       <h2 id="quiz-selection-title">{title}</h2>
       <div>{context ? <span className="quiz-selection-header__context" aria-label="Current quiz context">{context}</span> : null}</div>
     </header>
@@ -68,7 +69,7 @@ function QuizCard({ quiz, detail, onChoose }: { readonly quiz: QuizRecord; reado
       <strong>{quiz.title}</strong>
       <span>{quiz.description}</span>
       <small>{detail ?? `${quiz.questionCount} questions · ${quiz.averageScore}% average score`}</small>
-      <b>Choose quiz <span aria-hidden="true">→</span></b>
+      <b>Choose quiz <AppIcon name="arrow-right" /></b>
     </button>
   );
 }
@@ -214,7 +215,7 @@ export function QuizPage() {
 
   const renderStep = () => {
     if (step === "sport") return (
-      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Pick a Sport" /><p className="quiz-selection-guidance">Choose where you want to test your fan knowledge.</p><div className="quiz-option-list">{quizSports.map((option) => <button key={option} type="button" onClick={() => { setSport(option); setLeague(null); setDifficulty(null); setStep("league"); }}><span className="quiz-option-list__icon" aria-hidden="true">{sportIcons[option]}</span><strong>{option}</strong><span aria-hidden="true">→</span></button>)}</div></section>
+      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Pick a Sport" /><p className="quiz-selection-guidance">Choose where you want to test your fan knowledge.</p><div className="quiz-option-list">{quizSports.map((option) => <button key={option} type="button" onClick={() => { setSport(option); setLeague(null); setDifficulty(null); setStep("league"); }}><span className="quiz-option-list__icon" aria-hidden="true">{sportIcons[option]}</span><strong>{option}</strong><AppIcon name="arrow-right" /></button>)}</div></section>
     );
 
     if (step === "league") return (
@@ -222,23 +223,23 @@ export function QuizPage() {
     );
 
     if (step === "difficulty") return (
-      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Pick a Difficulty" context={[sport, league].filter(Boolean).join(" · ")} backLabel="Back to leagues" onBack={selectionBack} /><div className="quiz-difficulty-list">{quizDifficulties.map((option) => <button key={option} type="button" onClick={() => { setDifficulty(option); setStep("path"); }}><span><strong>{option}</strong><small>{difficultyDescriptions[option]}</small></span><span aria-hidden="true">→</span></button>)}</div></section>
+      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Pick a Difficulty" context={[sport, league].filter(Boolean).join(" · ")} backLabel="Back to leagues" onBack={selectionBack} /><div className="quiz-difficulty-list">{quizDifficulties.map((option) => <button key={option} type="button" onClick={() => { setDifficulty(option); setStep("path"); }}><span><strong>{option}</strong><small>{difficultyDescriptions[option]}</small></span><AppIcon name="arrow-right" /></button>)}</div></section>
     );
 
     if (step === "path") return (
-      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to difficulties" onBack={selectionBack} /><div className="quiz-path-grid">{(["random", "browse", "retake"] as const).map((path) => <button key={path} type="button" onClick={() => choosePath(path)}><span aria-hidden="true">{pathDetails[path].icon}</span><strong>{pathDetails[path].title}</strong><small>{pathDetails[path].description}</small>{path === "retake" ? <b>{eligibleRetakes.length} eligible</b> : null}</button>)}</div></section>
+      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to difficulties" onBack={selectionBack} /><div className="quiz-path-grid">{(["random", "browse", "retake"] as const).map((path) => <button key={path} type="button" onClick={() => choosePath(path)}><AppIcon name={pathDetails[path].icon} /><strong>{pathDetails[path].title}</strong><small>{pathDetails[path].description}</small>{path === "retake" ? <b>{eligibleRetakes.length} eligible</b> : null}</button>)}</div></section>
     );
 
     if (step === "random-empty") return (
-      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-empty-state"><span aria-hidden="true">◌</span><h3>No quizzes available for this selection</h3><p>Try another difficulty or return to Quiz Selection and browse a different path.</p><button type="button" onClick={() => setStep("difficulty")}>Change difficulty</button></div></section>
+      <section className="quiz-selection-panel" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-empty-state"><AppIcon name="information-circle" /><h3>No quizzes available for this selection</h3><p>Try another difficulty or return to Quiz Selection and browse a different path.</p><button type="button" onClick={() => setStep("difficulty")}>Change difficulty</button></div></section>
     );
 
     if (step === "browse") return (
-      <section className="quiz-selection-panel quiz-selection-panel--catalog" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-step-heading"><span className="eyebrow">Browse Category</span><h3>Choose a Topic</h3><p>Filter the matching quiz cards by category, then pick one to play.</p></div>{matchingQuizzes.length ? <><div className="quiz-topic-filter" aria-label="Quiz topics"><button type="button" aria-pressed={selectedTopic === null} onClick={() => setSelectedTopic(null)}>All topics</button>{browseTopics.map((topic) => <button key={topic} type="button" aria-pressed={selectedTopic === topic} onClick={() => setSelectedTopic(topic)}>{topic}</button>)}</div><div className="quiz-catalog-grid">{browseQuizzes.map((quiz) => <QuizCard key={quiz.id} quiz={quiz} onChoose={() => chooseQuiz(quiz, "browse")} />)}</div></> : <div className="quiz-empty-state"><span aria-hidden="true">◌</span><h3>No quizzes available</h3><p>No approved quiz cards match this sport, league, and difficulty yet.</p></div>}</section>
+      <section className="quiz-selection-panel quiz-selection-panel--catalog" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-step-heading"><span className="eyebrow">Browse Category</span><h3>Choose a Topic</h3><p>Filter the matching quiz cards by category, then pick one to play.</p></div>{matchingQuizzes.length ? <><div className="quiz-topic-filter" aria-label="Quiz topics"><button type="button" aria-pressed={selectedTopic === null} onClick={() => setSelectedTopic(null)}>All topics</button>{browseTopics.map((topic) => <button key={topic} type="button" aria-pressed={selectedTopic === topic} onClick={() => setSelectedTopic(topic)}>{topic}</button>)}</div><div className="quiz-catalog-grid">{browseQuizzes.map((quiz) => <QuizCard key={quiz.id} quiz={quiz} onChoose={() => chooseQuiz(quiz, "browse")} />)}</div></> : <div className="quiz-empty-state"><AppIcon name="information-circle" /><h3>No quizzes available</h3><p>No approved quiz cards match this sport, league, and difficulty yet.</p></div>}</section>
     );
 
     if (step === "retake") return (
-      <section className="quiz-selection-panel quiz-selection-panel--catalog" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-step-heading"><span className="eyebrow">Retake Quiz</span><h3>Eligible Retakes</h3><p>Completed quizzes return after the mock {MOCK_RETAKE_COOLDOWN_DAYS}-day cooldown. Perfect scores remain eligible.</p></div>{eligibleRetakes.length ? <div className="quiz-catalog-grid">{eligibleRetakes.map(({ quiz, attempt }) => <QuizCard key={quiz.id} quiz={quiz} detail={`Last score ${attempt.score}% · completed ${daysSince(attempt.completedAt)} days ago`} onChoose={() => chooseQuiz(quiz, "retake")} />)}</div> : <div className="quiz-empty-state"><span aria-hidden="true">◷</span><h3>No retakes available yet.</h3><p>Recently completed quizzes remain in cooldown, and unfinished quizzes appear through Random or Browse.</p></div>}</section>
+      <section className="quiz-selection-panel quiz-selection-panel--catalog" aria-labelledby="quiz-selection-title"><QuizSelectionHeader title="Choose a Quiz" context={selectionContext} backLabel="Back to quiz selection" onBack={selectionBack} /><div className="quiz-step-heading"><span className="eyebrow">Retake Quiz</span><h3>Eligible Retakes</h3><p>Completed quizzes return after the mock {MOCK_RETAKE_COOLDOWN_DAYS}-day cooldown. Perfect scores remain eligible.</p></div>{eligibleRetakes.length ? <div className="quiz-catalog-grid">{eligibleRetakes.map(({ quiz, attempt }) => <QuizCard key={quiz.id} quiz={quiz} detail={`Last score ${attempt.score}% · completed ${daysSince(attempt.completedAt)} days ago`} onChoose={() => chooseQuiz(quiz, "retake")} />)}</div> : <div className="quiz-empty-state"><AppIcon name="clock" /><h3>No retakes available yet.</h3><p>Recently completed quizzes remain in cooldown, and unfinished quizzes appear through Random or Browse.</p></div>}</section>
     );
 
     return selectedQuiz ? (
@@ -249,9 +250,9 @@ export function QuizPage() {
   return (
     <div className="quiz-page">
       <header className="quiz-topbar">
-        <button className="quiz-back" type="button" aria-label="Back" onClick={appBack}><span aria-hidden="true">←</span><span>Back</span></button>
+        <button className="quiz-back" type="button" aria-label="Back" onClick={appBack}><AppIcon name="arrow-left" /><span>Back</span></button>
         <div className="quiz-topbar__title"><h1>Quiz</h1></div>
-        <button className="quiz-add" type="button" aria-label="Add Quiz" aria-expanded={createOpen} onClick={() => setCreateOpen(true)}><span aria-hidden="true">＋</span><span>Add Quiz</span></button>
+        <button className="quiz-add" type="button" aria-label="Add Quiz" aria-expanded={createOpen} onClick={() => setCreateOpen(true)}><AppIcon name="plus" /><span>Add Quiz</span></button>
       </header>
       <QuizStatsDashboard />
       <div className="quiz-workspace surface">{renderStep()}</div>

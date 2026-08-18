@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "./AuthContext";
+import { AppIcon } from "../../components/AppIcon";
 
 type AccountDialogMode = "sign-in" | "create";
 
@@ -59,7 +60,7 @@ export function AccountDialog({ onClose, initialMode = "sign-in" }: { readonly o
   return (
     <div className="account-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <section ref={dialogRef} className="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
-        <header><div><span className="eyebrow">FANatical account</span><h2 id="account-dialog-title">{mode === "sign-in" ? "Sign In" : "Create Account"}</h2></div><button ref={closeRef} type="button" aria-label="Close account dialog" disabled={busy} onClick={onClose}>×</button></header>
+        <header><div><span className="eyebrow">FANatical account</span><h2 id="account-dialog-title">{mode === "sign-in" ? "Sign In" : "Create Account"}</h2></div><button ref={closeRef} type="button" aria-label="Close account dialog" disabled={busy} onClick={onClose}><AppIcon name="x-mark" /></button></header>
         <div className="account-dialog__modes" role="tablist" aria-label="Account action">
           <button type="button" role="tab" aria-selected={mode === "sign-in"} onClick={() => { setMode("sign-in"); setError(""); setMessage(""); }}>Sign In</button>
           <button type="button" role="tab" aria-selected={mode === "create"} onClick={() => { setMode("create"); setError(""); setMessage(""); }}>Create Account</button>

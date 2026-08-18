@@ -3,6 +3,7 @@ import { NewsActionRow } from "./NewsActionRow";
 import type { NewsItem, NewsSource } from "./types";
 import { TeamBadge } from "../../components/TeamBadge";
 import { findFollowedTeam } from "../../data/followedTeams";
+import { AppIcon } from "../../components/AppIcon";
 
 type NewsCardProps = {
   readonly item: NewsItem;
@@ -35,7 +36,7 @@ export function NewsCard({
             <span className="news-source-avatar" aria-hidden="true">{source.initials}</span>
             <strong>{source.name}</strong>
             <span className="news-content-type">{item.contentType}</span>
-            {item.viewType === "external" ? <span className="news-external-label">External ↗</span> : null}
+            {item.viewType === "external" ? <span className="news-external-label">External <AppIcon name="arrow-top-right-on-square" /></span> : null}
           </div>
           <h2>{item.headline}</h2>
           <p className="news-card__summary">{item.summary}</p>

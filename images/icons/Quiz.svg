@@ -1,0 +1,23 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="path-1-inside-1_1_3" fill="white">
+<rect x="2" y="3" width="4" height="4" rx="0.5"/>
+</mask>
+<rect x="2" y="3" width="4" height="4" rx="0.5" stroke="black" stroke-width="1.4" mask="url(#path-1-inside-1_1_3)"/>
+<mask id="path-2-inside-2_1_3" fill="white">
+<rect x="2" y="13" width="4" height="4" rx="0.5"/>
+</mask>
+<rect x="2" y="13" width="4" height="4" rx="0.5" stroke="black" stroke-width="1.4" mask="url(#path-2-inside-2_1_3)"/>
+<mask id="path-3-inside-3_1_3" fill="white">
+<rect x="2" y="8" width="4" height="4" rx="0.5"/>
+</mask>
+<rect x="2" y="8" width="4" height="4" rx="0.5" stroke="black" stroke-width="1.4" mask="url(#path-3-inside-3_1_3)"/>
+<mask id="path-4-inside-4_1_3" fill="white">
+<rect x="2" y="18" width="4" height="4" rx="0.5"/>
+</mask>
+<rect x="2" y="18" width="4" height="4" rx="0.5" stroke="black" stroke-width="1.4" mask="url(#path-4-inside-4_1_3)"/>
+<path d="M3 4L4.5 5.5L8 2" stroke="black" stroke-width="0.7"/>
+<line x1="9.5" y1="4.5" x2="20.5" y2="4.5" stroke="black" stroke-linecap="round"/>
+<line x1="9.5" y1="9.5" x2="20.5" y2="9.5" stroke="black" stroke-linecap="round"/>
+<line x1="9.5" y1="14.5" x2="20.5" y2="14.5" stroke="black" stroke-linecap="round"/>
+<line x1="9.5" y1="19.5" x2="20.5" y2="19.5" stroke="black" stroke-linecap="round"/>
+</svg>

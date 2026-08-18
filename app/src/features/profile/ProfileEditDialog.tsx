@@ -3,6 +3,7 @@ import type { ProfileRecord } from "./types";
 import { useNavigationSide, type NavigationSide } from "../../data/navigationSidePreference";
 import { ProfileVisualSettings } from "../profileVisual/ProfileVisualSettings";
 import { useProfileVisual } from "../profileVisual/ProfileVisualContext";
+import { AppIcon } from "../../components/AppIcon";
 
 let localSportSequence = 0;
 
@@ -101,9 +102,9 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
             <h2 id="profile-edit-title">{visualEditorOpen ? "Profile Visual" : "Edit Profile"}</h2>
             <p>{visualEditorOpen ? "Crop and manage the responsive images used on Home." : accountBacked ? "Profile and personal settings synchronize with your FANatical account." : "Prototype changes stay on this device until hosted accounts are configured."}</p>
           </div>
-          <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close profile editor" onClick={onClose}>×</button>
+          <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close profile editor" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
-        {visualEditorOpen ? <div className="profile-visual-manager"><button type="button" onClick={() => setVisualEditorOpen(false)}>← Back to Profile settings</button><ProfileVisualSettings /></div> : <form onSubmit={(event) => void submit(event)}>
+        {visualEditorOpen ? <div className="profile-visual-manager"><button type="button" onClick={() => setVisualEditorOpen(false)}><AppIcon name="arrow-left" /> Back to Profile settings</button><ProfileVisualSettings /></div> : <form onSubmit={(event) => void submit(event)}>
           <fieldset>
             <legend>Profile identity</legend>
             <label>Display name<input required value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} /></label>
@@ -153,7 +154,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
             </div>
           </fieldset>
           <fieldset aria-labelledby="profile-edit-sports-title">
-            <div className="profile-edit-dialog__section-heading"><h3 id="profile-edit-sports-title">Sports Played</h3><button type="button" aria-label="Add sport" onClick={addSport}>+</button></div>
+            <div className="profile-edit-dialog__section-heading"><h3 id="profile-edit-sports-title">Sports Played</h3><button type="button" aria-label="Add sport" onClick={addSport}><AppIcon name="plus" /></button></div>
             <div className="profile-edit-dialog__sports">
               {draft.sportsPlayed.map((sport) => (
                 <section key={sport.id} aria-label={`Edit ${sport.sport || "new sport"}`}>

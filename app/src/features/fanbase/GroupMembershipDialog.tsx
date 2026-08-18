@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { mockFanConnections } from "./mockFanbaseData";
 import type { FanGroup } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type MembershipAction = "invite" | "moderator";
 
@@ -74,7 +75,7 @@ export function GroupMembershipDialog({ group, onInvite, onAddModerators, onClos
       <section className="fanbase-create group-membership-dialog" role="dialog" aria-modal="true" aria-labelledby="group-membership-title">
         <header>
           <div><span className="eyebrow">{group.visibility} group · {group.viewerRole ?? "Not joined"}</span><h2 id="group-membership-title">Group membership</h2><p>{group.name}</p></div>
-          <button ref={closeButtonRef} className="fanbase-icon-button" type="button" aria-label="Close group membership" onClick={onClose}>×</button>
+          <button ref={closeButtonRef} className="fanbase-icon-button" type="button" aria-label="Close group membership" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
         {canManage ? (
           <form className="group-membership-dialog__body" onSubmit={submit}>
@@ -88,7 +89,7 @@ export function GroupMembershipDialog({ group, onInvite, onAddModerators, onClos
               <div className="fanbase-invite-picker__selected" aria-label="Selected people">
                 {selectedIds.map((userId) => {
                   const connection = mockFanConnections.find((candidate) => candidate.id === userId);
-                  return connection ? <button key={userId} type="button" aria-label={`Remove ${connection.username} from selection`} onClick={() => toggleSelection(userId)}><span className="community-avatar" aria-hidden="true">{connection.initials}</span>@{connection.username}<span aria-hidden="true">×</span></button> : null;
+                  return connection ? <button key={userId} type="button" aria-label={`Remove ${connection.username} from selection`} onClick={() => toggleSelection(userId)}><span className="community-avatar" aria-hidden="true">{connection.initials}</span>@{connection.username}<AppIcon name="x-mark" /></button> : null;
                 })}
               </div>
             ) : <p className="fanbase-invite-picker__empty">No people selected.</p>}

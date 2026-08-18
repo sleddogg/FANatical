@@ -22,7 +22,7 @@ export function FanPhotoRating({ label, value, onRate, compact = false }: FanPho
               aria-pressed={value === rating}
               onClick={() => onRate(rating)}
             >
-              <span aria-hidden="true">★</span>
+              <AppIcon name={value !== null && rating <= value ? "star-solid" : "star"} />
             </button>
           ))}
         </span>
@@ -30,3 +30,4 @@ export function FanPhotoRating({ label, value, onRate, compact = false }: FanPho
     </div>
   );
 }
+import { AppIcon } from "../../components/AppIcon";

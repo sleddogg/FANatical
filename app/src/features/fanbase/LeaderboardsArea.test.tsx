@@ -21,7 +21,7 @@ describe("FANbase Leaderboards", () => {
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("Maya84");
 
     await user.click(within(table).getByRole("button", { name: "Sort by Quiz IQ" }));
-    expect(within(table).getByRole("button", { name: "Sort by Quiz IQ" })).toHaveTextContent("↓");
+    expect(within(table).getByRole("button", { name: "Sort by Quiz IQ" }).querySelector(".app-icon")).toBeInTheDocument();
   });
 
   it("changes population without mixing Team-only Fan Score into broader rankings", async () => {

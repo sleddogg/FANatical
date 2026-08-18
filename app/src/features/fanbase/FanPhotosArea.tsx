@@ -13,6 +13,7 @@ import { formatFanbaseTime, formatRating, totalReactions } from "./fanbaseFormat
 import { FanPhotoRankings } from "./FanPhotoRankings";
 import { FanPhotoRating } from "./FanPhotoRating";
 import { ReactionPicker } from "./ReactionPicker";
+import { AppIcon } from "../../components/AppIcon";
 import type { FanPhoto, FanPhotoCategory } from "./types";
 
 export const FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD = 50;
@@ -89,7 +90,7 @@ export function FanPhotoCategoryHub({
     <section className="fan-photo-category-hub" aria-label="Fan Photo categories">
       {introduction ? <div className="fan-photo-category-hub__intro"><p>{introduction}</p></div> : null}
       <div className="fan-photo-category-carousel-shell">
-        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--previous" type="button" aria-label="Previous Fan Photo category" disabled={activeIndex === 0} onClick={() => moveTo(activeIndex - 1)}>‹</button>
+        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--previous" type="button" aria-label="Previous Fan Photo category" disabled={activeIndex === 0} onClick={() => moveTo(activeIndex - 1)}><AppIcon name="chevron-left" /></button>
         <div ref={scrollerRef} className="fan-photo-category-carousel" onScroll={updateActiveCard}>
           {displayedCategories.map((category, index) => {
             const cover = photos.find((photo) => photo.category === category)?.images[0];
@@ -103,14 +104,14 @@ export function FanPhotoCategoryHub({
                 aria-current={activeIndex === index ? "true" : undefined}
                 onClick={() => activeIndex === index ? onOpenCategory(category) : moveTo(index)}
               >
-                {cover ? <img src={cover.url} alt="" /> : <span className="fan-photo-category-card__empty" aria-hidden="true">▧</span>}
+                {cover ? <img src={cover.url} alt="" /> : <span className="fan-photo-category-card__empty"><AppIcon name="photo" /></span>}
                 <span className="fan-photo-category-card__shade" />
-                <span className="fan-photo-category-card__copy">{minimal ? null : <small>{photos.filter((photo) => photo.category === category).length} FANfotos</small>}<strong>{category}</strong>{minimal ? null : <><span>{categoryDescriptions[category]}</span><b>Explore <span aria-hidden="true">→</span></b></>}</span>
+                <span className="fan-photo-category-card__copy">{minimal ? null : <small>{photos.filter((photo) => photo.category === category).length} FANfotos</small>}<strong>{category}</strong>{minimal ? null : <><span>{categoryDescriptions[category]}</span><b>Explore <AppIcon name="arrow-right" /></b></>}</span>
               </button>
             );
           })}
         </div>
-        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--next" type="button" aria-label="Next Fan Photo category" disabled={activeIndex === displayedCategories.length - 1} onClick={() => moveTo(activeIndex + 1)}>›</button>
+        <button className="fan-photo-carousel-arrow fan-photo-carousel-arrow--next" type="button" aria-label="Next Fan Photo category" disabled={activeIndex === displayedCategories.length - 1} onClick={() => moveTo(activeIndex + 1)}><AppIcon name="chevron-right" /></button>
       </div>
       <div className="fan-photo-carousel-dots" aria-label={`Showing ${displayedCategories[activeIndex]} category`}>
         {displayedCategories.map((category, index) => <button key={category} type="button" aria-label={`Show ${category}`} aria-pressed={activeIndex === index} onClick={() => moveTo(index)} />)}
@@ -240,8 +241,8 @@ export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { read
           {currentImage ? <img src={currentImage.url} alt={currentImage.alt} draggable="false" /> : null}
           {hasMultipleImages ? (
             <>
-              <button className="fan-photo-viewer__image-arrow fan-photo-viewer__image-arrow--previous" type="button" aria-label="Previous image" onClick={() => moveImage(-1)}>‹</button>
-              <button className="fan-photo-viewer__image-arrow fan-photo-viewer__image-arrow--next" type="button" aria-label="Next image" onClick={() => moveImage(1)}>›</button>
+              <button className="fan-photo-viewer__image-arrow fan-photo-viewer__image-arrow--previous" type="button" aria-label="Previous image" onClick={() => moveImage(-1)}><AppIcon name="chevron-left" /></button>
+              <button className="fan-photo-viewer__image-arrow fan-photo-viewer__image-arrow--next" type="button" aria-label="Next image" onClick={() => moveImage(1)}><AppIcon name="chevron-right" /></button>
               <span className="fan-photo-viewer__image-position" aria-live="polite">{imageIndex + 1} / {photo.images.length}</span>
             </>
           ) : null}
@@ -254,7 +255,7 @@ export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { read
             <h2>{photo.title}</h2>
             <p>{photo.details}</p>
             <dl>
-              <div><dt>Rating</dt><dd>★ {formatRating(photo.ratingTotal, photo.ratingCount)}</dd></div>
+              <div><dt>Rating</dt><dd><AppIcon name="star-solid" /> {formatRating(photo.ratingTotal, photo.ratingCount)}</dd></div>
               <div><dt>Ratings</dt><dd>{photo.ratingCount}</dd></div>
               <div><dt>Recognition</dt><dd>{photo.rankingBadge ?? (photo.ratingCount >= FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD ? "Ranking eligible" : `${FAN_PHOTO_RATING_ELIGIBILITY_THRESHOLD - photo.ratingCount} ratings to qualify`)}</dd></div>
               <div><dt>Images</dt><dd>{photo.images.length}</dd></div>
@@ -271,9 +272,9 @@ export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { read
       </div>
 
       {photo.rankingBadge ? <span className="fan-photo-viewer__ranking">{photo.rankingBadge}</span> : null}
-      <button ref={closeButtonRef} className="fan-photo-viewer__close" type="button" aria-label="Close FANfoto" onClick={onClose}>×</button>
+      <button ref={closeButtonRef} className="fan-photo-viewer__close" type="button" aria-label="Close FANfoto" onClick={onClose}><AppIcon name="x-mark" /></button>
       <div className="fan-photo-viewer__bottom-actions">
-        <button type="button" onClick={() => setShareMessage("Sharing is represented as a local frontend placeholder.")}><span aria-hidden="true">↗</span> Share</button>
+        <button type="button" onClick={() => setShareMessage("Sharing is represented as a local frontend placeholder.")}><AppIcon name="share" /> Share</button>
         {!flipped ? <FanPhotoRating label="Rate this FANfoto" value={photo.viewerRating} compact onRate={(rating) => fanbase.rateFanPhoto(photo.id, rating)} /> : <span />}
         <button
           type="button"
@@ -281,7 +282,7 @@ export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { read
           aria-label={flipLocked ? "Rate this FANfoto to unlock details" : flipped ? "Photo" : "Flip"}
           title={flipLocked ? "Rate this FANfoto to unlock details" : undefined}
           onClick={() => setFlipped((current) => !current)}
-        ><span aria-hidden="true">{flipLocked ? "🔒" : "↻"}</span> {flipped ? "Photo" : "Flip"}</button>
+        ><AppIcon name={flipLocked ? "lock-closed" : "arrow-uturn-right"} /> {flipped ? "Photo" : "Flip"}</button>
       </div>
       {shareMessage ? <p className="fan-photo-viewer__status" role="status">{shareMessage}</p> : null}
     </section>,

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { quizLeagues } from "./mockQuizData";
+import { AppIcon } from "../../components/AppIcon";
 import {
   quizDifficulties,
   quizSports,
@@ -33,7 +34,7 @@ const isQuestionComplete = (question: QuizQuestionDraft) => question.prompt.trim
 function CreationHeader({ title, context, onBack }: { readonly title: string; readonly context?: string; readonly onBack?: () => void }) {
   return (
     <header className="create-quiz-stage-header">
-      <div>{onBack ? <button type="button" aria-label="Back one creation stage" onClick={onBack}><span aria-hidden="true">←</span><span>Back</span></button> : null}</div>
+      <div>{onBack ? <button type="button" aria-label="Back one creation stage" onClick={onBack}><AppIcon name="arrow-left" /><span>Back</span></button> : null}</div>
       <h2 id="create-quiz-stage-title" tabIndex={-1}>{title}</h2>
       <div>{context ? <span>{context}</span> : null}</div>
     </header>
@@ -194,7 +195,7 @@ export function CreateQuizFlow({ onClose, onSubmit }: CreateQuizFlowProps) {
   return (
     <section ref={dialogRef} className="create-quiz-screen" role="dialog" aria-modal="true" aria-labelledby="create-quiz-stage-title">
       <div className="create-quiz-shell">
-        <div className="create-quiz-topline"><strong>Create Quiz</strong><button type="button" aria-label="Exit Create Quiz" onClick={requestClose}>×</button></div>
+        <div className="create-quiz-topline"><strong>Create Quiz</strong><button type="button" aria-label="Exit Create Quiz" onClick={requestClose}><AppIcon name="x-mark" /></button></div>
         {stage !== "success" ? <div className="create-quiz-progress" aria-label={`${stageTitle} creation stage`}>{[0, 1, 2, 3].map((position) => <span key={position} data-state={position < progressStage ? "complete" : position === progressStage ? "current" : "upcoming"} />)}</div> : null}
 
         {stage === "identity" ? (
@@ -250,7 +251,7 @@ export function CreateQuizFlow({ onClose, onSubmit }: CreateQuizFlowProps) {
         {stage === "success" ? (
           <main className="create-quiz-stage create-quiz-success">
             <CreationHeader title="Quiz Submitted" />
-            <span className="create-quiz-success__mark" aria-hidden="true">✓</span><h3>{title}</h3><p>Your quiz has been saved locally and submitted for review. It will not become publicly playable until it is approved.</p><dl><div><dt>Status</dt><dd>Pending Review</dd></div><div><dt>Questions</dt><dd>10 complete</dd></div><div><dt>Submission</dt><dd>{submittedId}</dd></div></dl><button type="button" onClick={onClose}>Return to Quiz</button>
+            <span className="create-quiz-success__mark"><AppIcon name="check-circle" /></span><h3>{title}</h3><p>Your quiz has been saved locally and submitted for review. It will not become publicly playable until it is approved.</p><dl><div><dt>Status</dt><dd>Pending Review</dd></div><div><dt>Questions</dt><dd>10 complete</dd></div><div><dt>Submission</dt><dd>{submittedId}</dd></div></dl><button type="button" onClick={onClose}>Return to Quiz</button>
           </main>
         ) : null}
       </div>

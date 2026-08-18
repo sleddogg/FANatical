@@ -12,6 +12,7 @@ import {
 } from "../stats/sportsStats";
 import { demoUser } from "./mockFanbaseData";
 import { useFanbaseContext } from "./FanbaseContext";
+import { AppIcon } from "../../components/AppIcon";
 import "./leaderboards.css";
 
 type PopulationId = "team" | "league" | "sport" | "friends" | `group:${string}`;
@@ -29,7 +30,7 @@ function sortableValue(user: SportsStatsUser, column: SortColumn, sportId: Retur
 
 function StatSortButton({ label, column, activeColumn, direction, onSort }: { readonly label: string; readonly column: SortColumn; readonly activeColumn: SortColumn; readonly direction: "asc" | "desc"; readonly onSort: (column: SortColumn) => void }) {
   const active = column === activeColumn;
-  return <button type="button" className={active ? "leaderboard-sort leaderboard-sort--active" : "leaderboard-sort"} aria-label={`Sort by ${label}`} onClick={() => onSort(column)}>{label}<span aria-hidden="true">{active ? direction === "desc" ? "↓" : "↑" : "↕"}</span></button>;
+  return <button type="button" className={active ? "leaderboard-sort leaderboard-sort--active" : "leaderboard-sort"} aria-label={`Sort by ${label}`} onClick={() => onSort(column)}>{label}<AppIcon name={active ? direction === "desc" ? "arrow-down" : "arrow-up" : "arrows-up-down"} /></button>;
 }
 
 export function LeaderboardsArea({ teamId }: { readonly teamId: TeamId }) {

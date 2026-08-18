@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FollowedSourcePreference, NewsContentType, NewsSource } from "./types";
+import { AppIcon } from "../../components/AppIcon";
 
 type SourceManagerTab = "add" | "manage" | "how-to";
 
@@ -84,7 +85,7 @@ export function SourceManagerDialog({
             <span className="eyebrow">Your News</span>
             <h2 id="source-manager-title">Source Manager</h2>
           </div>
-          <button ref={closeButtonRef} className="news-icon-button" type="button" aria-label="Close Source Manager" onClick={onClose}>×</button>
+          <button ref={closeButtonRef} className="news-icon-button" type="button" aria-label="Close Source Manager" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
 
         <div className="source-manager__tabs" role="tablist" aria-label="Source Manager sections">
@@ -157,7 +158,7 @@ export function SourceManagerDialog({
 
                 {canRequestQuery ? (
                   <div className="source-request surface">
-                    <span aria-hidden="true">＋</span>
+                    <AppIcon name="plus" />
                     <div>
                       <h3>Can’t find “{query.trim()}”?</h3>
                       <p>Request it for a future catalog review. This demo keeps the request only until you leave the page.</p>
