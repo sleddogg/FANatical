@@ -35,7 +35,6 @@ export function HomePage() {
         {featureNavigation.map((item) => (
           <NavLink key={item.path} className="home-hero__shortcut" to={item.path} aria-label={item.label}>
             <NavIcon name={item.icon} />
-            <span className="home-hero__shortcut-tooltip" aria-hidden="true">{item.label}</span>
             <span className="visually-hidden">{item.label}</span>
           </NavLink>
         ))}

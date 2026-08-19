@@ -4,21 +4,19 @@ import { BrandMark } from "./BrandMark";
 import { FollowedTeamStrip } from "./FollowedTeamStrip";
 import { NavIcon } from "./NavIcon";
 import { useAuth } from "../features/account/AuthContext";
+import { useProfileAvatar } from "../features/profileAvatar/ProfileAvatarContext";
+import { ProfileNavigationControl } from "./ProfileNavigationControl";
 
 type BottomNavigationProps = {
   readonly variant: "home" | "inner";
 };
 
-function navClassName({ isActive }: { isActive: boolean }) {
-  return `bottom-navigation__link${isActive ? " bottom-navigation__link--active" : ""}`;
-}
-
 export function BottomNavigation({ variant }: BottomNavigationProps) {
-  const { configured, user } = useAuth();
-  const profileLabel = configured && !user ? "Sign In" : "Profile";
+  const { user } = useAuth();
+  const { avatar } = useProfileAvatar();
   return (
     <nav className={`bottom-navigation bottom-navigation--${variant}`} aria-label={variant === "home" ? "Home navigation" : "Application navigation"}>
-      <NavLink className={navClassName} to="/" end aria-label="FANatical home">
+      <NavLink className="bottom-navigation__link" to="/" end aria-label="FANatical home">
         <BrandMark />
       </NavLink>
 
@@ -27,7 +25,7 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
       ) : (
         <div className="bottom-navigation__feature-links">
           {featureNavigation.map((item) => (
-            <NavLink key={item.path} className={navClassName} to={item.path} aria-label={item.label}>
+            <NavLink key={item.path} className="bottom-navigation__link" to={item.path} aria-label={item.label}>
               <NavIcon name={item.icon} />
               <span className="visually-hidden">{item.label}</span>
             </NavLink>
@@ -35,10 +33,7 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
         </div>
       )}
 
-      <NavLink className={navClassName} to="/profile" aria-label={profileLabel}>
-        <NavIcon name="profile" />
-        <span className="visually-hidden">{profileLabel}</span>
-      </NavLink>
+      <ProfileNavigationControl signedIn={Boolean(user)} avatar={avatar} />
     </nav>
   );
 }

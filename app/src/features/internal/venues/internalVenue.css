@@ -6,7 +6,6 @@
 .internal-venue-topbar strong { font-size: .98rem; }
 .internal-venue-topbar nav { display: flex; gap: .45rem; padding: .3rem; border-radius: 12px; background: #eef1f5; }
 .internal-venue-topbar nav a { padding: .65rem .9rem; color: #4e596b; border-radius: 9px; font-size: .84rem; font-weight: 750; text-decoration: none; }
-.internal-venue-topbar nav a[aria-current="page"] { color: white; background: var(--internal-ink); box-shadow: 0 3px 10px rgba(20,30,50,.18); }
 .internal-kicker { color: var(--internal-orange); font-size: .7rem; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
 .internal-venue-main, .resolver-main { width: min(1480px, calc(100% - 2rem)); margin: 0 auto; padding: clamp(1rem, 3vw, 2.5rem) 0 5rem; }
 .venue-hero { display: grid; grid-template-columns: minmax(0, .8fr) minmax(380px, 1.2fr); gap: clamp(1rem, 4vw, 4rem); align-items: center; padding: clamp(1.2rem, 3vw, 2.5rem); overflow: hidden; border-radius: 24px; background: var(--internal-ink); color: white; box-shadow: 0 20px 60px rgba(29,38,56,.16); }

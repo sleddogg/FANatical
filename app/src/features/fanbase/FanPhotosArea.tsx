@@ -280,7 +280,6 @@ export function FanPhotoViewer({ photo, openedFromRatingQueue, onClose }: { read
           type="button"
           disabled={flipLocked}
           aria-label={flipLocked ? "Rate this FANfoto to unlock details" : flipped ? "Photo" : "Flip"}
-          title={flipLocked ? "Rate this FANfoto to unlock details" : undefined}
           onClick={() => setFlipped((current) => !current)}
         ><AppIcon name={flipLocked ? "lock-closed" : "arrow-uturn-right"} /> {flipped ? "Photo" : "Flip"}</button>
       </div>

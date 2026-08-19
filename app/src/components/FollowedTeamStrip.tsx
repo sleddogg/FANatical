@@ -115,7 +115,7 @@ export function FollowedTeamStrip() {
                 type="button"
                 aria-label={`Select ${team.name}`}
                 aria-pressed={isSelected}
-                title={`${team.name} · ${team.league}`}
+                data-tooltip-label={`${team.name} · ${team.league}`}
                 onClick={() => handleTeamSelection(team.id)}
               >
                 <TeamBadge team={team} />
@@ -130,7 +130,6 @@ export function FollowedTeamStrip() {
         className="team-strip__add"
         type="button"
         aria-label="Add Team"
-        title="Add a followed team"
         onClick={() => setAddTeamOpen(true)}
       >
         <AppIcon name="plus" />

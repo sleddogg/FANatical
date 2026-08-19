@@ -4,6 +4,9 @@ import { useNavigationSide, type NavigationSide } from "../../data/navigationSid
 import { ProfileVisualSettings } from "../profileVisual/ProfileVisualSettings";
 import { useProfileVisual } from "../profileVisual/ProfileVisualContext";
 import { AppIcon } from "../../components/AppIcon";
+import { ProfileAvatarEditor } from "../profileAvatar/ProfileAvatarEditor";
+import { useProfileAvatar } from "../profileAvatar/ProfileAvatarContext";
+import { ProfileAvatarMedia } from "../profileAvatar/ProfileAvatarMedia";
 
 let localSportSequence = 0;
 
@@ -17,10 +20,11 @@ type ProfileEditDialogProps = {
 
 export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = false, onSignOut }: ProfileEditDialogProps) {
   const [draft, setDraft] = useState(profile);
-  const [visualEditorOpen, setVisualEditorOpen] = useState(false);
+  const [mediaEditor, setMediaEditor] = useState<"avatar" | "visual" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { images } = useProfileVisual();
+  const { avatar } = useProfileAvatar();
   const { side: savedNavigationSide, setSide: saveNavigationSide } = useNavigationSide();
   const [navigationSide, setNavigationSide] = useState<NavigationSide>(savedNavigationSide);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -99,12 +103,12 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
         <header>
           <div>
             <span className="eyebrow">Owner controls</span>
-            <h2 id="profile-edit-title">{visualEditorOpen ? "Profile Visual" : "Edit Profile"}</h2>
-            <p>{visualEditorOpen ? "Crop and manage the responsive images used on Home." : accountBacked ? "Profile and personal settings synchronize with your FANatical account." : "Prototype changes stay on this device until hosted accounts are configured."}</p>
+            <h2 id="profile-edit-title">{mediaEditor === "visual" ? "Profile Visual" : mediaEditor === "avatar" ? "Profile Photo" : "Edit Profile"}</h2>
+            <p>{mediaEditor === "visual" ? "Crop and manage the responsive images used on Home." : mediaEditor === "avatar" ? "Position the image exactly as it will appear throughout FANatical." : accountBacked ? "Profile and personal settings synchronize with your FANatical account." : "Prototype changes stay on this device until hosted accounts are configured."}</p>
           </div>
           <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close profile editor" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
-        {visualEditorOpen ? <div className="profile-visual-manager"><button type="button" onClick={() => setVisualEditorOpen(false)}><AppIcon name="arrow-left" /> Back to Profile settings</button><ProfileVisualSettings /></div> : <form onSubmit={(event) => void submit(event)}>
+        {mediaEditor === "visual" ? <div className="profile-visual-manager"><button type="button" onClick={() => setMediaEditor(null)}><AppIcon name="arrow-left" /> Back to Profile settings</button><ProfileVisualSettings /></div> : mediaEditor === "avatar" ? <div className="profile-avatar-manager"><ProfileAvatarEditor onDone={() => setMediaEditor(null)} onCancel={() => setMediaEditor(null)} /></div> : <form onSubmit={(event) => void submit(event)}>
           <fieldset>
             <legend>Profile identity</legend>
             <label>Display name<input required value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} /></label>
@@ -117,6 +121,14 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
                 ))}
               </div>
               <p>The featured category is centered when Profile opens. Its first curated FANfoto supplies the cover.</p>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Profile photo</legend>
+            <div className="profile-avatar-summary">
+              <ProfileAvatarMedia avatar={avatar} />
+              <span><strong>{avatar ? "Custom profile photo" : "User icon"}</strong><small>{avatar?.sourceFilename ?? (accountBacked ? "Add a photo for your FANatical account" : "Sign in to add a profile photo")}</small></span>
+              <button type="button" disabled={!accountBacked} onClick={() => setMediaEditor("avatar")}>{avatar ? "Edit photo" : "Add photo"}</button>
             </div>
           </fieldset>
           <fieldset>
@@ -137,7 +149,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
               {(["mobile", "wide"] as const).map((variant) => {
                 const image = images[variant];
                 const label = variant === "mobile" ? "Mobile image" : "Wide image";
-                return <div key={variant}><span><strong>{label}</strong><small>{image?.sourceFilename ?? "FANatical default"}</small></span><button type="button" aria-label={`${image ? "Manage" : "Add"} ${label}`} onClick={() => setVisualEditorOpen(true)}>{image ? "Manage" : "Add image"}</button></div>;
+                return <div key={variant}><span><strong>{label}</strong><small>{image?.sourceFilename ?? "FANatical default"}</small></span><button type="button" aria-label={`${image ? "Manage" : "Add"} ${label}`} onClick={() => setMediaEditor("visual")}>{image ? "Manage" : "Add image"}</button></div>;
               })}
             </div>
           </fieldset>

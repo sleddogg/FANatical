@@ -25,7 +25,7 @@ describe("FANatical application shell", () => {
     );
   });
 
-  it("restores the navigation side preference with accessible shortcut names and tooltips", () => {
+  it("restores the navigation side preference with accessible shortcut names", () => {
     window.localStorage.setItem(navigationSideStorageKey, "right");
     renderRoute();
 
@@ -34,7 +34,6 @@ describe("FANatical application shell", () => {
     for (const label of ["News", "Quiz", "FANbase", "Cheer"]) {
       const link = screen.getByRole("link", { name: label });
       expect(link).toBeInTheDocument();
-      expect(link.querySelector(".home-hero__shortcut-tooltip")).toHaveTextContent(label);
       expect(link.querySelector(".app-icon")).toHaveAttribute("aria-hidden", "true");
     }
   });
@@ -68,12 +67,14 @@ describe("FANatical application shell", () => {
     const { unmount } = renderRoute("/fanbase");
 
     expect(screen.getByRole("link", { name: "FANbase" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "FANbase" })).not.toHaveClass("bottom-navigation__link--active");
     expect(screen.getByRole("link", { name: "News" })).not.toHaveAttribute("aria-current");
 
     unmount();
     renderRoute("/profile");
 
-    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Sign In" })).not.toHaveClass("bottom-navigation__link--active");
   });
 
   it("provides keyboard access to the main content", async () => {
