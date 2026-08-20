@@ -109,8 +109,7 @@ a {
   box-shadow: var(--shadow-soft);
 }
 
-.eyebrow,
-.home-hero__eyebrow {
+.eyebrow {
   font-size: var(--font-size-xs);
   font-weight: 850;
   letter-spacing: 0.14em;
@@ -213,26 +212,118 @@ a {
   transform: scale(0.94);
 }
 
-.home-hero__content {
-  align-self: flex-end;
-  max-width: 44rem;
-  margin: var(--space-10) var(--space-8) var(--space-10) clamp(7rem, 12vw, 12rem);
+.home-hero__overlay {
+  position: absolute;
+  z-index: 1;
+  max-width: calc(100% - 2 * clamp(1rem, 4vw, 2rem));
   color: #ffffff;
 }
 
-.home-hero__content h1 {
-  max-width: 10ch;
-  margin: var(--space-2) 0 var(--space-4);
-  font-size: var(--font-size-display);
+.home-hero__overlay[data-position^="top-"] {
+  top: clamp(1rem, 4vw, 2rem);
+}
+
+.home-hero__overlay[data-position^="middle-"] {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.home-hero__overlay[data-position^="bottom-"] {
+  bottom: clamp(1rem, 4vw, 2rem);
+}
+
+.home-hero__overlay[data-position$="-left"] {
+  left: clamp(1rem, 4vw, 2rem);
+  text-align: left;
+}
+
+.home-hero__overlay[data-position$="-right"] {
+  right: clamp(1rem, 4vw, 2rem);
+  text-align: right;
+}
+
+.home-hero__overlay[data-position$="-center"] {
+  left: 50%;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.home-hero__text-overlay {
+  width: min(42rem, 56vw);
+  text-shadow: 0 0.12rem 0.28rem rgba(0, 0, 0, 0.82), 0 0.35rem 1.15rem rgba(0, 0, 0, 0.72);
+}
+
+.home-hero__text-overlay[data-position^="middle-"][data-position$="-center"] {
+  transform: translate(-50%, -50%);
+}
+
+.home-hero__text-overlay h1 {
+  max-width: 15ch;
+  margin: 0 0 var(--space-4);
+  overflow-wrap: break-word;
+  font-size: clamp(2rem, 3.7vw, var(--font-size-display));
   line-height: var(--line-height-tight);
   letter-spacing: -0.045em;
 }
 
-.home-hero__content p {
-  max-width: 38rem;
+.home-hero__text-overlay[data-position$="-right"] h1,
+.home-hero__text-overlay[data-position$="-right"] p {
+  margin-left: auto;
+}
+
+.home-hero__text-overlay[data-position$="-center"] h1,
+.home-hero__text-overlay[data-position$="-center"] p {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.home-hero__text-overlay p {
+  max-width: 40rem;
   margin: 0;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: var(--font-size-lg);
+  overflow-wrap: break-word;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(1rem, 1.5vw, var(--font-size-lg));
+  line-height: 1.38;
+}
+
+.home-hero__fan-card {
+  width: min(22rem, 48vw);
+  text-shadow: 0 0.12rem 0.28rem rgba(0, 0, 0, 0.82), 0 0.35rem 1.15rem rgba(0, 0, 0, 0.72);
+}
+
+.home-hero__fan-card[data-position^="middle-"][data-position$="-center"] {
+  transform: translate(-50%, -50%);
+}
+
+.home-hero__fan-card ul {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-hero__fan-card--grid ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-hero__fan-card--grid li:only-child {
+  grid-column: 1 / -1;
+}
+
+.home-hero__fan-card--grid li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.home-hero__fan-card--stack {
+  width: min(15rem, 48vw);
+}
+
+.home-hero__fan-card li {
+  overflow-wrap: break-word;
+  font-size: clamp(0.92rem, 1.3vw, 1.08rem);
+  font-weight: 850;
+  line-height: 1.2;
 }
 
 .app-icon {
@@ -264,9 +355,18 @@ a {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 50%;
   background: var(--color-surface-muted);
   color: currentColor;
+}
+
+.profile-avatar-media--circle,
+.brand-mark--circle {
+  border-radius: 50%;
+}
+
+.profile-avatar-media--square,
+.brand-mark--square {
+  border-radius: 0.65rem;
 }
 
 .profile-avatar-media > img {
@@ -291,9 +391,8 @@ a {
 }
 
 .brand-mark {
-  width: var(--control-size);
-  height: var(--control-size);
-  border-radius: 0.65rem;
+  width: 2.2rem;
+  height: 2.2rem;
   object-fit: contain;
 }
 
@@ -462,7 +561,7 @@ a {
 }
 
 .team-strip__team,
-.team-strip__add {
+.team-strip__manage {
   position: relative;
   display: inline-grid;
   width: var(--control-size);
@@ -513,7 +612,7 @@ a {
   line-height: 1;
 }
 
-.team-strip__add {
+.team-strip__manage {
   margin-left: 0.08rem;
   border-color: #686864;
   background: #686864;
@@ -525,7 +624,7 @@ a {
   cursor: pointer;
 }
 
-.team-strip__add:disabled {
+.team-strip__manage:disabled {
   cursor: not-allowed;
 }
 
@@ -601,10 +700,21 @@ a {
 }
 
 @media (max-width: 29.99rem) {
-  .home-hero__content {
-    margin-right: var(--space-5);
-    margin-bottom: var(--space-8);
-    margin-left: 6.25rem;
+  .home-hero__text-overlay {
+    width: min(74vw, 24rem);
+  }
+
+  .home-hero__text-overlay h1 {
+    max-width: 13ch;
+    font-size: clamp(1.85rem, 9.5vw, 3.2rem);
+  }
+
+  .home-hero__fan-card {
+    width: min(68vw, 19rem);
+  }
+
+  .home-hero__fan-card--grid ul {
+    gap: var(--space-2) var(--space-3);
   }
 
   .placeholder-surface {

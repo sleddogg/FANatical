@@ -35,6 +35,8 @@ export const followedTeams = [
 
 export const defaultSelectedTeamId: TeamId = "new-england-patriots";
 
+export const defaultFollowedTeamIds: readonly OfficialTeamId[] = followedTeams.map((team) => team.officialTeamId);
+
 export function officialTeamToFollowedTeam(teamId: OfficialTeamId): FollowedTeam | null {
   const team = findOfficialTeam(teamId);
   const league = team ? findOfficialLeague(team.parentLeagueId) : null;
@@ -74,21 +76,22 @@ export function savePersistedFollowedTeamIds(teamIds: readonly OfficialTeamId[])
 
   try {
     window.localStorage.setItem(followedTeamsStorageKey, JSON.stringify([...new Set(teamIds)]));
-  } catch {
-    // The current TeamContext remains usable if browser storage is unavailable.
+  } catch (error) {
+    throw new Error("Your followed teams could not be saved in this browser.", { cause: error });
   }
 }
 
 export function loadFollowedTeams(): readonly FollowedTeam[] {
-  const seededOfficialIds = new Set<OfficialTeamId>();
-  for (const team of followedTeams) {
-    if (team.officialTeamId) seededOfficialIds.add(team.officialTeamId);
+  if (typeof window === "undefined") {
+    return followedTeams;
   }
-  const additions = loadPersistedFollowedTeamIds()
-    .filter((teamId) => !seededOfficialIds.has(teamId))
-    .map(officialTeamToFollowedTeam)
-    .filter((team): team is FollowedTeam => team !== null);
-  return [...followedTeams, ...additions];
+  try {
+    return window.localStorage.getItem(followedTeamsStorageKey) === null
+      ? followedTeams
+      : followedTeamsFromOfficialIds(loadPersistedFollowedTeamIds());
+  } catch {
+    return followedTeams;
+  }
 }
 
 export function findFollowedTeam(teamId: TeamId) {

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import { loadFollowedTeams } from "../../data/followedTeams";
 import { loadNavigationSide } from "../../data/navigationSideStorage";
+import { loadProfileImageShape } from "../../data/profileImageShapeStorage";
+import { loadHomeCustomization } from "../../data/homeCustomizationStorage";
 import { localSelectedTeamPreferenceStore } from "../../data/selectedTeamPreference";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import { initialProfile } from "../profile/mockProfileData";
@@ -32,6 +34,8 @@ async function migratePrototypeAccount(userId: string) {
   await replaceAccountFollowedTeams(userId, followedTeamIds);
   await saveAccountSettings(userId, {
     navigationSide: loadNavigationSide(),
+    profileImageShape: loadProfileImageShape(),
+    homeCustomization: loadHomeCustomization(),
     selectedTeamId,
   });
 
@@ -43,7 +47,9 @@ async function migratePrototypeAccount(userId: string) {
   }
   if (localVisuals.length) {
     const remoteVisuals = await loadRemoteProfileVisuals(userId);
-    for (const visual of localVisuals) await uploadRemoteProfileVisual(userId, visual, remoteVisuals.find((remote) => remote.variant === visual.variant));
+    for (const visual of localVisuals) {
+      if (!remoteVisuals.some((remote) => remote.variant === visual.variant)) await uploadRemoteProfileVisual(userId, visual);
+    }
   }
 
   await saveAccountSettings(userId, { prototypeMigrationVersion: migrationVersion });

@@ -1,9 +1,13 @@
-import { defaultProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualVariant } from "./types";
+import { createUuid } from "../../lib/uuid";
+import { defaultProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualLibrary, type ProfileVisualVariant } from "./types";
 
 const databaseName = "fanatical-profile-media";
-const databaseVersion = 1;
-const imageStore = "profile-visual-images";
+const databaseVersion = 2;
+const legacyImageStore = "profile-visual-images";
+const libraryStore = "profile-visual-library";
 const supportedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+type StoredProfileVisual = ProfileVisualImageRecord & Readonly<{ id: string; active: boolean }>;
 
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
@@ -11,46 +15,100 @@ function openDatabase() {
     const request = window.indexedDB.open(databaseName, databaseVersion);
     request.onerror = () => reject(request.error ?? new Error("Could not open persistent image storage."));
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(imageStore)) request.result.createObjectStore(imageStore, { keyPath: "variant" });
+      const database = request.result;
+      const nextStore = database.objectStoreNames.contains(libraryStore)
+        ? request.transaction!.objectStore(libraryStore)
+        : database.createObjectStore(libraryStore, { keyPath: "id" });
+      if (database.objectStoreNames.contains(legacyImageStore)) {
+        const legacyStore = request.transaction!.objectStore(legacyImageStore);
+        const cursor = legacyStore.openCursor();
+        cursor.onsuccess = () => {
+          const entry = cursor.result;
+          if (!entry) return;
+          const record = entry.value as ProfileVisualImageRecord;
+          nextStore.put({ ...record, id: record.id ?? createUuid(), active: true });
+          entry.continue();
+        };
+      }
     };
     request.onsuccess = () => resolve(request.result);
   });
 }
 
-async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore, resolve: (value: T) => void, reject: (reason?: unknown) => void) => void) {
+async function allStoredVisuals(): Promise<readonly StoredProfileVisual[]> {
   const database = await openDatabase();
-  return new Promise<T>((resolve, reject) => {
-    const transaction = database.transaction(imageStore, mode);
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(libraryStore, "readonly");
+    const request = transaction.objectStore(libraryStore).getAll();
+    request.onsuccess = () => resolve(request.result as StoredProfileVisual[]);
+    request.onerror = () => reject(request.error);
     transaction.oncomplete = () => database.close();
     transaction.onerror = () => { database.close(); reject(transaction.error ?? new Error("Profile image storage failed.")); };
-    run(transaction.objectStore(imageStore), resolve, reject);
   });
+}
+
+function publicRecord(record: StoredProfileVisual): ProfileVisualImageRecord {
+  const { active: _active, ...rest } = record;
+  return { ...rest, sourceFilename: rest.sourceFilename || "Uploaded image" };
+}
+
+export async function loadProfileVisualLibrary(): Promise<Readonly<{
+  images: Readonly<Partial<Record<ProfileVisualVariant, ProfileVisualImageRecord>>>;
+  library: ProfileVisualLibrary;
+}>> {
+  if (!window.indexedDB) return { images: {}, library: { mobile: [], wide: [] } };
+  const records = await allStoredVisuals();
+  const images: Partial<Record<ProfileVisualVariant, ProfileVisualImageRecord>> = {};
+  for (const stored of records) if (stored.active) images[stored.variant] = publicRecord(stored);
+  return {
+    images,
+    library: {
+      mobile: records.filter((record) => record.variant === "mobile").map(publicRecord),
+      wide: records.filter((record) => record.variant === "wide").map(publicRecord),
+    },
+  };
 }
 
 export async function loadProfileVisualImages() {
-  return withStore<readonly ProfileVisualImageRecord[]>("readonly", (store, resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => resolve((request.result as ProfileVisualImageRecord[]).map((record) => ({
-      ...record,
-      sourceFilename: record.sourceFilename || "Uploaded image",
-    })));
-    request.onerror = () => reject(request.error);
+  return Object.values((await loadProfileVisualLibrary()).images).filter((record): record is ProfileVisualImageRecord => Boolean(record));
+}
+
+export async function storeProfileVisualImage(record: ProfileVisualImageRecord): Promise<ProfileVisualImageRecord> {
+  const database = await openDatabase();
+  const records = await allStoredVisuals();
+  const sameVariant = records.filter((item) => item.variant === record.variant);
+  if (!record.id && sameVariant.length >= 3) {
+    database.close();
+    throw new Error(`You already have three saved ${record.variant} visuals. Remove one before adding another.`);
+  }
+  const id = record.id ?? createUuid();
+  const saved: StoredProfileVisual = { ...record, id, active: true, updatedAt: new Date().toISOString() };
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(libraryStore, "readwrite");
+    const store = transaction.objectStore(libraryStore);
+    for (const item of sameVariant) if (item.id !== id && item.active) store.put({ ...item, active: false });
+    store.put(saved);
+    transaction.oncomplete = () => { database.close(); resolve(publicRecord(saved)); };
+    transaction.onerror = () => { database.close(); reject(transaction.error ?? new Error("Profile image storage failed.")); };
   });
 }
 
-export async function storeProfileVisualImage(record: ProfileVisualImageRecord) {
-  return withStore<void>("readwrite", (store, resolve, reject) => {
-    const request = store.put(record);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-export async function deleteProfileVisualImage(variant: ProfileVisualVariant) {
-  return withStore<void>("readwrite", (store, resolve, reject) => {
-    const request = store.delete(variant);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+export async function deleteProfileVisualImage(variant: ProfileVisualVariant, imageId?: string) {
+  if (!imageId) return;
+  const database = await openDatabase();
+  const records = await allStoredVisuals();
+  const removed = records.find((record) => record.id === imageId && record.variant === variant);
+  if (!removed) { database.close(); return; }
+  const fallback = removed.active
+    ? records.filter((record) => record.variant === variant && record.id !== imageId).sort((first, second) => Date.parse(second.updatedAt) - Date.parse(first.updatedAt))[0]
+    : undefined;
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(libraryStore, "readwrite");
+    const store = transaction.objectStore(libraryStore);
+    store.delete(imageId);
+    if (fallback) store.put({ ...fallback, active: true });
+    transaction.oncomplete = () => { database.close(); resolve(); };
+    transaction.onerror = () => { database.close(); reject(transaction.error ?? new Error("Profile image storage failed.")); };
   });
 }
 
@@ -82,7 +140,7 @@ export async function prepareProfileVisualImage(variant: ProfileVisualVariant, f
     if (!context) throw new Error("The selected image could not be processed.");
     context.drawImage(bitmap, 0, 0, displayWidth, displayHeight);
     const displayBlob = await canvasBlob(canvas);
-    return { variant, sourceFilename: file.name, sourceBlob: file, displayBlob, width: bitmap.width, height: bitmap.height, crop: defaultProfileVisualCrop, updatedAt: new Date().toISOString() };
+    return { variant, sourceFilename: file.name, sourceMediaType: file.type, sourceBlob: file, displayBlob, width: bitmap.width, height: bitmap.height, crop: defaultProfileVisualCrop, updatedAt: new Date().toISOString() };
   } finally {
     bitmap.close();
   }

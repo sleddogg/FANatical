@@ -7,8 +7,10 @@ export type ProfileVisualCrop = Readonly<{
 }>;
 
 export type ProfileVisualImageRecord = Readonly<{
+  id?: string;
   variant: ProfileVisualVariant;
   sourceFilename: string;
+  sourceMediaType?: string;
   sourceBlob?: Blob;
   displayBlob?: Blob;
   displayUrl?: string;
@@ -18,6 +20,11 @@ export type ProfileVisualImageRecord = Readonly<{
   height: number;
   crop: ProfileVisualCrop;
   updatedAt: string;
+}>;
+
+export type ProfileVisualLibrary = Readonly<{
+  mobile: readonly ProfileVisualImageRecord[];
+  wide: readonly ProfileVisualImageRecord[];
 }>;
 
 export const defaultProfileVisualCrop: ProfileVisualCrop = { focalX: 0.5, focalY: 0.5, zoom: 1 };

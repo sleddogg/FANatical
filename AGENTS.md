@@ -42,6 +42,21 @@ Before editing:
 
 Do not assume the user is a programmer. Explain approvals or decisions in plain English, including what will happen before asking the user to approve a command.
 
+### Backend / Migration Completion
+
+- If a feature creates or depends on a Supabase migration, compare local migrations with the linked hosted project before reporting completion.
+- If the required migration is pending remotely, stop and request approval to apply it through the normal Supabase migration workflow.
+- After applying it, verify the hosted schema and all relevant RLS policies, functions, constraints, and other introduced backend dependencies.
+- A local migration file alone does not make a feature complete. Verify new dependencies are active in the environment where the feature is tested.
+
+## Engineering Foundations
+
+- Protect durable, high-cost foundations: identity, user data, verified facts, permissions, financial records, history, relationships, and security boundaries.
+- Keep interfaces between systems clean so News, Cheer, FANbase, agents, and other systems can evolve independently without becoming unnecessarily coupled.
+- Treat ordinary application code—including UI, workflows, algorithms, layouts, implementation patterns, and services—as replaceable when change is needed, without threatening underlying data or system integrity.
+- Prefer recoverability over assumed foresight. Use migrations, audit trails, versioning, backups, feature flags, tests, rollback-safe changes, and similar mechanisms where appropriate.
+- If a materially consequential foundational decision is uncertain, stop and ask rather than inventing a product rule, data convention, permission model, migration strategy, or security boundary.
+
 ## Styling Priorities
 
 For styling work, prioritize:

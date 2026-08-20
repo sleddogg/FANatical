@@ -3,6 +3,8 @@ import { requireSupabase } from "../../lib/supabase/client";
 import { createUuid } from "../../lib/uuid";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import type { NavigationSide } from "../../data/navigationSideStorage";
+import type { ProfileImageShape } from "../../data/profileImageShapeStorage";
+import { normalizeHomeCustomization, type HomeCustomization } from "../../data/homeCustomizationStorage";
 import type { ProfileField, ProfileRecord, SportExperience } from "../profile/types";
 
 type UnknownRow = Record<string, unknown>;
@@ -14,6 +16,8 @@ export type AccountTeamState = Readonly<{
 
 export type AccountSettings = Readonly<{
   navigationSide: NavigationSide;
+  profileImageShape: ProfileImageShape;
+  homeCustomization: HomeCustomization;
   selectedTeamId: OfficialTeamId | null;
   prototypeMigrationVersion: number;
 }>;
@@ -140,22 +144,41 @@ export async function saveOwnedProfile(userId: string, profile: ProfileRecord) {
 }
 
 export async function loadAccountSettings(userId: string): Promise<AccountSettings> {
-  const result = await requireSupabase().from("user_settings").select("navigation_side, selected_team_id, prototype_migration_version").eq("user_id", userId).maybeSingle();
+  const result = await requireSupabase().from("user_settings").select("navigation_side, selected_team_id, preferences, prototype_migration_version").eq("user_id", userId).maybeSingle();
   requireNoError(result.error, "Personal settings could not be loaded.");
   const row = result.data as UnknownRow | null;
+  const preferences = row?.preferences && typeof row.preferences === "object" && !Array.isArray(row.preferences)
+    ? row.preferences as UnknownRow
+    : {};
   return {
     navigationSide: text(row, "navigation_side") === "right" ? "right" : "left",
+    profileImageShape: text(preferences, "profileImageShape") === "square" ? "square" : "circle",
+    homeCustomization: normalizeHomeCustomization(preferences.homeCustomization),
     selectedTeamId: optionalText(row, "selected_team_id") as OfficialTeamId | null,
     prototypeMigrationVersion: typeof row?.prototype_migration_version === "number" ? row.prototype_migration_version : 0,
   };
 }
 
-export async function saveAccountSettings(userId: string, values: Partial<{ navigationSide: NavigationSide; selectedTeamId: OfficialTeamId | null; prototypeMigrationVersion: number }>) {
+export async function saveAccountSettings(userId: string, values: Partial<{ navigationSide: NavigationSide; profileImageShape: ProfileImageShape; homeCustomization: HomeCustomization; selectedTeamId: OfficialTeamId | null; prototypeMigrationVersion: number }>) {
+  const client = requireSupabase();
   const row: Record<string, unknown> = { user_id: userId };
   if (values.navigationSide !== undefined) row.navigation_side = values.navigationSide;
   if (values.selectedTeamId !== undefined) row.selected_team_id = values.selectedTeamId;
   if (values.prototypeMigrationVersion !== undefined) row.prototype_migration_version = values.prototypeMigrationVersion;
-  const result = await requireSupabase().from("user_settings").upsert(row, { onConflict: "user_id" });
+  if (values.profileImageShape !== undefined || values.homeCustomization !== undefined) {
+    const current = await client.from("user_settings").select("preferences").eq("user_id", userId).maybeSingle();
+    requireNoError(current.error, "Personal settings could not be loaded.");
+    const currentRow = current.data as UnknownRow | null;
+    const preferences = currentRow?.preferences && typeof currentRow.preferences === "object" && !Array.isArray(currentRow.preferences)
+      ? currentRow.preferences as UnknownRow
+      : {};
+    row.preferences = {
+      ...preferences,
+      ...(values.profileImageShape !== undefined ? { profileImageShape: values.profileImageShape } : {}),
+      ...(values.homeCustomization !== undefined ? { homeCustomization: normalizeHomeCustomization(values.homeCustomization) } : {}),
+    };
+  }
+  const result = await client.from("user_settings").upsert(row, { onConflict: "user_id" });
   requireNoError(result.error, "Personal settings could not be saved.");
 }
 
@@ -185,7 +208,7 @@ export async function addAccountFollowedTeam(userId: string, teamId: OfficialTea
   return "added" as const;
 }
 
-const synchronizedTables = ["profiles", "fan_identities", "sports_played", "user_followed_teams", "user_settings", "profile_visuals"] as const;
+const synchronizedTables = ["profiles", "fan_identities", "sports_played", "user_followed_teams", "user_settings", "profile_visuals", "profile_photos", "profile_visual_images"] as const;
 export type AccountTable = (typeof synchronizedTables)[number];
 
 export function subscribeToAccountChanges(userId: string, callback: () => void, tables: readonly AccountTable[] = synchronizedTables): () => void {

@@ -1,40 +1,60 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type PointerEvent } from "react";
-import { useProfileVisual } from "./ProfileVisualContext";
-import { cropImageStyle, useProfileVisualUrl } from "./ProfileVisualMedia";
-import { clampProfileVisualCrop, defaultProfileVisualCrop, type ProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualVariant } from "./types";
 import { AppIcon } from "../../components/AppIcon";
+import { SavedImageLibrary } from "../profile/SavedImageLibrary";
+import { useProfileVisual } from "./ProfileVisualContext";
+import { cropImageStyle, ProfileVisualMedia, useProfileVisualUrl } from "./ProfileVisualMedia";
+import { prepareProfileVisualImage } from "./profileVisualStorage";
+import { clampProfileVisualCrop, defaultProfileVisualCrop, type ProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualVariant } from "./types";
 
 function cropsMatch(first: ProfileVisualCrop, second: ProfileVisualCrop) {
   return first.focalX === second.focalX && first.focalY === second.focalY && first.zoom === second.zoom;
 }
 
-function ProfileVisualEditor({ variant, record }: { readonly variant: ProfileVisualVariant; readonly record: ProfileVisualImageRecord | undefined }) {
-  const title = variant === "mobile" ? "Mobile image" : "Wide image";
-  const { replaceImage, removeImage, saveCrop } = useProfileVisual();
-  const [crop, setCrop] = useState(record?.crop ?? defaultProfileVisualCrop);
+function ProfileVisualEditor({ variant, record, photos }: {
+  readonly variant: ProfileVisualVariant;
+  readonly record: ProfileVisualImageRecord | undefined;
+  readonly photos: readonly ProfileVisualImageRecord[];
+}) {
+  const title = variant === "mobile" ? "Mobile Visual" : "Wide Visual";
+  const { saveImage, removeImage } = useProfileVisual();
+  const [draft, setDraft] = useState<ProfileVisualImageRecord | undefined>(record);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const dragPoint = useRef<{ x: number; y: number } | null>(null);
-  const previewUrl = useProfileVisualUrl(record?.displayBlob, record?.displayUrl);
+  const draftChanged = useRef(false);
+  const previewUrl = useProfileVisualUrl(draft?.displayBlob, draft?.displayUrl);
+  const crop = draft?.crop ?? defaultProfileVisualCrop;
   const instructionId = `profile-visual-${variant}-instructions`;
 
-  useEffect(() => setCrop(record?.crop ?? defaultProfileVisualCrop), [record]);
+  useEffect(() => {
+    if (!draftChanged.current) setDraft(record);
+  }, [record]);
 
-  const updateCrop = (next: ProfileVisualCrop) => setCrop(clampProfileVisualCrop(next));
+  const updateCrop = (next: ProfileVisualCrop) => {
+    draftChanged.current = true;
+    setDraft((current) => current ? { ...current, crop: clampProfileVisualCrop(next) } : current);
+  };
 
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    draftChanged.current = true;
     setBusy(true);
     setError("");
     try {
-      await replaceImage(variant, file);
+      setDraft(await prepareProfileVisualImage(variant, file));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The selected image could not be saved.");
+      setError(reason instanceof Error ? reason.message : "The selected image could not be prepared.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const selectSavedPhoto = (photo: ProfileVisualImageRecord) => {
+    draftChanged.current = true;
+    setError("");
+    setDraft(photo);
   };
 
   const moveWithKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -49,33 +69,51 @@ function ProfileVisualEditor({ variant, record }: { readonly variant: ProfileVis
     updateCrop(nextCrop);
   };
 
-  const persistCrop = async () => {
+  const save = async () => {
+    if (!draft) return;
     setBusy(true);
     setError("");
     try {
-      await saveCrop(variant, crop);
+      const saved = await saveImage(draft);
+      draftChanged.current = false;
+      setDraft(saved);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The crop could not be saved.");
+      setError(reason instanceof Error ? reason.message : "The image could not be saved.");
     } finally {
       setBusy(false);
     }
   };
 
-  const remove = async () => {
-    if (!window.confirm(`Remove ${title}? The remaining image or FANatical default will be used instead.`)) return;
+  const cancel = () => {
+    draftChanged.current = false;
+    setError("");
+    setDraft(record);
+  };
+
+  const remove = async (photo: ProfileVisualImageRecord) => {
+    if (!photo.id) return;
+    const active = photo.id === record?.id;
+    const message = active
+      ? `Remove this active ${title}? Another saved image will become active, or the FANatical default will be shown if none remain.`
+      : `Remove this saved ${title}? This cannot be undone.`;
+    if (!window.confirm(message)) return;
     setBusy(true);
     setError("");
     try {
-      await removeImage(variant);
+      const nextActive = await removeImage(variant, photo.id);
+      if (draft?.id === photo.id) {
+        draftChanged.current = false;
+        setDraft(nextActive);
+      }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The image could not be removed.");
+      setError(reason instanceof Error ? reason.message : "The saved image could not be removed.");
     } finally {
       setBusy(false);
     }
   };
 
   const beginDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (!record) return;
+    if (!draft) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragPoint.current = { x: event.clientX, y: event.clientY };
   };
@@ -98,24 +136,54 @@ function ProfileVisualEditor({ variant, record }: { readonly variant: ProfileVis
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
+  const changed = Boolean(draft && (
+    draft.sourceBlob
+    || draft.id !== record?.id
+    || !record
+    || !cropsMatch(draft.crop, record.crop)
+  ));
+
   return (
     <section className={`profile-visual-editor profile-visual-editor--${variant}`} aria-labelledby={`profile-visual-${variant}-title`}>
-      <header><h4 id={`profile-visual-${variant}-title`}>{title}</h4><span>{record ? "Custom" : "Default"}</span></header>
-      <div className="profile-visual-editor__preview" role="group" aria-label={`${title} crop area`} aria-describedby={instructionId} tabIndex={record ? 0 : -1} onKeyDown={moveWithKeyboard} onPointerDown={beginDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+      <header><h4 id={`profile-visual-${variant}-title`}>{title}</h4><span>{draft ? "Preview" : "Default"}</span></header>
+      <div className="profile-visual-editor__preview" role="group" aria-label={`${title} crop area`} aria-describedby={instructionId} tabIndex={draft ? 0 : -1} onKeyDown={moveWithKeyboard} onPointerDown={beginDrag} onPointerMove={drag} onPointerUp={endDrag} onPointerCancel={endDrag}>
         {previewUrl ? <img src={previewUrl} alt="" aria-hidden="true" draggable={false} style={cropImageStyle(crop)} /> : <div className="profile-visual-editor__default" aria-hidden="true"><strong>FANatical</strong><span>Your home for fandom.</span></div>}
       </div>
-      <p className="profile-visual-editor__instructions" id={instructionId}>{record ? "Drag to reposition. With the crop area focused, use Arrow keys to move; hold Shift for larger steps." : "Upload an image to customize this profile visual."}</p>
-      {record ? <label className="profile-visual-editor__zoom">Zoom <input type="range" min="1" max="3" step="0.01" value={crop.zoom} aria-label={`${title} Zoom`} onChange={(event) => updateCrop({ ...crop, zoom: Number(event.target.value) })} /><output>{Math.round(crop.zoom * 100)}%</output></label> : null}
+      <SavedImageLibrary
+        id={`profile-visual-${variant}-library-title`}
+        title={`Saved ${variant === "mobile" ? "Mobile" : "Wide"} images`}
+        items={photos}
+        maximum={3}
+        busy={busy}
+        emptyMessage={`No saved ${variant === "mobile" ? "Mobile" : "Wide"} images yet.`}
+        limitMessage="Three-image limit reached. Remove a saved image before choosing another."
+        previewClassName={`profile-saved-image-library__preview--${variant}`}
+        itemKey={(photo) => photo.id ?? photo.displayPath ?? `${variant}-${photo.sourceFilename}`}
+        isActive={(photo) => photo.id === record?.id}
+        isSelected={(photo) => photo.id === draft?.id && !draft?.sourceBlob}
+        selectLabel={(photo) => `Edit saved ${title} ${photo.sourceFilename}`}
+        removeLabel={(photo) => photo.id ? `Remove saved ${title} ${photo.sourceFilename}` : null}
+        renderPreview={(photo) => <ProfileVisualMedia record={photo} />}
+        onSelect={selectSavedPhoto}
+        onRemove={(photo) => void remove(photo)}
+      />
+      <p className="profile-visual-editor__instructions" id={instructionId}>{draft ? "Drag to reposition. With the crop area focused, use Arrow keys to move; hold Shift for larger steps." : "Upload an image to customize this profile visual."}</p>
+      {draft ? <label className="profile-visual-editor__zoom">Zoom <input type="range" min="1" max="3" step="0.01" value={crop.zoom} aria-label={`${title} Zoom`} onChange={(event) => updateCrop({ ...crop, zoom: Number(event.target.value) })} /><output>{Math.round(crop.zoom * 100)}%</output></label> : null}
       {error ? <p className="profile-visual-editor__error" role="alert">{error}</p> : null}
       <div className="profile-visual-editor__controls">
-        <label className="profile-visual-editor__upload"><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-label={`${record ? "Replace" : "Upload"} ${title}`} disabled={busy} onChange={upload} /><span><AppIcon name="arrow-up-tray" />{busy ? "Processing…" : record ? "Replace image" : "Upload image"}</span></label>
-        {record ? <><button type="button" disabled={busy} onClick={() => setCrop(defaultProfileVisualCrop)}>Reset crop</button><button type="button" disabled={busy || cropsMatch(crop, record.crop)} onClick={() => void persistCrop()}>Save crop</button><button className="profile-visual-editor__remove" type="button" disabled={busy} onClick={() => void remove()}>Remove image</button></> : null}
+        <label className={`profile-visual-editor__upload${photos.length >= 3 ? " profile-visual-editor__upload--disabled" : ""}`}><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-label={`Choose ${title}`} disabled={busy || photos.length >= 3} onChange={upload} /><span><AppIcon name="arrow-up-tray" />{busy ? "Processing…" : draft ? "Choose another image" : "Choose image"}</span></label>
+        {draft ? <button type="button" disabled={busy} onClick={() => updateCrop(defaultProfileVisualCrop)}>Reset crop</button> : null}
+        <button type="button" disabled={busy || !changed} onClick={cancel}>Cancel changes</button>
+        <button className="profile-visual-editor__save" type="button" disabled={busy || !changed} onClick={() => void save()}>{busy ? "Saving…" : "Save image"}</button>
       </div>
     </section>
   );
 }
 
 export function ProfileVisualSettings() {
-  const { images } = useProfileVisual();
-  return <div className="profile-visual-settings"><ProfileVisualEditor variant="mobile" record={images.mobile} /><ProfileVisualEditor variant="wide" record={images.wide} /></div>;
+  const { images, library } = useProfileVisual();
+  return <div className="profile-visual-settings">
+    <ProfileVisualEditor variant="mobile" record={images.mobile} photos={library.mobile} />
+    <ProfileVisualEditor variant="wide" record={images.wide} photos={library.wide} />
+  </div>;
 }

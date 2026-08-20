@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppIcon } from "../../components/AppIcon";
 import type { ProfileAvatarCrop, ProfileAvatarRecord } from "./types";
+import type { ProfileImageShape } from "../../data/profileImageShapeStorage";
 
 export function profileAvatarImageStyle(crop: ProfileAvatarCrop) {
   return {
@@ -26,10 +27,10 @@ export function useProfileAvatarUrl(record: ProfileAvatarRecord | null | undefin
   return url;
 }
 
-export function ProfileAvatarMedia({ avatar, className = "" }: { readonly avatar: ProfileAvatarRecord | null; readonly className?: string }) {
+export function ProfileAvatarMedia({ avatar, shape = "circle", className = "" }: { readonly avatar: ProfileAvatarRecord | null; readonly shape?: ProfileImageShape; readonly className?: string }) {
   const url = useProfileAvatarUrl(avatar);
   return (
-    <span className={`profile-avatar-media${className ? ` ${className}` : ""}`} aria-hidden="true">
+    <span className={`profile-avatar-media profile-avatar-media--${shape}${className ? ` ${className}` : ""}`} aria-hidden="true">
       {avatar && url
         ? <img src={url} alt="" draggable={false} style={profileAvatarImageStyle(avatar.crop)} />
         : <AppIcon name="user" />}

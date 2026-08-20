@@ -6,6 +6,7 @@ import { NavIcon } from "./NavIcon";
 import { useAuth } from "../features/account/AuthContext";
 import { useProfileAvatar } from "../features/profileAvatar/ProfileAvatarContext";
 import { ProfileNavigationControl } from "./ProfileNavigationControl";
+import { useProfileImageShape } from "../data/profileImageShapePreference";
 
 type BottomNavigationProps = {
   readonly variant: "home" | "inner";
@@ -14,10 +15,11 @@ type BottomNavigationProps = {
 export function BottomNavigation({ variant }: BottomNavigationProps) {
   const { user } = useAuth();
   const { avatar } = useProfileAvatar();
+  const { shape } = useProfileImageShape();
   return (
     <nav className={`bottom-navigation bottom-navigation--${variant}`} aria-label={variant === "home" ? "Home navigation" : "Application navigation"}>
       <NavLink className="bottom-navigation__link" to="/" end aria-label="FANatical home">
-        <BrandMark />
+        <BrandMark shape={shape} />
       </NavLink>
 
       {variant === "home" ? (
@@ -33,7 +35,7 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
         </div>
       )}
 
-      <ProfileNavigationControl signedIn={Boolean(user)} avatar={avatar} />
+      <ProfileNavigationControl signedIn={Boolean(user)} avatar={avatar} shape={shape} />
     </nav>
   );
 }

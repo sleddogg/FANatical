@@ -47,13 +47,15 @@ describe("Profile owner experience", () => {
     expect(within(dialog).queryByLabelText("Banner placeholder")).not.toBeInTheDocument();
     expect(within(dialog).getAllByText("FANatical default")).toHaveLength(2);
     await user.click(within(dialog).getByRole("button", { name: "Add Mobile image" }));
-    expect(within(dialog).getByRole("group", { name: "Mobile image crop area" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("group", { name: "Wide image crop area" })).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Upload Mobile image")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
-    expect(within(dialog).getByLabelText("Upload Wide image")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    expect(within(dialog).getByRole("group", { name: "Mobile Visual crop area" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("group", { name: "Wide Visual crop area" })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Choose Mobile Visual")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
+    expect(within(dialog).getByLabelText("Choose Wide Visual")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
     await user.click(within(dialog).getByRole("button", { name: /Back to Profile settings/ }));
     expect(within(dialog).getByRole("radio", { name: "Left" })).toBeChecked();
     await user.click(within(dialog).getByRole("radio", { name: "Right" }));
+    expect(within(dialog).queryByRole("radio", { name: "Circle" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio", { name: "Square" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("radio", { name: "Game Face" }));
     await user.click(within(dialog).getByRole("button", { name: "Add sport" }));
     const sportInputs = within(dialog).getAllByLabelText("Sport");
@@ -76,6 +78,44 @@ describe("Profile owner experience", () => {
     await user.click(screen.getByRole("tab", { name: "Trophy Case" }));
     expect(screen.getByRole("heading", { name: "Trophy Case" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Founding Fan" })).toBeInTheDocument();
+  });
+
+  it("customizes responsive Home text and a Profile-backed Fan Card", async () => {
+    const user = userEvent.setup();
+    renderProfile();
+
+    await user.click(screen.getByRole("button", { name: "Edit profile" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit Profile" });
+    const textPanel = within(dialog).getByRole("region", { name: "Text Overlay" });
+    const fanCardPanel = within(dialog).getByRole("region", { name: "Fan Card" });
+    const bigText = within(textPanel).getByLabelText("Big text");
+    await user.clear(bigText);
+    await user.type(bigText, "A".repeat(35));
+    expect(bigText).toHaveValue("A".repeat(30));
+    expect(within(textPanel).getByText("30 / 30")).toBeInTheDocument();
+    await user.click(within(textPanel).getByRole("radio", { name: "Top Left" }));
+
+    await user.click(within(fanCardPanel).getByRole("switch", { name: "Enable Fan Card" }));
+    await user.click(within(fanCardPanel).getByRole("button", { name: "Select FANatical name, North Star" }));
+    await user.click(within(fanCardPanel).getByRole("button", { name: "Select Nickname, Sleddogg" }));
+    expect(within(fanCardPanel).getByRole("button", { name: "FANatical name, selected 1 of 4, North Star" })).toHaveTextContent("1");
+    expect(within(fanCardPanel).getByRole("button", { name: "Nickname, selected 2 of 4, Sleddogg" })).toHaveTextContent("2");
+    await user.click(within(fanCardPanel).getByRole("button", { name: "Move Nickname up" }));
+    await user.click(within(fanCardPanel).getByRole("radio", { name: "Stack" }));
+    await user.click(within(fanCardPanel).getByRole("radio", { name: "Bottom Left" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save profile" }));
+
+    await user.click(screen.getByRole("link", { name: "FANatical home" }));
+    expect(screen.getByRole("heading", { name: "A".repeat(30) })).toBeInTheDocument();
+    const textOverlay = screen.getByRole("heading", { name: "A".repeat(30) }).closest(".home-hero__text-overlay");
+    expect(textOverlay).not.toHaveTextContent("FANatical");
+    const fanCard = screen.getByLabelText("Fan Card");
+    expect(within(fanCard).getByText("Sleddogg")).toBeInTheDocument();
+    expect(within(fanCard).getByText("North Star")).toBeInTheDocument();
+    expect(within(fanCard).queryByText("Nickname")).not.toBeInTheDocument();
+    expect(within(fanCard).queryByText("FANatical name")).not.toBeInTheDocument();
+    expect(within(fanCard).queryByRole("term")).not.toBeInTheDocument();
+    expect(fanCard).toHaveClass("home-hero__fan-card--stack");
   });
 
   it("keeps Profile curation separate while opening the shared multi-image viewer", async () => {

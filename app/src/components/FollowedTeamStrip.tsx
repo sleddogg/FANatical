@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TeamId } from "../domain/team";
 import { useTeamContext } from "../state/TeamContext";
-import { ProfileAddTeamDialog } from "../features/profile/ProfileAddTeamDialog";
 import type { OfficialTeamId } from "../data/officialSportsDatabase";
 import { TeamBadge } from "./TeamBadge";
 import { AppIcon } from "./AppIcon";
+import { ManageTeamsDialog } from "./ManageTeamsDialog";
 
 type ScrollState = Readonly<{
   canScrollBackward: boolean;
@@ -19,10 +19,11 @@ const initialScrollState: ScrollState = {
 };
 
 export function FollowedTeamStrip() {
-  const { followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam } = useTeamContext();
+  const { followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam, replaceFollowedTeams } = useTeamContext();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const manageButtonRef = useRef<HTMLButtonElement>(null);
   const [scrollState, setScrollState] = useState<ScrollState>(initialScrollState);
-  const [addTeamOpen, setAddTeamOpen] = useState(false);
+  const [manageTeamsOpen, setManageTeamsOpen] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const viewport = viewportRef.current;
@@ -92,8 +93,9 @@ export function FollowedTeamStrip() {
     selectTeam(teamId);
   };
 
-  const addTeam = async (teamId: OfficialTeamId) => {
-    if (await addFollowedTeam(teamId) === "added") setAddTeamOpen(false);
+  const closeManageTeams = () => {
+    setManageTeamsOpen(false);
+    window.requestAnimationFrame(() => manageButtonRef.current?.focus());
   };
 
   return (
@@ -127,19 +129,21 @@ export function FollowedTeamStrip() {
       </div>
 
       <button
-        className="team-strip__add"
+        className="team-strip__manage"
         type="button"
-        aria-label="Add Team"
-        onClick={() => setAddTeamOpen(true)}
+        aria-label="Manage Teams"
+        data-tooltip-label="Manage Teams"
+        ref={manageButtonRef}
+        onClick={() => setManageTeamsOpen(true)}
       >
-        <AppIcon name="plus" />
+        <AppIcon name="pencil-square" />
       </button>
 
       <span className="visually-hidden" aria-live="polite">
         Selected team: {selectedTeam.name}
       </span>
       </div>
-      {addTeamOpen ? <ProfileAddTeamDialog followedTeams={followedTeams} onAdd={addTeam} onClose={() => setAddTeamOpen(false)} placement="bottom" /> : null}
+      {manageTeamsOpen ? <ManageTeamsDialog followedTeams={followedTeams} onAdd={(teamId: OfficialTeamId) => addFollowedTeam(teamId)} onReplace={replaceFollowedTeams} onClose={closeManageTeams} /> : null}
     </>
   );
 }

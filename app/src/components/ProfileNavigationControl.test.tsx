@@ -53,6 +53,17 @@ describe("ProfileNavigationControl", () => {
     expect(screen.getByRole("heading", { name: "Profile destination" })).toBeInTheDocument();
   });
 
+  it("applies the selected display shape without changing the avatar image", () => {
+    render(
+      <MemoryRouter>
+        <ProfileNavigationControl signedIn avatar={avatar} shape="square" />
+      </MemoryRouter>,
+    );
+    const media = screen.getByRole("link", { name: "Profile" }).querySelector(".profile-avatar-media");
+    expect(media).toHaveClass("profile-avatar-media--square");
+    expect(media?.querySelector("img")).toBeInTheDocument();
+  });
+
   it("does not show the Profile tooltip from touch-generated focus", () => {
     renderControl(true, avatar);
     const control = screen.getByRole("link", { name: "Profile" });

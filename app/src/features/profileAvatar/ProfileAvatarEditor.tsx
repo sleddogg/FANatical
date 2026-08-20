@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type PointerEvent } from "react";
 import { AppIcon } from "../../components/AppIcon";
+import { useProfileImageShape } from "../../data/profileImageShapePreference";
+import { SavedImageLibrary } from "../profile/SavedImageLibrary";
 import { useProfileAvatar } from "./ProfileAvatarContext";
 import { prepareProfileAvatarImage } from "./profileAvatarImage";
-import { profileAvatarImageStyle, useProfileAvatarUrl } from "./ProfileAvatarMedia";
+import { ProfileAvatarMedia, profileAvatarImageStyle, useProfileAvatarUrl } from "./ProfileAvatarMedia";
 import { clampProfileAvatarCrop, defaultProfileAvatarCrop, panProfileAvatarCrop, pinchProfileAvatarCrop, type ProfileAvatarCrop, type ProfileAvatarRecord } from "./types";
 
 type Point = Readonly<{ x: number; y: number }>;
@@ -20,24 +22,38 @@ function cropsMatch(first: ProfileAvatarCrop, second: ProfileAvatarCrop) {
 }
 
 export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () => void; readonly onCancel: () => void }) {
-  const { avatar, saveAvatar, removeAvatar } = useProfileAvatar();
+  const { avatar, photos, saveAvatar, removePhoto } = useProfileAvatar();
+  const { shape: savedShape, setShape: saveShape } = useProfileImageShape();
   const [draft, setDraft] = useState<ProfileAvatarRecord | null>(avatar);
+  const [draftShape, setDraftShape] = useState(savedShape);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const pointers = useRef(new Map<number, Point>());
   const lastPoint = useRef<Point | null>(null);
   const pinch = useRef<{ distance: number; midpoint: Point; crop: ProfileAvatarCrop } | null>(null);
+  const draftChanged = useRef(false);
+  const shapeChanged = useRef(false);
   const previewUrl = useProfileAvatarUrl(draft);
   const crop = draft?.crop ?? defaultProfileAvatarCrop;
 
-  useEffect(() => setDraft(avatar), [avatar]);
+  useEffect(() => {
+    if (!draftChanged.current) setDraft(avatar);
+  }, [avatar]);
 
-  const updateCrop = (next: ProfileAvatarCrop) => setDraft((current) => current ? { ...current, crop: clampProfileAvatarCrop(next) } : current);
+  useEffect(() => {
+    if (!shapeChanged.current) setDraftShape(savedShape);
+  }, [savedShape]);
+
+  const updateCrop = (next: ProfileAvatarCrop) => {
+    draftChanged.current = true;
+    setDraft((current) => current ? { ...current, crop: clampProfileAvatarCrop(next) } : current);
+  };
 
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    draftChanged.current = true;
     setBusy(true);
     setError("");
     try {
@@ -47,6 +63,12 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
     } finally {
       setBusy(false);
     }
+  };
+
+  const selectSavedPhoto = (photo: ProfileAvatarRecord) => {
+    draftChanged.current = true;
+    setError("");
+    setDraft(photo);
   };
 
   const moveBy = (deltaX: number, deltaY: number, bounds: DOMRect) => {
@@ -110,11 +132,11 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
   };
 
   const save = async () => {
-    if (!draft) return;
     setBusy(true);
     setError("");
     try {
-      await saveAvatar(draft);
+      if (draft && avatarDraftChanged) await saveAvatar(draft);
+      if (displayShapeChanged) await saveShape(draftShape);
       onDone();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The profile photo could not be saved.");
@@ -123,13 +145,21 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
     }
   };
 
-  const remove = async () => {
-    if (!avatar || !window.confirm("Remove this profile photo? The User icon will be shown instead.")) return;
+  const remove = async (photo: ProfileAvatarRecord) => {
+    if (!photo.id) return;
+    const active = photo.id === avatar?.id;
+    const message = active
+      ? "Remove this active profile photo? Another saved photo will become active, or the User icon will be shown if none remain."
+      : "Remove this saved profile photo? This cannot be undone.";
+    if (!window.confirm(message)) return;
     setBusy(true);
     setError("");
     try {
-      await removeAvatar();
-      onDone();
+      const nextActive = await removePhoto(photo.id);
+      if (draft?.id === photo.id) {
+        draftChanged.current = false;
+        setDraft(nextActive);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The profile photo could not be removed.");
     } finally {
@@ -137,14 +167,16 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
     }
   };
 
-  const changed = Boolean(draft && (draft !== avatar || !avatar || !cropsMatch(draft.crop, avatar.crop)));
+  const avatarDraftChanged = Boolean(draft && (draft !== avatar || !avatar || !cropsMatch(draft.crop, avatar.crop)));
+  const displayShapeChanged = draftShape !== savedShape;
+  const changed = avatarDraftChanged || displayShapeChanged;
 
   return (
     <section className="profile-avatar-editor" aria-labelledby="profile-avatar-editor-title">
-      <header><div><h3 id="profile-avatar-editor-title">Profile photo</h3><p>Move and zoom the original image behind the fixed circle.</p></div><span>{draft ? "Preview" : "No photo"}</span></header>
+      <header><div><h3 id="profile-avatar-editor-title">Profile photo</h3><p>Move and zoom the original image behind the fixed {draftShape}.</p></div><span>{draft ? "Preview" : "No photo"}</span></header>
       <div className="profile-avatar-editor__stage">
         <div
-          className="profile-avatar-editor__frame"
+          className={`profile-avatar-editor__frame profile-avatar-editor__frame--${draftShape}`}
           role="group"
           aria-label="Profile photo positioning area"
           aria-describedby="profile-avatar-editor-instructions"
@@ -160,15 +192,41 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
             : <AppIcon name="user" />}
         </div>
       </div>
+      <SavedImageLibrary
+        id="profile-photo-library-title"
+        title="Saved photos"
+        items={photos}
+        maximum={3}
+        busy={busy}
+        emptyMessage="No saved profile photos yet."
+        limitMessage="Three-photo limit reached. Remove a saved photo before choosing another."
+        previewClassName="profile-saved-image-library__preview--avatar"
+        itemKey={(photo) => photo.id ?? photo.displayPath ?? photo.sourceFilename}
+        isActive={(photo) => photo.id === avatar?.id}
+        isSelected={(photo) => photo.id === draft?.id && !draft?.sourceBlob}
+        selectLabel={(photo) => `Edit saved photo ${photo.sourceFilename}`}
+        removeLabel={(photo) => photo.id ? `Remove saved photo ${photo.sourceFilename}` : null}
+        renderPreview={(photo) => <ProfileAvatarMedia avatar={photo} shape={draftShape} />}
+        onSelect={selectSavedPhoto}
+        onRemove={(photo) => void remove(photo)}
+      />
+      <div className="profile-featured-picker profile-avatar-editor__shape" role="radiogroup" aria-labelledby="profile-image-shape-title">
+        <strong id="profile-image-shape-title">Profile Image Shape</strong>
+        <div>
+          {(["circle", "square"] as const).map((shape) => (
+            <label key={shape}><input type="radio" name="profileImageShape" value={shape} checked={draftShape === shape} onChange={() => { shapeChanged.current = true; setDraftShape(shape); }} /><span>{shape === "circle" ? "Circle" : "Square"}</span></label>
+          ))}
+        </div>
+        <p>This shape is also used by your Profile and FANatical Home controls.</p>
+      </div>
       <p id="profile-avatar-editor-instructions">Drag to reposition. Use two fingers to pinch on touch screens, or use the Zoom slider. Arrow keys also reposition the image.</p>
       {draft ? <label className="profile-avatar-editor__zoom">Zoom<input type="range" min="1" max="4" step="0.01" value={crop.zoom} aria-label="Profile photo zoom" onChange={(event) => updateCrop({ ...crop, zoom: Number(event.target.value) })} /><output>{Math.round(crop.zoom * 100)}%</output></label> : null}
       {error ? <p className="profile-avatar-editor__error" role="alert">{error}</p> : null}
       <div className="profile-avatar-editor__actions">
-        <label className="profile-avatar-editor__upload"><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={upload} /><span><AppIcon name="camera" />{busy ? "Processing…" : draft ? "Choose another photo" : "Choose photo"}</span></label>
+        <label className={`profile-avatar-editor__upload${photos.length >= 3 ? " profile-avatar-editor__upload--disabled" : ""}`}><input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy || photos.length >= 3} onChange={upload} /><span><AppIcon name="camera" />{busy ? "Processing…" : draft ? "Choose another photo" : "Choose photo"}</span></label>
         {draft ? <button type="button" disabled={busy} onClick={() => updateCrop(defaultProfileAvatarCrop)}>Reset</button> : null}
-        {avatar ? <button className="profile-avatar-editor__remove" type="button" disabled={busy} onClick={() => void remove()}>Remove photo</button> : null}
         <button type="button" disabled={busy} onClick={onCancel}>Cancel</button>
-        <button className="profile-avatar-editor__save" type="button" disabled={busy || !draft || !changed} onClick={() => void save()}>{busy ? "Saving…" : "Save photo"}</button>
+        <button className="profile-avatar-editor__save" type="button" disabled={busy || !changed} onClick={() => void save()}>{busy ? "Saving…" : "Save photo"}</button>
       </div>
     </section>
   );

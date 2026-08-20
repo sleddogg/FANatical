@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ProfileRecord } from "./types";
 import { useNavigationSide, type NavigationSide } from "../../data/navigationSidePreference";
+import { useProfileImageShape } from "../../data/profileImageShapePreference";
 import { ProfileVisualSettings } from "../profileVisual/ProfileVisualSettings";
 import { useProfileVisual } from "../profileVisual/ProfileVisualContext";
 import { AppIcon } from "../../components/AppIcon";
 import { ProfileAvatarEditor } from "../profileAvatar/ProfileAvatarEditor";
 import { useProfileAvatar } from "../profileAvatar/ProfileAvatarContext";
 import { ProfileAvatarMedia } from "../profileAvatar/ProfileAvatarMedia";
+import { useHomeCustomization } from "../../data/homeCustomizationPreference";
+import { resolveSavedHomeCustomizationPositions } from "../../pages/homeOverlayLayout";
+import { HomeCustomizationSettings } from "./HomeCustomizationSettings";
 
 let localSportSequence = 0;
 
@@ -26,20 +30,35 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
   const { images } = useProfileVisual();
   const { avatar } = useProfileAvatar();
   const { side: savedNavigationSide, setSide: saveNavigationSide } = useNavigationSide();
+  const { shape: profileImageShape } = useProfileImageShape();
+  const { customization: savedHomeCustomization, setCustomization: saveHomeCustomization } = useHomeCustomization();
   const [navigationSide, setNavigationSide] = useState<NavigationSide>(savedNavigationSide);
+  const [homeCustomization, setHomeCustomization] = useState(savedHomeCustomization);
+  const navigationSideDirtyRef = useRef(false);
+  const homeCustomizationDirtyRef = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!navigationSideDirtyRef.current) setNavigationSide(savedNavigationSide);
+  }, [savedNavigationSide]);
+
+  useEffect(() => {
+    if (!homeCustomizationDirtyRef.current) setHomeCustomization(savedHomeCustomization);
+  }, [savedHomeCustomization]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onCloseRef.current();
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [onClose]);
+  }, []);
 
   const updateField = (collection: "bio" | "fanIdentity", fieldId: string, value: string) => {
     setDraft((current) => ({
@@ -77,6 +96,18 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
     }));
   };
 
+  const changeHomeCustomization = (next: typeof homeCustomization) => {
+    homeCustomizationDirtyRef.current = true;
+    setHomeCustomization(next);
+  };
+
+  const changeNavigationSide = (side: NavigationSide) => {
+    navigationSideDirtyRef.current = true;
+    homeCustomizationDirtyRef.current = true;
+    setNavigationSide(side);
+    setHomeCustomization((current) => resolveSavedHomeCustomizationPositions(current, side));
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
@@ -88,6 +119,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
         tagline: draft.tagline.trim(),
       });
       await saveNavigationSide(navigationSide);
+      await saveHomeCustomization(resolveSavedHomeCustomizationPositions(homeCustomization, navigationSide));
       onClose();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Profile changes could not be saved.");
@@ -126,7 +158,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
           <fieldset>
             <legend>Profile photo</legend>
             <div className="profile-avatar-summary">
-              <ProfileAvatarMedia avatar={avatar} />
+              <ProfileAvatarMedia avatar={avatar} shape={profileImageShape} />
               <span><strong>{avatar ? "Custom profile photo" : "User icon"}</strong><small>{avatar?.sourceFilename ?? (accountBacked ? "Add a photo for your FANatical account" : "Sign in to add a profile photo")}</small></span>
               <button type="button" disabled={!accountBacked} onClick={() => setMediaEditor("avatar")}>{avatar ? "Edit photo" : "Add photo"}</button>
             </div>
@@ -137,12 +169,13 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
               <strong id="profile-navigation-side-title">Navigation Side</strong>
               <div>
                 {(["left", "right"] as const).map((side) => (
-                  <label key={side}><input type="radio" name="navigationSide" value={side} checked={navigationSide === side} onChange={() => setNavigationSide(side)} /><span>{side === "left" ? "Left" : "Right"}</span></label>
+                  <label key={side}><input type="radio" name="navigationSide" value={side} checked={navigationSide === side} onChange={() => changeNavigationSide(side)} /><span>{side === "left" ? "Left" : "Right"}</span></label>
                 ))}
               </div>
               <p>Choose which side of the Home profile visual holds the floating feature navigation.</p>
             </div>
           </fieldset>
+          <HomeCustomizationSettings profile={draft} value={homeCustomization} navigationSide={navigationSide} onChange={changeHomeCustomization} />
           <fieldset>
             <legend>Profile visual</legend>
             <div className="profile-visual-summary">

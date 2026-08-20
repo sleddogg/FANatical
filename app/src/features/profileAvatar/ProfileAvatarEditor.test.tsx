@@ -4,11 +4,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProfileAvatarRecord } from "./types";
 
 const mocks = vi.hoisted(() => ({
+  avatar: null as ProfileAvatarRecord | null,
+  photos: [] as ProfileAvatarRecord[],
   saveAvatar: vi.fn(),
-  removeAvatar: vi.fn(),
+  removePhoto: vi.fn(),
+  prepareImage: vi.fn(),
 }));
 
 const avatar: ProfileAvatarRecord = {
+  id: "photo-1",
   sourceFilename: "portrait.jpg",
   sourceMediaType: "image/jpeg",
   displayUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
@@ -22,18 +26,28 @@ const avatar: ProfileAvatarRecord = {
 
 vi.mock("./ProfileAvatarContext", () => ({
   useProfileAvatar: () => ({
-    avatar,
+    avatar: mocks.avatar,
+    photos: mocks.photos,
     loading: false,
     saveAvatar: mocks.saveAvatar,
     saveCrop: vi.fn(),
-    removeAvatar: mocks.removeAvatar,
+    removePhoto: mocks.removePhoto,
   }),
+}));
+
+vi.mock("./profileAvatarImage", () => ({
+  prepareProfileAvatarImage: mocks.prepareImage,
 }));
 
 import { ProfileAvatarEditor } from "./ProfileAvatarEditor";
 
 describe("ProfileAvatarEditor", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.avatar = avatar;
+    mocks.photos = [avatar];
+    mocks.removePhoto.mockResolvedValue(null);
+  });
 
   it("shows the fixed circular preview and saves zoom changes", async () => {
     const user = userEvent.setup();
@@ -41,6 +55,7 @@ describe("ProfileAvatarEditor", () => {
     render(<ProfileAvatarEditor onDone={onDone} onCancel={vi.fn()} />);
 
     expect(screen.getByRole("group", { name: "Profile photo positioning area" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose another photo")).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
     fireEvent.change(screen.getByRole("slider", { name: "Profile photo zoom" }), { target: { value: "2.25" } });
     await user.click(screen.getByRole("button", { name: "Save photo" }));
 
@@ -55,5 +70,77 @@ describe("ProfileAvatarEditor", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalledOnce();
     expect(mocks.saveAvatar).not.toHaveBeenCalled();
+  });
+
+  it("moves the shape setting into the editor and updates the preview before saving", async () => {
+    const user = userEvent.setup();
+    render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+
+    const frame = screen.getByRole("group", { name: "Profile photo positioning area" });
+    expect(screen.getByRole("radio", { name: "Circle" })).toBeChecked();
+    expect(frame).toHaveClass("profile-avatar-editor__frame--circle");
+
+    await user.click(screen.getByRole("radio", { name: "Square" }));
+    expect(frame).toHaveClass("profile-avatar-editor__frame--square");
+    await user.click(screen.getByRole("button", { name: "Save photo" }));
+
+    expect(window.localStorage.getItem("fanatical.profile-image-shape.v1")).toBe("square");
+    expect(mocks.saveAvatar).not.toHaveBeenCalled();
+  });
+
+  it("keeps a first-attempt picker photo when focus/session refreshes the saved avatar", async () => {
+    const user = userEvent.setup();
+    const replacement: ProfileAvatarRecord = {
+      ...avatar,
+      sourceFilename: "replacement.png",
+      sourceMediaType: "image/png",
+      displayUrl: "data:image/svg+xml,%3Csvg%20id='replacement'%20xmlns='http://www.w3.org/2000/svg'/%3E",
+      updatedAt: "2026-08-20T00:00:00.000Z",
+    };
+    mocks.prepareImage.mockResolvedValueOnce(replacement);
+    const view = render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.upload(screen.getByLabelText("Choose another photo"), new File(["image"], "replacement.png", { type: "image/png" }));
+    expect(mocks.prepareImage).toHaveBeenCalledWith(expect.objectContaining({ name: "replacement.png", type: "image/png" }));
+
+    window.dispatchEvent(new Event("focus"));
+    mocks.avatar = { ...avatar, updatedAt: "2026-08-20T00:00:01.000Z" };
+    view.rerender(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Save photo" }));
+
+    expect(mocks.saveAvatar).toHaveBeenCalledWith(expect.objectContaining({ sourceFilename: "replacement.png" }));
+  });
+
+  it("loads a saved thumbnail as the working photo without activating it before Save", async () => {
+    const user = userEvent.setup();
+    const second = { ...avatar, id: "photo-2", sourceFilename: "second.webp", displayUrl: "data:image/svg+xml,%3Csvg%20id='second'%20xmlns='http://www.w3.org/2000/svg'/%3E", crop: { focalX: 0.3, focalY: 0.7, zoom: 1.4 } };
+    mocks.photos = [avatar, second];
+    render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText("Active")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit saved photo second.webp" }));
+    expect(mocks.saveAvatar).not.toHaveBeenCalled();
+    expect(screen.getByRole("slider", { name: "Profile photo zoom" })).toHaveValue("1.4");
+
+    await user.click(screen.getByRole("button", { name: "Save photo" }));
+    expect(mocks.saveAvatar).toHaveBeenCalledWith(expect.objectContaining({ id: "photo-2", sourceFilename: "second.webp" }));
+  });
+
+  it("blocks a fourth upload and explains how to free a slot", () => {
+    mocks.photos = [avatar, { ...avatar, id: "photo-2" }, { ...avatar, id: "photo-3" }];
+    render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText("Three-photo limit reached. Remove a saved photo before choosing another.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose another photo")).toBeDisabled();
+  });
+
+  it("requires confirmation before removing a saved photo", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Remove saved photo portrait.jpg" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("active profile photo"));
+    expect(mocks.removePhoto).not.toHaveBeenCalled();
   });
 });

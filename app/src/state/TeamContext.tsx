@@ -13,7 +13,6 @@ import {
   followedTeamsFromOfficialIds,
   followedTeams as seededFollowedTeams,
   loadFollowedTeams,
-  loadPersistedFollowedTeamIds,
   savePersistedFollowedTeamIds,
 } from "../data/followedTeams";
 import {
@@ -24,7 +23,7 @@ import type { FollowedTeam, TeamId } from "../domain/team";
 import type { OfficialTeamId } from "../data/officialSportsDatabase";
 import { useAuth } from "../features/account/AuthContext";
 import { useAccountBootstrap } from "../features/account/AccountBootstrap";
-import { addAccountFollowedTeam, loadAccountTeamState, saveAccountSettings, subscribeToAccountChanges } from "../features/account/accountRepository";
+import { loadAccountTeamState, replaceAccountFollowedTeams, saveAccountSettings, subscribeToAccountChanges } from "../features/account/accountRepository";
 
 type TeamContextValue = Readonly<{
   followedTeams: readonly FollowedTeam[];
@@ -32,6 +31,7 @@ type TeamContextValue = Readonly<{
   selectedTeamId: TeamId;
   selectTeam: (teamId: TeamId) => void;
   addFollowedTeam: (teamId: OfficialTeamId) => Promise<"added" | "duplicate" | "unavailable">;
+  replaceFollowedTeams: (teamIds: readonly OfficialTeamId[]) => Promise<void>;
 }>;
 
 type TeamProviderProps = PropsWithChildren<{
@@ -68,7 +68,7 @@ export function TeamProvider({
     const load = () => loadAccountTeamState(user.id).then((state) => {
       if (!current) return;
       const nextTeams = followedTeamsFromOfficialIds(state.followedTeamIds);
-      setFollowedTeams(nextTeams.length ? nextTeams : loadFollowedTeams());
+      setFollowedTeams(nextTeams);
       if (!selectionChangedInSession.current && state.selectedTeamId) {
         const selected = nextTeams.find((team) => team.officialTeamId === state.selectedTeamId);
         if (selected) setSelectedTeamId(selected.id);
@@ -98,7 +98,7 @@ export function TeamProvider({
 
   useEffect(() => {
     if (!configured) setFollowedTeams(loadFollowedTeams());
-    else if (!user) setFollowedTeams(seededFollowedTeams);
+    else if (!user) setFollowedTeams(loadFollowedTeams());
   }, [configured, user]);
 
   const selectTeam = useCallback(
@@ -116,27 +116,37 @@ export function TeamProvider({
     [configured, followedTeams, preferenceStore, user],
   );
 
+  const persistFollowedTeams = useCallback(async (teamIds: readonly OfficialTeamId[]) => {
+    const uniqueIds = [...new Set(teamIds)].filter((teamId) => Boolean(followedTeamsFromOfficialIds([teamId]).length));
+    if (configured && user) {
+      await replaceAccountFollowedTeams(user.id, uniqueIds);
+    } else {
+      savePersistedFollowedTeamIds(uniqueIds);
+    }
+    const nextTeams = followedTeamsFromOfficialIds(uniqueIds);
+    setFollowedTeams(nextTeams);
+
+    if (!nextTeams.some((team) => team.id === selectedTeamId)) {
+      const nextSelected = nextTeams[0];
+      selectionChangedInSession.current = true;
+      setSelectedTeamId(nextSelected?.id ?? defaultSelectedTeamId);
+      if (configured && user) await saveAccountSettings(user.id, { selectedTeamId: nextSelected?.officialTeamId ?? null });
+      else if (nextSelected) await preferenceStore.saveSelectedTeamId(nextSelected.id);
+    }
+  }, [configured, preferenceStore, selectedTeamId, user]);
+
   const addFollowedTeam = useCallback(async (teamId: OfficialTeamId) => {
     if (followedTeams.some((team) => team.officialTeamId === teamId)) return "duplicate";
-    if (configured && user) {
-      const result = await addAccountFollowedTeam(user.id, teamId, followedTeams.length);
-      if (result === "duplicate") return result;
-      const nextTeams = followedTeamsFromOfficialIds([...followedTeams.map((team) => team.officialTeamId).filter((id): id is OfficialTeamId => Boolean(id)), teamId]);
-      setFollowedTeams(nextTeams);
-      return "added";
-    }
-    const persistedIds = [...loadPersistedFollowedTeamIds(), teamId];
-    savePersistedFollowedTeamIds(persistedIds);
-    const nextTeams = loadFollowedTeams();
-    if (!nextTeams.some((team) => team.officialTeamId === teamId)) return "unavailable";
-    setFollowedTeams(nextTeams);
+    const nextIds = [...followedTeams.map((team) => team.officialTeamId).filter((id): id is OfficialTeamId => Boolean(id)), teamId];
+    if (followedTeamsFromOfficialIds(nextIds).length !== nextIds.length) return "unavailable";
+    await persistFollowedTeams(nextIds);
     return "added";
-  }, [configured, followedTeams, user]);
+  }, [followedTeams, persistFollowedTeams]);
 
   const selectedTeam = followedTeams.find((team) => team.id === selectedTeamId) ?? defaultSelectedTeam;
   const value = useMemo<TeamContextValue>(
-    () => ({ followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam }),
-    [addFollowedTeam, followedTeams, selectTeam, selectedTeam, selectedTeamId],
+    () => ({ followedTeams, selectedTeam, selectedTeamId, selectTeam, addFollowedTeam, replaceFollowedTeams: persistFollowedTeams }),
+    [addFollowedTeam, followedTeams, persistFollowedTeams, selectTeam, selectedTeam, selectedTeamId],
   );
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;

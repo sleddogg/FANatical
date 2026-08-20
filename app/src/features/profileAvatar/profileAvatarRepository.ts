@@ -1,23 +1,26 @@
 import { requireSupabase } from "../../lib/supabase/client";
 import { createUuid } from "../../lib/uuid";
-import { clampProfileAvatarCrop, type ProfileAvatarCrop, type ProfileAvatarRecord } from "./types";
+import { clampProfileAvatarCrop, type ProfileAvatarRecord } from "./types";
 
-type AvatarRow = Readonly<{
-  avatar_path: unknown;
-  avatar_customization: unknown;
+type ProfileRow = Readonly<{ active_profile_photo_id: unknown }>;
+
+type ProfilePhotoRow = Readonly<{
+  id: unknown;
+  source_path: unknown;
+  display_path: unknown;
+  source_filename: unknown;
+  source_media_type: unknown;
+  source_width: unknown;
+  source_height: unknown;
+  focal_x: unknown;
+  focal_y: unknown;
+  zoom: unknown;
   updated_at: unknown;
 }>;
 
-type AvatarCustomization = Readonly<{
-  sourcePath: string;
-  displayPath: string;
-  sourceFilename: string;
-  sourceMediaType: string;
-  sourceWidth: number;
-  sourceHeight: number;
-  focalX: number;
-  focalY: number;
-  zoom: number;
+export type ProfileAvatarLibrary = Readonly<{
+  photos: readonly ProfileAvatarRecord[];
+  active: ProfileAvatarRecord | null;
 }>;
 
 const bucket = "profile-media";
@@ -28,25 +31,6 @@ function text(value: unknown) {
 
 function number(value: unknown, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function parseCustomization(value: unknown): AvatarCustomization | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const sourcePath = text(row.sourcePath);
-  const displayPath = text(row.displayPath);
-  if (!sourcePath || !displayPath) return null;
-  return {
-    sourcePath,
-    displayPath,
-    sourceFilename: text(row.sourceFilename) || "Profile photo",
-    sourceMediaType: text(row.sourceMediaType) || "image/jpeg",
-    sourceWidth: Math.max(1, number(row.sourceWidth, 1)),
-    sourceHeight: Math.max(1, number(row.sourceHeight, 1)),
-    focalX: number(row.focalX, 0.5),
-    focalY: number(row.focalY, 0.5),
-    zoom: number(row.zoom, 1),
-  };
 }
 
 function safeExtension(file: Blob, filename: string) {
@@ -64,49 +48,66 @@ async function signedUrl(path: string) {
   return result.data.signedUrl;
 }
 
-function customizationFor(record: ProfileAvatarRecord, sourcePath: string, displayPath: string): AvatarCustomization {
-  const crop = clampProfileAvatarCrop(record.crop);
+async function recordFromRow(row: ProfilePhotoRow): Promise<ProfileAvatarRecord> {
+  const displayPath = text(row.display_path);
   return {
-    sourcePath,
-    displayPath,
-    sourceFilename: record.sourceFilename,
-    sourceMediaType: record.sourceMediaType,
-    sourceWidth: record.width,
-    sourceHeight: record.height,
-    focalX: crop.focalX,
-    focalY: crop.focalY,
-    zoom: crop.zoom,
-  };
-}
-
-export async function loadRemoteProfileAvatar(userId: string): Promise<ProfileAvatarRecord | null> {
-  const result = await requireSupabase().from("profiles").select("avatar_path, avatar_customization, updated_at").eq("user_id", userId).maybeSingle();
-  if (result.error) throw new Error(result.error.message);
-  const row = result.data as AvatarRow | null;
-  const customization = parseCustomization(row?.avatar_customization);
-  const displayPath = text(row?.avatar_path) || customization?.displayPath;
-  if (!customization || !displayPath) return null;
-  return {
-    sourceFilename: customization.sourceFilename,
-    sourceMediaType: customization.sourceMediaType,
-    sourcePath: customization.sourcePath,
+    id: text(row.id),
+    sourceFilename: text(row.source_filename) || "Profile photo",
+    sourceMediaType: text(row.source_media_type) || "image/jpeg",
+    sourcePath: text(row.source_path),
     displayPath,
     displayUrl: await signedUrl(displayPath),
-    width: customization.sourceWidth,
-    height: customization.sourceHeight,
-    crop: clampProfileAvatarCrop({ focalX: customization.focalX, focalY: customization.focalY, zoom: customization.zoom }),
-    updatedAt: text(row?.updated_at) || new Date().toISOString(),
+    width: Math.max(1, number(row.source_width, 1)),
+    height: Math.max(1, number(row.source_height, 1)),
+    crop: clampProfileAvatarCrop({
+      focalX: number(row.focal_x, 0.5),
+      focalY: number(row.focal_y, 0.5),
+      zoom: number(row.zoom, 1),
+    }),
+    updatedAt: text(row.updated_at) || new Date().toISOString(),
   };
 }
 
-export async function uploadRemoteProfileAvatar(userId: string, record: ProfileAvatarRecord, previous: ProfileAvatarRecord | null): Promise<ProfileAvatarRecord> {
+export async function loadRemoteProfileAvatarLibrary(userId: string): Promise<ProfileAvatarLibrary> {
+  const client = requireSupabase();
+  const [profileResult, photosResult] = await Promise.all([
+    client.from("profiles").select("active_profile_photo_id").eq("user_id", userId).maybeSingle(),
+    client.from("profile_photos").select("*").eq("user_id", userId).order("created_at", { ascending: true }),
+  ]);
+  if (profileResult.error) throw new Error(profileResult.error.message);
+  if (photosResult.error) throw new Error(photosResult.error.message);
+  const photos = await Promise.all(((photosResult.data ?? []) as ProfilePhotoRow[]).map(recordFromRow));
+  const activeId = text((profileResult.data as ProfileRow | null)?.active_profile_photo_id);
+  return { photos, active: photos.find((photo) => photo.id === activeId) ?? null };
+}
+
+async function activatePhoto(record: ProfileAvatarRecord) {
+  if (!record.id) throw new Error("The saved profile photo could not be found.");
+  const crop = clampProfileAvatarCrop(record.crop);
+  const result = await requireSupabase().rpc("activate_my_profile_photo", {
+    photo_id_value: record.id,
+    focal_x_value: crop.focalX,
+    focal_y_value: crop.focalY,
+    zoom_value: crop.zoom,
+  });
+  if (result.error) throw new Error(result.error.message);
+  return { ...record, crop, updatedAt: new Date().toISOString() };
+}
+
+export async function uploadRemoteProfileAvatar(userId: string, record: ProfileAvatarRecord): Promise<ProfileAvatarRecord> {
   if (!record.sourceBlob || !record.displayBlob) throw new Error("The selected profile photo is not available for upload.");
   const client = requireSupabase();
-  const version = `${Date.now()}-${createUuid()}`;
+  const count = await client.from("profile_photos").select("id", { count: "exact", head: true }).eq("user_id", userId);
+  if (count.error) throw new Error(count.error.message);
+  if ((count.count ?? 0) >= 3) throw new Error("You already have three saved profile photos. Remove one before adding another.");
+
+  const id = createUuid();
+  const version = `${Date.now()}-${id}`;
   const folder = `${userId}/avatar`;
   const sourcePath = `${folder}/${version}-source.${safeExtension(record.sourceBlob, record.sourceFilename)}`;
   const displayPath = `${folder}/${version}-display.webp`;
   const createdPaths: string[] = [];
+  let inserted = false;
 
   try {
     const sourceUpload = await client.storage.from(bucket).upload(sourcePath, record.sourceBlob, { contentType: record.sourceMediaType, upsert: false });
@@ -117,49 +118,53 @@ export async function uploadRemoteProfileAvatar(userId: string, record: ProfileA
     if (displayUpload.error) throw new Error(displayUpload.error.message);
     createdPaths.push(displayPath);
 
-    const save = await client.from("profiles").update({
-      avatar_path: displayPath,
-      avatar_customization: customizationFor(record, sourcePath, displayPath),
-    }).eq("user_id", userId);
-    if (save.error) throw new Error(save.error.message);
+    const crop = clampProfileAvatarCrop(record.crop);
+    const insert = await client.from("profile_photos").insert({
+      id,
+      user_id: userId,
+      source_path: sourcePath,
+      display_path: displayPath,
+      source_filename: record.sourceFilename,
+      source_media_type: record.sourceMediaType,
+      source_width: record.width,
+      source_height: record.height,
+      focal_x: crop.focalX,
+      focal_y: crop.focalY,
+      zoom: crop.zoom,
+    });
+    if (insert.error) throw new Error(insert.error.message);
+    inserted = true;
+
+    return await activatePhoto({
+      ...record,
+      id,
+      sourcePath,
+      displayPath,
+      displayUrl: await signedUrl(displayPath),
+      crop,
+      updatedAt: new Date().toISOString(),
+    });
   } catch (reason) {
+    if (inserted) await client.from("profile_photos").delete().eq("id", id).eq("user_id", userId);
     if (createdPaths.length) await client.storage.from(bucket).remove(createdPaths);
     throw reason;
   }
-
-  const oldPaths = [previous?.sourcePath, previous?.displayPath].filter((path): path is string => Boolean(path) && path !== sourcePath && path !== displayPath);
-  if (oldPaths.length) {
-    const removal = await client.storage.from(bucket).remove(oldPaths);
-    if (removal.error) console.warn("The profile photo was saved, but old media cleanup must be retried.", removal.error);
-  }
-
-  return {
-    ...record,
-    sourcePath,
-    displayPath,
-    displayUrl: await signedUrl(displayPath),
-    updatedAt: new Date().toISOString(),
-  };
 }
 
-export async function saveRemoteProfileAvatarCrop(userId: string, record: ProfileAvatarRecord, crop: ProfileAvatarCrop): Promise<ProfileAvatarRecord> {
-  if (!record.sourcePath || !record.displayPath) throw new Error("The saved profile photo could not be found.");
-  const next = { ...record, crop: clampProfileAvatarCrop(crop), updatedAt: new Date().toISOString() };
-  const result = await requireSupabase().from("profiles").update({
-    avatar_path: record.displayPath,
-    avatar_customization: customizationFor(next, record.sourcePath, record.displayPath),
-  }).eq("user_id", userId);
-  if (result.error) throw new Error(result.error.message);
-  return next;
+export async function activateRemoteProfileAvatar(_userId: string, record: ProfileAvatarRecord): Promise<ProfileAvatarRecord> {
+  return activatePhoto(record);
 }
 
-export async function deleteRemoteProfileAvatar(userId: string, record: ProfileAvatarRecord) {
+export async function deleteRemoteProfilePhoto(userId: string, photoId: string): Promise<ProfileAvatarLibrary> {
   const client = requireSupabase();
-  const result = await client.from("profiles").update({ avatar_path: null, avatar_customization: {} }).eq("user_id", userId);
+  const result = await client.rpc("remove_my_profile_photo", { photo_id_value: photoId });
   if (result.error) throw new Error(result.error.message);
-  const paths = [record.sourcePath, record.displayPath].filter((path): path is string => Boolean(path));
+  const paths = result.data && typeof result.data === "object"
+    ? [text((result.data as Record<string, unknown>).sourcePath), text((result.data as Record<string, unknown>).displayPath)].filter(Boolean)
+    : [];
   if (paths.length) {
     const removal = await client.storage.from(bucket).remove(paths);
-    if (removal.error) console.warn("The profile photo reference was removed, but media cleanup must be retried.", removal.error);
+    if (removal.error) console.warn("The profile photo was removed, but owned media cleanup must be retried.", removal.error);
   }
+  return loadRemoteProfileAvatarLibrary(userId);
 }

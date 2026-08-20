@@ -5,6 +5,7 @@ export type ProfileAvatarCrop = Readonly<{
 }>;
 
 export type ProfileAvatarRecord = Readonly<{
+  id?: string;
   sourceFilename: string;
   sourceMediaType: string;
   sourceBlob?: Blob;
