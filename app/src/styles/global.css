@@ -575,7 +575,8 @@ a {
 }
 
 .team-strip__team {
-  padding: 0.38rem;
+  padding: 0.18rem;
+  border-width: 0.1rem;
   box-shadow: 0 0.15rem 0.5rem rgba(17, 17, 17, 0.09);
   cursor: pointer;
   scroll-snap-align: center;
@@ -588,7 +589,7 @@ a {
 
 .team-strip__team--selected {
   border-color: var(--color-control);
-  box-shadow: 0 0 0 0.12rem var(--color-surface), 0 0 0 0.26rem var(--color-control);
+  box-shadow: none;
 }
 
 .team-strip__team .team-badge {
@@ -626,6 +627,57 @@ a {
 
 .team-strip__manage:disabled {
   cursor: not-allowed;
+}
+
+/* Home consumes the shared app theme without changing the neutral None state. */
+.application-shell[data-theme-active="true"] .page-frame--home .bottom-navigation--home {
+  background: var(--theme-color-1-15);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .home-hero__shortcuts {
+  border-color: transparent;
+  background: var(--theme-color-1-15);
+  box-shadow: 0 0 0 0.1875rem var(--theme-color-2-100), 0 0.45rem 1.4rem rgba(17, 17, 17, 0.18);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .home-hero__shortcut {
+  color: var(--theme-color-1-15-foreground);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .home-hero__shortcut:hover,
+.application-shell[data-theme-active="true"] .page-frame--home .home-hero__shortcut:focus-visible,
+.application-shell[data-theme-active="true"] .page-frame--home .home-hero__shortcut:active {
+  color: var(--color-text);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .team-strip {
+  border-color: transparent;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 0.1875rem var(--theme-color-2-100), 0 0.45rem 1.4rem rgba(17, 17, 17, 0.16);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .team-strip__viewport-frame::before {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.98), transparent);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .team-strip__viewport-frame::after {
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.98), transparent);
+}
+
+.application-shell[data-theme-active="true"] .page-frame--home .bottom-navigation--home .brand-mark,
+.application-shell[data-theme-active="true"] .page-frame--home .bottom-navigation--home .profile-avatar-media {
+  box-shadow: 0 0 0 0.1875rem var(--theme-color-2-100);
+}
+
+.page-frame--home .bottom-navigation--home .brand-mark,
+.page-frame--home .bottom-navigation--home .profile-avatar-media {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.page-frame--home .bottom-navigation--home .brand-mark {
+  padding: 0.14rem;
+  background: var(--color-surface);
 }
 
 .placeholder-page {

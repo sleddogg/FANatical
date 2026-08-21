@@ -11,6 +11,9 @@ import { ProfileAvatarMedia } from "../profileAvatar/ProfileAvatarMedia";
 import { useHomeCustomization } from "../../data/homeCustomizationPreference";
 import { resolveSavedHomeCustomizationPositions } from "../../pages/homeOverlayLayout";
 import { HomeCustomizationSettings } from "./HomeCustomizationSettings";
+import { useThemePreference } from "../../data/themePreference";
+import { useTeamContext } from "../../state/TeamContext";
+import { ThemeSettings } from "./ThemeSettings";
 
 let localSportSequence = 0;
 
@@ -32,10 +35,14 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
   const { side: savedNavigationSide, setSide: saveNavigationSide } = useNavigationSide();
   const { shape: profileImageShape } = useProfileImageShape();
   const { customization: savedHomeCustomization, setCustomization: saveHomeCustomization } = useHomeCustomization();
+  const { preference: savedThemePreference, setPreference: saveThemePreference } = useThemePreference();
+  const { followedTeams, selectedTeam } = useTeamContext();
   const [navigationSide, setNavigationSide] = useState<NavigationSide>(savedNavigationSide);
   const [homeCustomization, setHomeCustomization] = useState(savedHomeCustomization);
+  const [themePreference, setThemePreference] = useState(savedThemePreference);
   const navigationSideDirtyRef = useRef(false);
   const homeCustomizationDirtyRef = useRef(false);
+  const themePreferenceDirtyRef = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -47,6 +54,10 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
   useEffect(() => {
     if (!homeCustomizationDirtyRef.current) setHomeCustomization(savedHomeCustomization);
   }, [savedHomeCustomization]);
+
+  useEffect(() => {
+    if (!themePreferenceDirtyRef.current) setThemePreference(savedThemePreference);
+  }, [savedThemePreference]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -108,6 +119,11 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
     setHomeCustomization((current) => resolveSavedHomeCustomizationPositions(current, side));
   };
 
+  const changeThemePreference = (next: typeof themePreference) => {
+    themePreferenceDirtyRef.current = true;
+    setThemePreference(next);
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setBusy(true);
@@ -120,6 +136,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
       });
       await saveNavigationSide(navigationSide);
       await saveHomeCustomization(resolveSavedHomeCustomizationPositions(homeCustomization, navigationSide));
+      await saveThemePreference(themePreference);
       onClose();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Profile changes could not be saved.");
@@ -175,6 +192,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
               <p>Choose which side of the Home profile visual holds the floating feature navigation.</p>
             </div>
           </fieldset>
+          <ThemeSettings value={themePreference} favoriteTeam={followedTeams[0]} currentTeam={selectedTeam} onChange={changeThemePreference} />
           <HomeCustomizationSettings profile={draft} value={homeCustomization} navigationSide={navigationSide} onChange={changeHomeCustomization} />
           <fieldset>
             <legend>Profile visual</legend>

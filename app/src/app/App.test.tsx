@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { appRoutes } from "./routes";
 import { navigationSideStorageKey } from "../data/navigationSidePreference";
+import { themePreferenceStorageKey } from "../data/themePreferenceStorage";
 
 function renderRoute(route = "/") {
   const router = createMemoryRouter(appRoutes, { initialEntries: [route] });
@@ -23,6 +24,7 @@ describe("FANatical application shell", () => {
       "aria-pressed",
       "true",
     );
+    expect(document.querySelector(".application-shell")).toHaveAttribute("data-theme-active", "false");
   });
 
   it("restores the navigation side preference with accessible shortcut names", () => {
@@ -36,6 +38,22 @@ describe("FANatical application shell", () => {
       expect(link).toBeInTheDocument();
       expect(link.querySelector(".app-icon")).toHaveAttribute("aria-hidden", "true");
     }
+  });
+
+  it("publishes the resolved app-wide theme variables without restyling individual pages", () => {
+    window.localStorage.setItem(themePreferenceStorageKey, JSON.stringify({
+      source: "custom",
+      order: "swapped",
+      customColor1: "#00205B",
+      customColor2: "#D14520",
+    }));
+    renderRoute();
+
+    const shell = document.querySelector(".application-shell");
+    expect(shell).toHaveAttribute("data-theme-source", "custom");
+    expect(shell).toHaveAttribute("data-theme-order", "swapped");
+    expect(shell).toHaveAttribute("data-theme-active", "true");
+    expect(shell).toHaveStyle({ "--theme-color-1-100": "#D14520", "--theme-color-2-100": "#00205B" });
   });
 
   it.each([

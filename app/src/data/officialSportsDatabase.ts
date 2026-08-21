@@ -75,7 +75,7 @@ export const officialTeams = [
   { id: "hockey-nhl-columbus-blue-jackets", displayName: "Columbus Blue Jackets", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },
   { id: "hockey-nhl-dallas-stars", displayName: "Dallas Stars", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },
   { id: "hockey-nhl-detroit-red-wings", displayName: "Detroit Red Wings", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },
-  { id: "hockey-nhl-edmonton-oilers", displayName: "Edmonton Oilers", parentLeagueId: "hockey-nhl", colors: { primary: "#FF4C00", secondary: "#041E42", tertiary: "#FFFFFF", quaternary: null, quinary: null } },
+  { id: "hockey-nhl-edmonton-oilers", displayName: "Edmonton Oilers", parentLeagueId: "hockey-nhl", colors: { primary: "#00205B", secondary: "#D14520", tertiary: "#FFFFFF", quaternary: null, quinary: null } },
   { id: "hockey-nhl-florida-panthers", displayName: "Florida Panthers", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },
   { id: "hockey-nhl-los-angeles-kings", displayName: "Los Angeles Kings", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },
   { id: "hockey-nhl-minnesota-wild", displayName: "Minnesota Wild", parentLeagueId: "hockey-nhl", colors: { primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null } },

@@ -5,6 +5,7 @@ import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import type { NavigationSide } from "../../data/navigationSideStorage";
 import type { ProfileImageShape } from "../../data/profileImageShapeStorage";
 import { normalizeHomeCustomization, type HomeCustomization } from "../../data/homeCustomizationStorage";
+import { normalizeThemePreference, type ThemePreference } from "../../theme/theme";
 import type { ProfileField, ProfileRecord, SportExperience } from "../profile/types";
 
 type UnknownRow = Record<string, unknown>;
@@ -18,6 +19,7 @@ export type AccountSettings = Readonly<{
   navigationSide: NavigationSide;
   profileImageShape: ProfileImageShape;
   homeCustomization: HomeCustomization;
+  themePreference: ThemePreference;
   selectedTeamId: OfficialTeamId | null;
   prototypeMigrationVersion: number;
 }>;
@@ -154,18 +156,19 @@ export async function loadAccountSettings(userId: string): Promise<AccountSettin
     navigationSide: text(row, "navigation_side") === "right" ? "right" : "left",
     profileImageShape: text(preferences, "profileImageShape") === "square" ? "square" : "circle",
     homeCustomization: normalizeHomeCustomization(preferences.homeCustomization),
+    themePreference: normalizeThemePreference(preferences.themePreference),
     selectedTeamId: optionalText(row, "selected_team_id") as OfficialTeamId | null,
     prototypeMigrationVersion: typeof row?.prototype_migration_version === "number" ? row.prototype_migration_version : 0,
   };
 }
 
-export async function saveAccountSettings(userId: string, values: Partial<{ navigationSide: NavigationSide; profileImageShape: ProfileImageShape; homeCustomization: HomeCustomization; selectedTeamId: OfficialTeamId | null; prototypeMigrationVersion: number }>) {
+export async function saveAccountSettings(userId: string, values: Partial<{ navigationSide: NavigationSide; profileImageShape: ProfileImageShape; homeCustomization: HomeCustomization; themePreference: ThemePreference; selectedTeamId: OfficialTeamId | null; prototypeMigrationVersion: number }>) {
   const client = requireSupabase();
   const row: Record<string, unknown> = { user_id: userId };
   if (values.navigationSide !== undefined) row.navigation_side = values.navigationSide;
   if (values.selectedTeamId !== undefined) row.selected_team_id = values.selectedTeamId;
   if (values.prototypeMigrationVersion !== undefined) row.prototype_migration_version = values.prototypeMigrationVersion;
-  if (values.profileImageShape !== undefined || values.homeCustomization !== undefined) {
+  if (values.profileImageShape !== undefined || values.homeCustomization !== undefined || values.themePreference !== undefined) {
     const current = await client.from("user_settings").select("preferences").eq("user_id", userId).maybeSingle();
     requireNoError(current.error, "Personal settings could not be loaded.");
     const currentRow = current.data as UnknownRow | null;
@@ -176,6 +179,7 @@ export async function saveAccountSettings(userId: string, values: Partial<{ navi
       ...preferences,
       ...(values.profileImageShape !== undefined ? { profileImageShape: values.profileImageShape } : {}),
       ...(values.homeCustomization !== undefined ? { homeCustomization: normalizeHomeCustomization(values.homeCustomization) } : {}),
+      ...(values.themePreference !== undefined ? { themePreference: normalizeThemePreference(values.themePreference) } : {}),
     };
   }
   const result = await client.from("user_settings").upsert(row, { onConflict: "user_id" });

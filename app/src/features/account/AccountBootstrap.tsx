@@ -3,6 +3,7 @@ import { loadFollowedTeams } from "../../data/followedTeams";
 import { loadNavigationSide } from "../../data/navigationSideStorage";
 import { loadProfileImageShape } from "../../data/profileImageShapeStorage";
 import { loadHomeCustomization } from "../../data/homeCustomizationStorage";
+import { loadThemePreference } from "../../data/themePreferenceStorage";
 import { localSelectedTeamPreferenceStore } from "../../data/selectedTeamPreference";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
 import { initialProfile } from "../profile/mockProfileData";
@@ -36,6 +37,7 @@ async function migratePrototypeAccount(userId: string) {
     navigationSide: loadNavigationSide(),
     profileImageShape: loadProfileImageShape(),
     homeCustomization: loadHomeCustomization(),
+    themePreference: loadThemePreference(),
     selectedTeamId,
   });
 

@@ -29,6 +29,7 @@ export type CatalogTeam = Readonly<{
   parentSportId: string;
   parentLeagueId: string;
   colors: TeamColors;
+  colorsStatus: CatalogDataStatus;
   identityStatus: CatalogDataStatus;
   leagueStatus: CatalogDataStatus;
   catalogReady: boolean;
@@ -103,6 +104,7 @@ function compatibilitySnapshot(reason: string | null): TeamCatalogSnapshot {
       parentSportId: league?.parentSportId ?? "other",
       parentLeagueId: team.parentLeagueId,
       colors: team.colors,
+      colorsStatus: null,
       identityStatus: null,
       leagueStatus: null,
       catalogReady: false,
@@ -149,6 +151,7 @@ export function teamCatalogSnapshotFromRows(
       parentSportId: text(row, "sport_id"),
       parentLeagueId,
       colors: colors(row),
+      colorsStatus: dataStatus(row, "colors_status"),
       identityStatus: dataStatus(row, "identity_status"),
       leagueStatus: dataStatus(row, "primary_league_status"),
       catalogReady: boolean(readiness, "catalog_ready"),
@@ -191,4 +194,3 @@ export function findCatalogTeam(snapshot: TeamCatalogSnapshot, identifier: strin
   if (!identifier) return null;
   return snapshot.teams.find((team) => team.canonicalTeamId === identifier || team.legacyFrontendTeamId === identifier) ?? null;
 }
-

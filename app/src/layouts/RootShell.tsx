@@ -6,6 +6,7 @@ import { ProfileVisualProvider } from "../features/profileVisual/ProfileVisualCo
 import { AuthProvider } from "../features/account/AuthContext";
 import { AccountBootstrapProvider } from "../features/account/AccountBootstrap";
 import { ProfileAvatarProvider } from "../features/profileAvatar/ProfileAvatarContext";
+import { ThemeProvider } from "../state/ThemeContext";
 
 export function RootShell() {
   return (
@@ -13,14 +14,16 @@ export function RootShell() {
       <AccountBootstrapProvider>
         <ProfileAvatarProvider>
           <TeamProvider>
-            <ProfileVisualProvider>
-              <FanbaseProvider>
-                <LiveCheerNotificationProvider><div className="application-shell">
-                  <a className="skip-link" href="#main-content">Skip to main content</a>
-                  <Outlet />
-                </div></LiveCheerNotificationProvider>
-              </FanbaseProvider>
-            </ProfileVisualProvider>
+            <ThemeProvider>
+              <ProfileVisualProvider>
+                <FanbaseProvider>
+                  <LiveCheerNotificationProvider>
+                    <a className="skip-link" href="#main-content">Skip to main content</a>
+                    <Outlet />
+                  </LiveCheerNotificationProvider>
+                </FanbaseProvider>
+              </ProfileVisualProvider>
+            </ThemeProvider>
           </TeamProvider>
         </ProfileAvatarProvider>
       </AccountBootstrapProvider>

@@ -27,7 +27,7 @@ describe("official sports database", () => {
       "baseball-mlb-boston-red-sox",
       "football-nfl-new-england-patriots",
     ]);
-    expect(populated.find((team) => team.id === "hockey-nhl-edmonton-oilers")?.colors).toEqual({ primary: "#FF4C00", secondary: "#041E42", tertiary: "#FFFFFF", quaternary: null, quinary: null });
+    expect(populated.find((team) => team.id === "hockey-nhl-edmonton-oilers")?.colors).toEqual({ primary: "#00205B", secondary: "#D14520", tertiary: "#FFFFFF", quaternary: null, quinary: null });
     expect(populated.find((team) => team.id === "basketball-nba-boston-celtics")?.colors).toEqual({ primary: "#007A33", secondary: "#BA9653", tertiary: "#963821", quaternary: "#FFFFFF", quinary: null });
     expect(officialTeams.find((team) => team.id === "hockey-nhl-anaheim-ducks")?.colors).toEqual({ primary: null, secondary: null, tertiary: null, quaternary: null, quinary: null });
   });
