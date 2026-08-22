@@ -1,4 +1,5 @@
 export type ProfileTabId = "bio" | "fan-identity" | "sports-played" | "trophy-case" | "moments";
+export type ProfileVisibility = "public" | "private";
 
 export type ProfileField = Readonly<{
   id: string;
@@ -17,6 +18,7 @@ export type SportExperience = Readonly<{
 
 export type ProfileRecord = Readonly<{
   id: string;
+  visibility: ProfileVisibility;
   displayName: string;
   handle: string;
   tagline: string;

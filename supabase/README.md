@@ -16,8 +16,29 @@ policies, and realtime publication.
 5. Start the app and create the development account from Profile / Sign In.
 
 The private `profile-media` bucket stores source and optimized display files
-under `<auth-user-id>/profile-visual/...`. PostgreSQL stores paths and crop
-metadata; the UI creates short-lived signed URLs at read time.
+under `<auth-user-id>/avatar/...` and `<auth-user-id>/profile-visual/...`.
+PostgreSQL stores paths and crop metadata; the UI creates short-lived signed
+URLs at read time and reuses them until the five-minute expiry safety window.
+
+`profiles.visibility` is the canonical profile audience. The currently
+supported values are `public` and `private`; existing profiles migrated to the
+equivalent value from the former `is_public` boolean. Owner tables remain
+owner-readable. Public profile delivery uses `get_profile_for_viewer(uuid)`,
+which omits original paths, filenames, media types, and inactive library data.
+
+Storage authorization is record-backed. Owners may read all objects in their
+own folder. Other authenticated or anonymous viewers may read an object only
+when its exact path is registered as a display derivative and the owning
+profile is viewable. Any path registered as an original is owner-only even if
+another record incorrectly attempts to label it as a display path. The bucket
+must remain private.
+
+Supabase signed URLs are bearer URLs and cannot be revoked immediately. A URL
+issued while a profile is Public can remain usable until its one-hour expiry
+after the owner changes the profile to Private. FANatical clears the owner's
+browser cache on a visibility change so it will not deliberately reuse cached
+URLs, but immediate third-party revocation requires a future authorization
+proxy or shorter-lived delivery mechanism.
 
 The `staff_roles` table is the authorization source for the separate production
 admin shell. Authenticated browser clients can read only their own active role;

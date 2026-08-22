@@ -6,7 +6,8 @@ import type { NavigationSide } from "../../data/navigationSideStorage";
 import type { ProfileImageShape } from "../../data/profileImageShapeStorage";
 import { normalizeHomeCustomization, type HomeCustomization } from "../../data/homeCustomizationStorage";
 import { normalizeThemePreference, type ThemePreference } from "../../theme/theme";
-import type { ProfileField, ProfileRecord, SportExperience } from "../profile/types";
+import { clearProfileMediaSignedUrls } from "../profileMedia/profileMediaSignedUrlCache";
+import type { ProfileField, ProfileRecord, ProfileVisibility, SportExperience } from "../profile/types";
 
 type UnknownRow = Record<string, unknown>;
 
@@ -22,6 +23,16 @@ export type AccountSettings = Readonly<{
   themePreference: ThemePreference;
   selectedTeamId: OfficialTeamId | null;
   prototypeMigrationVersion: number;
+}>;
+
+export type ViewableProfileMedia = Readonly<{
+  avatarDisplayPath: string | null;
+  visualDisplayPaths: Readonly<Partial<Record<"mobile" | "wide", string>>>;
+}>;
+
+export type ViewableProfile = Readonly<{
+  profile: ProfileRecord;
+  media: ViewableProfileMedia;
 }>;
 
 function text(row: UnknownRow | null, key: string) {
@@ -80,6 +91,25 @@ function sportExperience(row: UnknownRow): SportExperience {
   };
 }
 
+function profileVisibility(row: UnknownRow | null): ProfileVisibility {
+  return text(row, "visibility") === "private" ? "private" : "public";
+}
+
+function profileRecord(userId: string, profileRow: UnknownRow, identityRow: UnknownRow | null, sportsRows: readonly UnknownRow[]): ProfileRecord {
+  const category = text(profileRow, "featured_fan_photo_category");
+  return {
+    id: userId,
+    visibility: profileVisibility(profileRow),
+    displayName: text(profileRow, "display_name"),
+    handle: text(profileRow, "handle"),
+    tagline: text(profileRow, "tagline"),
+    featuredFanPhotoCategory: category === "Game Face" || category === "Memorabilia" ? category : "Fan Cave",
+    bio: profileFields(profileRow),
+    fanIdentity: fanIdentityFields(identityRow),
+    sportsPlayed: sportsRows.map(sportExperience),
+  };
+}
+
 export async function loadOwnedProfile(userId: string): Promise<ProfileRecord | null> {
   const client = requireSupabase();
   const [profileResult, identityResult, sportsResult] = await Promise.all([
@@ -93,25 +123,49 @@ export async function loadOwnedProfile(userId: string): Promise<ProfileRecord | 
   if (!profileResult.data) return null;
   const profileRow = profileResult.data as UnknownRow;
   const identityRow = identityResult.data as UnknownRow | null;
-  const category = text(profileRow, "featured_fan_photo_category");
+  return profileRecord(userId, profileRow, identityRow, sportsResult.data as UnknownRow[] | null ?? []);
+}
+
+export async function loadViewableProfile(userId: string): Promise<ViewableProfile | null> {
+  const result = await requireSupabase().rpc("get_profile_for_viewer", { profile_user_id: userId });
+  requireNoError(result.error, "Profile could not be loaded.");
+  if (!result.data || typeof result.data !== "object" || Array.isArray(result.data)) return null;
+  const payload = result.data as UnknownRow;
+  const profileRow = payload.profile && typeof payload.profile === "object" && !Array.isArray(payload.profile) ? payload.profile as UnknownRow : null;
+  if (!profileRow) return null;
+  const identityRow = payload.fan_identity && typeof payload.fan_identity === "object" && !Array.isArray(payload.fan_identity) ? payload.fan_identity as UnknownRow : null;
+  const normalizedIdentity = identityRow ? {
+    ...identityRow,
+    additional_identity: {
+      "primary-team": text(identityRow, "primary_team"),
+      "secondary-teams": text(identityRow, "secondary_teams"),
+    },
+  } : null;
+  const sportsRows = Array.isArray(payload.sports_played) ? payload.sports_played.filter((row): row is UnknownRow => Boolean(row && typeof row === "object" && !Array.isArray(row))) : [];
+  const avatar = payload.avatar && typeof payload.avatar === "object" && !Array.isArray(payload.avatar) ? payload.avatar as UnknownRow : null;
+  const visuals = Array.isArray(payload.visuals) ? payload.visuals.filter((row): row is UnknownRow => Boolean(row && typeof row === "object" && !Array.isArray(row))) : [];
+  const visualDisplayPaths: Partial<Record<"mobile" | "wide", string>> = {};
+  for (const visual of visuals) {
+    const variant = text(visual, "variant");
+    const displayPath = text(visual, "display_path");
+    if ((variant === "mobile" || variant === "wide") && displayPath) visualDisplayPaths[variant] = displayPath;
+  }
   return {
-    id: userId,
-    displayName: text(profileRow, "display_name"),
-    handle: text(profileRow, "handle"),
-    tagline: text(profileRow, "tagline"),
-    featuredFanPhotoCategory: category === "Game Face" || category === "Memorabilia" ? category : "Fan Cave",
-    bio: profileFields(profileRow),
-    fanIdentity: fanIdentityFields(identityRow),
-    sportsPlayed: (sportsResult.data as UnknownRow[] | null ?? []).map(sportExperience),
+    profile: profileRecord(userId, profileRow, normalizedIdentity, sportsRows),
+    media: {
+      avatarDisplayPath: optionalText(avatar, "display_path"),
+      visualDisplayPaths,
+    },
   };
 }
 
-export async function saveOwnedProfile(userId: string, profile: ProfileRecord) {
+export async function saveOwnedProfile(userId: string, profile: ProfileRecord, previousVisibility?: ProfileVisibility) {
   if (profile.id !== userId) throw new Error("Profile ownership does not match the authenticated account.");
   const client = requireSupabase();
   const result = await client.rpc("save_my_profile", {
     profile_data: {
       display_name: profile.displayName.trim(),
+      visibility: profile.visibility,
       handle: profile.handle.trim(),
       fanatical_name: field(profile.bio, "fanatical-name"),
       given_name: field(profile.bio, "given-name"),
@@ -143,6 +197,7 @@ export async function saveOwnedProfile(userId: string, profile: ProfileRecord) {
     })),
   });
   requireNoError(result.error, "Profile could not be saved.");
+  if (previousVisibility !== undefined && previousVisibility !== profile.visibility) clearProfileMediaSignedUrls(userId);
 }
 
 export async function loadAccountSettings(userId: string): Promise<AccountSettings> {

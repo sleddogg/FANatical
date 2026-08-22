@@ -41,6 +41,8 @@ describe("Profile owner experience", () => {
     await user.click(screen.getByRole("button", { name: "Edit profile" }));
     const dialog = screen.getByRole("dialog", { name: "Edit Profile" });
     const nameInput = within(dialog).getByLabelText("Display name");
+    expect(within(dialog).getByRole("radio", { name: "Public profile" })).toBeChecked();
+    expect(within(dialog).getByRole("radio", { name: "Private profile" })).toBeDisabled();
     await user.clear(nameInput);
     await user.type(nameInput, "Sleddogg");
     expect(within(dialog).queryByLabelText("Avatar placeholder")).not.toBeInTheDocument();

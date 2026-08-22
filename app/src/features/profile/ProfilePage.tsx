@@ -309,7 +309,9 @@ export function ProfilePage() {
 
   const saveProfile = async (nextProfile: ProfileRecord) => {
     const ownedProfile = user ? { ...nextProfile, id: user.id } : nextProfile;
-    if (configured && user) await saveOwnedProfile(user.id, ownedProfile);
+    if (configured && user) {
+      await saveOwnedProfile(user.id, ownedProfile, profile.visibility);
+    }
     setProfile(ownedProfile);
   };
 

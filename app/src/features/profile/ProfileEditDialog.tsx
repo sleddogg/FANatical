@@ -14,6 +14,7 @@ import { HomeCustomizationSettings } from "./HomeCustomizationSettings";
 import { useThemePreference } from "../../data/themePreference";
 import { useTeamContext } from "../../state/TeamContext";
 import { ThemeSettings } from "./ThemeSettings";
+import { ProfilePrivacySettings } from "./ProfilePrivacySettings";
 
 let localSportSequence = 0;
 
@@ -192,6 +193,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
               <p>Choose which side of the Home profile visual holds the floating feature navigation.</p>
             </div>
           </fieldset>
+          <ProfilePrivacySettings value={draft.visibility} disabled={!accountBacked} onChange={(visibility) => setDraft((current) => ({ ...current, visibility }))} />
           <ThemeSettings value={themePreference} favoriteTeam={followedTeams[0]} currentTeam={selectedTeam} onChange={changeThemePreference} />
           <HomeCustomizationSettings profile={draft} value={homeCustomization} navigationSide={navigationSide} onChange={changeHomeCustomization} />
           <fieldset>
