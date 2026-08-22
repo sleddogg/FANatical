@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTeamContext } from "../../state/TeamContext";
-import { AppIcon } from "../../components/AppIcon";
+import { useAppTheme } from "../../state/ThemeContext";
+import { AppIcon, type AppIconName } from "../../components/AppIcon";
+import { TeamBadge } from "../../components/TeamBadge";
 import { useFanbaseContext } from "../fanbase/FanbaseContext";
 import { NewsCard } from "./NewsCard";
 import { NewsFilterMenu } from "./NewsFilterMenu";
@@ -14,7 +16,9 @@ import {
 } from "./mockNewsData";
 import {
   filterNewsItems,
+  findThemeTeamForNewsContext,
   getFeedContextLabel,
+  getFeedContextName,
   getSourceForItem,
 } from "./newsFiltering";
 import type {
@@ -22,6 +26,7 @@ import type {
   NewsContentType,
   NewsFeedContext,
   NewsSource,
+  SportId,
 } from "./types";
 import "./news.css";
 
@@ -30,8 +35,15 @@ type OverlayLocationState = Readonly<{
   articleDiscussionPath?: string;
 }>;
 
+const sportContextIcons: Readonly<Record<SportId, AppIconName>> = {
+  football: "mdi-football",
+  baseball: "mdi-baseball-outline",
+  basketball: "mdi-basketball",
+};
+
 export function NewsPage() {
-  const { followedTeams, selectedTeamId, selectTeam } = useTeamContext();
+  const { followedTeams, selectedTeam, selectedTeamId, selectTeam } = useTeamContext();
+  const theme = useAppTheme();
   const { getArticleCommentCount } = useFanbaseContext();
   const [feedContext, setFeedContext] = useState<NewsFeedContext>({ kind: "team", teamId: selectedTeamId });
   const [sourcePreferences, setSourcePreferences] = useState<FollowedSourcePreference[]>(createInitialFollowedSourcePreferences);
@@ -39,6 +51,10 @@ export function NewsPage() {
   const [sourceManagerOpen, setSourceManagerOpen] = useState(false);
   const [reactedItemIds, setReactedItemIds] = useState<ReadonlySet<string>>(() => new Set());
   const [notice, setNotice] = useState("");
+  const filterTriggerRef = useRef<HTMLButtonElement>(null);
+  const addFeedTriggerRef = useRef<HTMLButtonElement>(null);
+  const lastItemTriggerRef = useRef<HTMLButtonElement>(null);
+  const itemOverlayWasOpenRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -59,16 +75,43 @@ export function NewsPage() {
   const selectedItemSource = selectedItem ? getSourceForItem(selectedItem, mockSourceCatalog) : undefined;
   const overlayLocationState = location.state as OverlayLocationState | null;
   const articleDiscussionPath = overlayLocationState?.articleDiscussionPath;
+  const feedContextName = getFeedContextName(feedContext, followedTeams);
+  const feedContextTeam = feedContext.kind === "team"
+    ? followedTeams.find((team) => team.id === feedContext.teamId)
+    : undefined;
+  const newsThemeTeam = findThemeTeamForNewsContext(feedContext, selectedTeam, followedTeams);
+  const newsThemeActive = theme.active && (theme.source !== "current-team" || Boolean(newsThemeTeam));
+
+  const closeFilter = useCallback(() => {
+    setFilterOpen(false);
+    window.requestAnimationFrame(() => filterTriggerRef.current?.focus());
+  }, []);
+
+  const closeSourceManager = useCallback(() => {
+    setSourceManagerOpen(false);
+    window.requestAnimationFrame(() => addFeedTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (itemOverlayWasOpenRef.current && !selectedItem) {
+      window.requestAnimationFrame(() => lastItemTriggerRef.current?.focus());
+    }
+    itemOverlayWasOpenRef.current = Boolean(selectedItem);
+  }, [selectedItem]);
 
   const applyFilter = (context: NewsFeedContext) => {
     if (context.kind === "team") {
       selectTeam(context.teamId);
+    } else if (theme.source === "current-team" && (context.kind === "league" || context.kind === "sport")) {
+      const relevantTeam = findThemeTeamForNewsContext(context, selectedTeam, followedTeams);
+      if (relevantTeam && relevantTeam.id !== selectedTeamId) selectTeam(relevantTeam.id);
     }
     setFeedContext(context);
-    setFilterOpen(false);
+    closeFilter();
   };
 
-  const openItem = (itemId: string) => {
+  const openItem = (itemId: string, trigger: HTMLButtonElement) => {
+    lastItemTriggerRef.current = trigger;
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.set("item", itemId);
     setSearchParams(nextSearchParams, { state: { newsItemOverlay: true } satisfies OverlayLocationState });
@@ -137,59 +180,66 @@ export function NewsPage() {
   };
 
   return (
-    <div className="news-page">
+    <div className="news-page" data-news-theme-active={newsThemeActive ? "true" : "false"}>
       <header className="news-header">
-        <button className="news-filter-trigger" type="button" aria-label="Open News filters" aria-expanded={filterOpen} onClick={() => setFilterOpen(true)}>
+        <button
+          ref={filterTriggerRef}
+          className="news-filter-trigger"
+          type="button"
+          aria-label={`Filter News. Current context: ${feedContextName}`}
+          aria-expanded={filterOpen}
+          aria-controls="news-filter-menu"
+          data-tooltip-label="Filter News"
+          onClick={() => setFilterOpen(true)}
+        >
           <AppIcon className="news-filter-trigger__icon" name="bars-3" />
-          <span>Filter</span>
+          {feedContext.kind === "team" && feedContextTeam ? <TeamBadge team={feedContextTeam} /> : null}
+          {feedContext.kind === "sport" ? <AppIcon className="news-filter-trigger__context-icon" name={sportContextIcons[feedContext.sportId]} /> : null}
+          {feedContext.kind === "league" ? <span className="news-filter-trigger__context-text">{feedContextName}</span> : null}
+          {feedContext.kind === "all" ? <span className="news-filter-trigger__context-text">All</span> : null}
         </button>
         <div className="news-header__title">
-          <span className="eyebrow">FANatical feed</span>
           <h1>News</h1>
-          <p>{getFeedContextLabel(feedContext)}</p>
+          <p>{getFeedContextLabel(feedContext, followedTeams)}</p>
         </div>
-        <button className="news-add-feed" type="button" onClick={() => setSourceManagerOpen(true)}>
+        <button ref={addFeedTriggerRef} className="news-add-feed" type="button" aria-expanded={sourceManagerOpen} aria-controls="source-manager" onClick={() => setSourceManagerOpen(true)}>
           <AppIcon name="plus" /><span>Add Feed</span>
         </button>
       </header>
 
-      <div className="news-feed-heading">
-        <div>
-          <h2>Latest</h2>
-          <p>News from your followed sources, always in chronological order.</p>
+      <div className="news-feed-field">
+        <div className="news-feed-field__content">
+          {visibleItems.length ? (
+            <div className="news-feed">
+              {visibleItems.map((item) => {
+                const source = getSourceForItem(item, mockSourceCatalog);
+                if (!source) {
+                  return null;
+                }
+                return (
+                  <NewsCard
+                    key={item.id}
+                    item={item}
+                    source={source}
+                    discussionCount={getArticleCommentCount(item.id)}
+                    reacted={reactedItemIds.has(item.id)}
+                    onOpen={(trigger) => openItem(item.id, trigger)}
+                    onReaction={() => toggleReaction(item.id)}
+                    onDiscussion={() => openArticleDiscussion(item.id)}
+                    onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <div className="news-empty-state surface">
+              <AppIcon name="information-circle" />
+              <h2>No News in this view</h2>
+              <p>Try another context or manage your followed sources and content types.</p>
+            </div>
+          )}
         </div>
-        <span>{visibleItems.length} item{visibleItems.length === 1 ? "" : "s"}</span>
       </div>
-
-      {visibleItems.length ? (
-        <div className="news-feed">
-          {visibleItems.map((item) => {
-            const source = getSourceForItem(item, mockSourceCatalog);
-            if (!source) {
-              return null;
-            }
-            return (
-              <NewsCard
-                key={item.id}
-                item={item}
-                source={source}
-                discussionCount={getArticleCommentCount(item.id)}
-                reacted={reactedItemIds.has(item.id)}
-                onOpen={() => openItem(item.id)}
-                onReaction={() => toggleReaction(item.id)}
-                onDiscussion={() => openArticleDiscussion(item.id)}
-                onShare={() => showNotice("Sharing is represented here as a safe frontend placeholder.")}
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <div className="news-empty-state surface">
-          <AppIcon name="information-circle" />
-          <h2>No News in this view</h2>
-          <p>Try another context or manage your followed sources and content types.</p>
-        </div>
-      )}
 
       <div className={notice ? "news-notice news-notice--visible" : "news-notice"} role="status" aria-live="polite">
         {notice}
@@ -197,7 +247,7 @@ export function NewsPage() {
       </div>
 
       {filterOpen ? (
-        <NewsFilterMenu followedTeams={followedTeams} onApply={applyFilter} onClose={() => setFilterOpen(false)} />
+        <NewsFilterMenu followedTeams={followedTeams} onApply={applyFilter} onClose={closeFilter} />
       ) : null}
 
       {sourceManagerOpen ? (
@@ -208,7 +258,7 @@ export function NewsPage() {
           onRemove={removeSource}
           onToggleContentType={toggleSourceContentType}
           onMute={muteSource}
-          onClose={() => setSourceManagerOpen(false)}
+          onClose={closeSourceManager}
         />
       ) : null}
 

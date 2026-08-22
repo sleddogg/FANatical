@@ -1,4 +1,5 @@
 import { findFollowedTeam } from "../../data/followedTeams";
+import type { FollowedTeam } from "../../domain/team";
 import { leagueOptions, sportOptions } from "./mockNewsData";
 import type {
   FollowedSourcePreference,
@@ -36,17 +37,45 @@ export function filterNewsItems(
     .sort((first, second) => Date.parse(second.publishedAt) - Date.parse(first.publishedAt));
 }
 
-export function getFeedContextLabel(context: NewsFeedContext) {
+export function getFeedContextLabel(context: NewsFeedContext, teams?: readonly FollowedTeam[]) {
+  const contextName = getFeedContextName(context, teams);
+  if (context.kind === "league") {
+    return `Latest from the ${contextName}`;
+  }
+  if (context.kind === "all") {
+    return "Latest from All Followed Sources";
+  }
+  return `Latest from ${contextName}`;
+}
+
+export function getFeedContextName(context: NewsFeedContext, teams?: readonly FollowedTeam[]) {
   switch (context.kind) {
     case "team":
-      return `Latest from ${findFollowedTeam(context.teamId)?.name ?? "your selected team"}`;
+      return teams?.find((team) => team.id === context.teamId)?.name ?? findFollowedTeam(context.teamId)?.name ?? context.teamId;
     case "league":
-      return `Latest from ${leagueOptions.find((league) => league.id === context.leagueId)?.label ?? "this league"}`;
+      return leagueOptions.find((league) => league.id === context.leagueId)?.label ?? context.leagueId.toUpperCase();
     case "sport":
-      return `Latest across ${sportOptions.find((sport) => sport.id === context.sportId)?.label ?? "this sport"}`;
+      return sportOptions.find((sport) => sport.id === context.sportId)?.label ?? context.sportId;
     case "all":
-      return "All followed News · newest first";
+      return "All";
   }
+}
+
+function teamMatchesFeedContext(team: FollowedTeam, context: NewsFeedContext) {
+  if (context.kind === "team") return team.id === context.teamId;
+  if (context.kind === "league") return team.league.toLowerCase() === context.leagueId;
+  if (context.kind === "sport") return team.sport.toLowerCase() === context.sportId;
+  return true;
+}
+
+export function findThemeTeamForNewsContext(
+  context: NewsFeedContext,
+  currentTeam: FollowedTeam,
+  followedTeams: readonly FollowedTeam[],
+) {
+  if (context.kind === "all") return currentTeam;
+  if (teamMatchesFeedContext(currentTeam, context)) return currentTeam;
+  return followedTeams.find((team) => teamMatchesFeedContext(team, context));
 }
 
 export function getSourceForItem(item: NewsItem, sourceCatalog: readonly NewsSource[]) {

@@ -5,6 +5,7 @@ import type { NewsItem, NewsSource } from "./types";
 import { TeamBadge } from "../../components/TeamBadge";
 import { findFollowedTeam } from "../../data/followedTeams";
 import { AppIcon } from "../../components/AppIcon";
+import { trapDialogFocus } from "./dialogKeyboard";
 
 type NewsItemOverlayProps = {
   readonly item: NewsItem;
@@ -34,6 +35,7 @@ export function NewsItemOverlay({
   onExternalContinue,
 }: NewsItemOverlayProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const team = item.teamIds.length === 1 ? findFollowedTeam(item.teamIds[0]!) : undefined;
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export function NewsItemOverlay({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+      } else {
+        trapDialogFocus(event, dialogRef.current);
       }
     };
 
@@ -55,7 +59,7 @@ export function NewsItemOverlay({
   }, [onClose]);
 
   return (
-    <section className="news-item-overlay" role="dialog" aria-modal="true" aria-labelledby="news-item-title">
+    <section ref={dialogRef} className="news-item-overlay" role="dialog" aria-modal="true" aria-labelledby="news-item-title">
       <header className="news-item-overlay__topbar">
         <div className="news-item-overlay__brand">
           <span className="news-source-avatar" aria-hidden="true">{source.initials}</span>

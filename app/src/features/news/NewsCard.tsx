@@ -10,7 +10,7 @@ type NewsCardProps = {
   readonly source: NewsSource;
   readonly discussionCount: number;
   readonly reacted: boolean;
-  readonly onOpen: () => void;
+  readonly onOpen: (trigger: HTMLButtonElement) => void;
   readonly onReaction: () => void;
   readonly onDiscussion: () => void;
   readonly onShare: () => void;
@@ -30,7 +30,7 @@ export function NewsCard({
 
   return (
     <article className="news-card">
-      <button className="news-card__open" type="button" aria-label={`Open ${item.headline}`} onClick={onOpen}>
+      <div className="news-card__open">
         <div className="news-card__copy">
           <div className="news-card__source-row">
             <span className="news-source-avatar" aria-hidden="true">{source.initials}</span>
@@ -38,7 +38,7 @@ export function NewsCard({
             <span className="news-content-type">{item.contentType}</span>
             {item.viewType === "external" ? <span className="news-external-label">External <AppIcon name="arrow-top-right-on-square" /></span> : null}
           </div>
-          <h2>{item.headline}</h2>
+          <h2><button className="news-card__headline" type="button" aria-label={`Open ${item.headline}`} onClick={(event) => onOpen(event.currentTarget)}>{item.headline}</button></h2>
           <p className="news-card__summary">{item.summary}</p>
           <p className="news-card__meta">
             {item.byline ? `By ${item.byline} · ` : ""}{formatPublishedAt(item.publishedAt)}
@@ -49,7 +49,7 @@ export function NewsCard({
             <img src={item.imageUrl} alt={item.imageAlt ?? ""} />
           </span>
         ) : team ? <span className="news-card__image news-card__image--team"><TeamBadge team={team} /></span> : null}
-      </button>
+      </div>
 
       <NewsActionRow
         item={item}

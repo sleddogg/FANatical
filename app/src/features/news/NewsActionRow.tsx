@@ -24,7 +24,7 @@ export function NewsActionRow({
   const reactionCount = item.reactionCount + (reacted ? 1 : 0);
 
   return (
-    <div className={`news-actions news-actions--${variant}`} aria-label={`Actions for ${item.headline}`}>
+    <div className={`news-actions news-actions--${variant}`} role="group" aria-label={`Actions for ${item.headline}`}>
       <button type="button" aria-label={reacted ? "Remove reaction" : "React"} aria-pressed={reacted} onClick={onReaction}>
         <AppIcon name={reacted ? "heart-solid" : "heart"} />
         <small>{formatCount(reactionCount)}</small>
@@ -37,9 +37,10 @@ export function NewsActionRow({
         <AppIcon name="share" />
         <small>Share</small>
       </button>
-      <span className="news-actions__views" aria-label={`${item.viewCount} views`}>
+      <span className="news-actions__views">
         <AppIcon name="eye" />
-        <small>{formatCount(item.viewCount)}</small>
+        <small aria-hidden="true">{formatCount(item.viewCount)}</small>
+        <span className="visually-hidden">{item.viewCount} views</span>
       </span>
     </div>
   );

@@ -4,6 +4,7 @@ import type { FollowedTeam } from "../../domain/team";
 import { leagueOptions, sportOptions } from "./mockNewsData";
 import type { NewsFeedContext } from "./types";
 import { AppIcon } from "../../components/AppIcon";
+import { trapDialogFocus } from "./dialogKeyboard";
 
 type FilterPanel = "root" | "team" | "league" | "sport";
 
@@ -30,6 +31,8 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+      } else {
+        trapDialogFocus(event, dialogRef.current);
       }
     };
 
@@ -41,6 +44,7 @@ export function NewsFilterMenu({ followedTeams, onApply, onClose }: NewsFilterMe
     <div className="news-filter-layer">
       <button className="news-layer-backdrop" type="button" aria-label="Close News filters" onClick={onClose} />
       <section
+        id="news-filter-menu"
         className="news-filter-menu"
         role="dialog"
         aria-modal="true"

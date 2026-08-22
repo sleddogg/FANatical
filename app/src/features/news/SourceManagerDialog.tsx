@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FollowedSourcePreference, NewsContentType, NewsSource } from "./types";
 import { AppIcon } from "../../components/AppIcon";
+import { trapDialogFocus } from "./dialogKeyboard";
 
 type SourceManagerTab = "add" | "manage" | "how-to";
 
@@ -34,6 +35,7 @@ export function SourceManagerDialog({
   const [query, setQuery] = useState("");
   const [requestedSources, setRequestedSources] = useState<readonly string[]>([]);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -43,6 +45,8 @@ export function SourceManagerDialog({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
+      } else {
+        trapDialogFocus(event, dialogRef.current);
       }
     };
 
@@ -79,7 +83,7 @@ export function SourceManagerDialog({
   return (
     <div className="source-manager-layer">
       <button className="news-layer-backdrop" type="button" aria-label="Close Source Manager" onClick={onClose} />
-      <section className="source-manager" role="dialog" aria-modal="true" aria-labelledby="source-manager-title">
+      <section ref={dialogRef} id="source-manager" className="source-manager" role="dialog" aria-modal="true" aria-labelledby="source-manager-title">
         <header className="source-manager__header">
           <div>
             <span className="eyebrow">Your News</span>
