@@ -1,91 +1,136 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { subscribeToAccountChanges } from "../account/accountRepository";
 import { useAuth } from "../account/AuthContext";
-import { activateRemoteProfileAvatar, deleteRemoteProfilePhoto, loadRemoteProfileAvatarLibrary, uploadRemoteProfileAvatar } from "./profileAvatarRepository";
+import { createCoalescedProfileMediaRefresh } from "../profileMedia/profileMediaRefresh";
+import { activateRemoteProfileAvatar, deleteRemoteProfilePhoto, loadRemoteProfileAvatarLibrary, loadRemoteProfileAvatarSummary, uploadRemoteProfileAvatar } from "./profileAvatarRepository";
 import type { ProfileAvatarCrop, ProfileAvatarRecord } from "./types";
 
 type ProfileAvatarContextValue = Readonly<{
   avatar: ProfileAvatarRecord | null;
   photos: readonly ProfileAvatarRecord[];
   loading: boolean;
+  resolveLibrary: () => Promise<void>;
   saveAvatar: (record: ProfileAvatarRecord) => Promise<void>;
   saveCrop: (crop: ProfileAvatarCrop) => Promise<void>;
   removePhoto: (photoId: string) => Promise<ProfileAvatarRecord | null>;
 }>;
 
 const ProfileAvatarContext = createContext<ProfileAvatarContextValue | null>(null);
+const focusFreshnessMs = 5 * 60 * 1000;
+const signedUrlRefreshMs = 55 * 60 * 1000;
 
 export function ProfileAvatarProvider({ children }: PropsWithChildren) {
   const { configured, user } = useAuth();
+  const userId = user?.id ?? null;
+  const activeUserId = useRef(userId);
+  const requestSequence = useRef(0);
+  const libraryRequested = useRef(false);
+  const lastLoadedAt = useRef(0);
   const [avatar, setAvatar] = useState<ProfileAvatarRecord | null>(null);
   const [photos, setPhotos] = useState<readonly ProfileAvatarRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  activeUserId.current = userId;
+
+  const load = useCallback(async (scope?: "active" | "library") => {
+    const requestId = ++requestSequence.current;
+    if (!configured || !userId) {
+      if (requestId === requestSequence.current) {
+        setAvatar(null);
+        setPhotos([]);
+        setLoading(false);
+        lastLoadedAt.current = Date.now();
+      }
+      return;
+    }
+    setLoading(true);
+    const effectiveScope = scope ?? (libraryRequested.current ? "library" : "active");
+    const library = effectiveScope === "library"
+      ? await loadRemoteProfileAvatarLibrary(userId)
+      : await loadRemoteProfileAvatarSummary(userId);
+    if (requestId !== requestSequence.current || activeUserId.current !== userId) return;
+    setAvatar(library.active);
+    setPhotos(library.photos);
+    setLoading(false);
+    lastLoadedAt.current = Date.now();
+  }, [configured, userId]);
 
   useEffect(() => {
-    let current = true;
-    if (!configured || !user) {
+    libraryRequested.current = false;
+    requestSequence.current += 1;
+    if (!configured || !userId) {
       setAvatar(null);
       setPhotos([]);
       setLoading(false);
-      return () => { current = false; };
+      lastLoadedAt.current = Date.now();
+      return;
     }
-
-    setAvatar(null);
-    const load = () => {
-      setLoading(true);
-      return loadRemoteProfileAvatarLibrary(user.id).then((library) => {
-        if (current) {
-          setAvatar(library.active);
-          setPhotos(library.photos);
+    const refresh = createCoalescedProfileMediaRefresh(async () => {
+      try {
+        await load();
+      } catch (reason) {
+        if (activeUserId.current === userId) {
+          setLoading(false);
+          console.warn("FANatical could not load the profile photo.", reason);
         }
-      }).catch((reason: unknown) => {
-        console.warn("FANatical could not load the profile photo.", reason);
-      }).finally(() => {
-        if (current) setLoading(false);
-      });
+      }
+    });
+    void refresh.runNow();
+    const refreshSignedUrls = window.setInterval(() => { void refresh.runNow(); }, signedUrlRefreshMs);
+    const focus = () => {
+      if (Date.now() - lastLoadedAt.current >= focusFreshnessMs) void refresh.runNow();
     };
-
-    void load();
-    const refreshSignedUrl = window.setInterval(() => { void load(); }, 50 * 60 * 1000);
-    const focus = () => { void load(); };
     window.addEventListener("focus", focus);
-    const unsubscribe = subscribeToAccountChanges(user.id, focus, ["profiles", "profile_photos"]);
+    const unsubscribe = subscribeToAccountChanges(userId, refresh.schedule, ["profiles", "profile_photos"]);
     return () => {
-      current = false;
-      window.clearInterval(refreshSignedUrl);
+      requestSequence.current += 1;
+      window.clearInterval(refreshSignedUrls);
       window.removeEventListener("focus", focus);
+      refresh.dispose();
       unsubscribe();
     };
-  }, [configured, user]);
+  }, [configured, load, userId]);
+
+  const resolveLibrary = useCallback(async () => {
+    libraryRequested.current = true;
+    try {
+      await load("library");
+    } catch (reason) {
+      if (activeUserId.current === userId) console.warn("FANatical could not load the saved profile photos.", reason);
+    }
+  }, [load, userId]);
 
   const saveAvatar = useCallback(async (record: ProfileAvatarRecord) => {
-    if (!configured || !user) throw new Error("Sign in to save a profile photo.");
+    if (!configured || !userId) throw new Error("Sign in to save a profile photo.");
     const saved = record.sourceBlob && record.displayBlob
-      ? await uploadRemoteProfileAvatar(user.id, record)
-      : await activateRemoteProfileAvatar(user.id, record);
+      ? await uploadRemoteProfileAvatar(userId, record)
+      : await activateRemoteProfileAvatar(userId, record);
+    if (activeUserId.current !== userId) return;
     setAvatar(saved);
     setPhotos((current) => current.some((photo) => photo.id === saved.id)
       ? current.map((photo) => photo.id === saved.id ? saved : photo)
       : [...current, saved]);
-  }, [configured, user]);
+  }, [configured, userId]);
 
   const saveCrop = useCallback(async (crop: ProfileAvatarCrop) => {
-    if (!configured || !user) throw new Error("Sign in to save profile photo positioning.");
+    if (!configured || !userId) throw new Error("Sign in to save profile photo positioning.");
     if (!avatar) return;
-    const saved = await activateRemoteProfileAvatar(user.id, { ...avatar, crop });
+    const saved = await activateRemoteProfileAvatar(userId, { ...avatar, crop });
+    if (activeUserId.current !== userId) return;
     setAvatar(saved);
     setPhotos((current) => current.map((photo) => photo.id === saved.id ? saved : photo));
-  }, [avatar, configured, user]);
+  }, [avatar, configured, userId]);
 
   const removePhoto = useCallback(async (photoId: string) => {
-    if (!configured || !user) throw new Error("Sign in to remove a profile photo.");
-    const library = await deleteRemoteProfilePhoto(user.id, photoId);
+    if (!configured || !userId) throw new Error("Sign in to remove a profile photo.");
+    const library = await deleteRemoteProfilePhoto(userId, photoId);
+    if (activeUserId.current !== userId) return null;
+    libraryRequested.current = true;
     setAvatar(library.active);
     setPhotos(library.photos);
     return library.active;
-  }, [configured, user]);
+  }, [configured, userId]);
 
-  const value = useMemo<ProfileAvatarContextValue>(() => ({ avatar, photos, loading, saveAvatar, saveCrop, removePhoto }), [avatar, loading, photos, removePhoto, saveAvatar, saveCrop]);
+  const value = useMemo<ProfileAvatarContextValue>(() => ({ avatar, photos, loading, resolveLibrary, saveAvatar, saveCrop, removePhoto }), [avatar, loading, photos, removePhoto, resolveLibrary, saveAvatar, saveCrop]);
   return <ProfileAvatarContext.Provider value={value}>{children}</ProfileAvatarContext.Provider>;
 }
 

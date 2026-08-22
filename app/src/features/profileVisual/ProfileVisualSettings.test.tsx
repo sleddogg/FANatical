@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   library: { mobile: [], wide: [] } as ProfileVisualLibrary,
   saveImage: vi.fn(),
   removeImage: vi.fn(),
+  resolveLibrary: vi.fn(),
   prepareImage: vi.fn(),
 }));
 
@@ -40,6 +41,7 @@ vi.mock("./ProfileVisualContext", () => ({
   useProfileVisual: () => ({
     images: mocks.images,
     library: mocks.library,
+    resolveLibrary: mocks.resolveLibrary,
     saveImage: mocks.saveImage,
     removeImage: mocks.removeImage,
   }),
@@ -58,6 +60,7 @@ describe("ProfileVisualSettings", () => {
     mocks.library = { mobile: [mobile], wide: [wide] };
     mocks.saveImage.mockImplementation(async (record: ProfileVisualImageRecord) => ({ ...record, id: record.id ?? "saved-image" }));
     mocks.removeImage.mockResolvedValue(undefined);
+    mocks.resolveLibrary.mockResolvedValue(undefined);
   });
 
   it("keeps a first-attempt mobile picker selection through an active-record refresh and saves only on command", async () => {

@@ -181,7 +181,8 @@ function ProfileVisualEditor({ variant, record, photos }: {
 }
 
 export function ProfileVisualSettings() {
-  const { images, library } = useProfileVisual();
+  const { images, library, resolveLibrary } = useProfileVisual();
+  useEffect(() => { void resolveLibrary(); }, [resolveLibrary]);
   return <div className="profile-visual-settings">
     <ProfileVisualEditor variant="mobile" record={images.mobile} photos={library.mobile} />
     <ProfileVisualEditor variant="wide" record={images.wide} photos={library.wide} />

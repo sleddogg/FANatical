@@ -1,5 +1,6 @@
 import { requireSupabase } from "../../lib/supabase/client";
 import { createUuid } from "../../lib/uuid";
+import { cachedProfileMediaSignedUrl, evictProfileMediaSignedUrls, profileMediaBucket, resolveProfileMediaSignedUrl, resolveProfileMediaSignedUrls } from "../profileMedia/profileMediaSignedUrlCache";
 import { clampProfileVisualCrop, type ProfileVisualImageRecord, type ProfileVisualLibrary, type ProfileVisualVariant } from "./types";
 
 type VisualRow = Readonly<{
@@ -24,8 +25,6 @@ export type RemoteProfileVisualLibrary = Readonly<{
   library: ProfileVisualLibrary;
 }>;
 
-const bucket = "profile-media";
-
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
 }
@@ -47,13 +46,7 @@ function safeExtension(file: Blob, filename: string) {
   return "jpg";
 }
 
-async function signedUrl(path: string) {
-  const result = await requireSupabase().storage.from(bucket).createSignedUrl(path, 60 * 60);
-  if (result.error) throw new Error(result.error.message);
-  return result.data.signedUrl;
-}
-
-async function rowToRecord(row: VisualRow): Promise<ProfileVisualImageRecord> {
+function rowToRecord(row: VisualRow, displayUrl?: string): ProfileVisualImageRecord {
   const displayPath = text(row.display_path);
   return {
     ...(text(row.id) ? { id: text(row.id) } : {}),
@@ -62,7 +55,7 @@ async function rowToRecord(row: VisualRow): Promise<ProfileVisualImageRecord> {
     sourceMediaType: text(row.source_media_type) || "image/jpeg",
     sourcePath: text(row.source_path),
     displayPath,
-    displayUrl: await signedUrl(displayPath),
+    ...(displayUrl ? { displayUrl } : {}),
     width: Math.max(1, number(row.source_width, 1)),
     height: Math.max(1, number(row.source_height, 1)),
     crop: clampProfileVisualCrop({
@@ -75,6 +68,14 @@ async function rowToRecord(row: VisualRow): Promise<ProfileVisualImageRecord> {
 }
 
 export async function loadRemoteProfileVisualLibrary(userId: string): Promise<RemoteProfileVisualLibrary> {
+  return loadRemoteProfileVisualLibraryWithScope(userId, "library");
+}
+
+export async function loadRemoteProfileVisualSummary(userId: string): Promise<RemoteProfileVisualLibrary> {
+  return loadRemoteProfileVisualLibraryWithScope(userId, "active");
+}
+
+async function loadRemoteProfileVisualLibraryWithScope(userId: string, scope: "active" | "library"): Promise<RemoteProfileVisualLibrary> {
   const client = requireSupabase();
   const [activeResult, libraryResult] = await Promise.all([
     client.from("profile_visuals").select("variant, source_path, display_path, source_filename, source_media_type, source_width, source_height, focal_x, focal_y, zoom, updated_at").eq("user_id", userId),
@@ -84,7 +85,12 @@ export async function loadRemoteProfileVisualLibrary(userId: string): Promise<Re
   if (libraryResult.error) {
     const missingLibrary = libraryResult.error.code === "PGRST205" || libraryResult.error.code === "42P01";
     if (!missingLibrary) throw new Error(libraryResult.error.message);
-    const activeRecords = await Promise.all(((activeResult.data ?? []) as VisualRow[]).map(rowToRecord));
+    const activeRows = (activeResult.data ?? []) as VisualRow[];
+    const resolvedUrls = await resolveProfileMediaSignedUrls(userId, profileMediaBucket, activeRows.map((row) => text(row.display_path)).filter(Boolean));
+    const activeRecords = activeRows.map((row) => {
+      const displayPath = text(row.display_path);
+      return rowToRecord(row, resolvedUrls.get(displayPath) ?? cachedProfileMediaSignedUrl(userId, profileMediaBucket, displayPath));
+    });
     const images: Partial<Record<ProfileVisualVariant, ProfileVisualImageRecord>> = {};
     for (const record of activeRecords) images[record.variant] = record;
     return {
@@ -95,14 +101,24 @@ export async function loadRemoteProfileVisualLibrary(userId: string): Promise<Re
       },
     };
   }
-  const libraryRecords = await Promise.all(((libraryResult.data ?? []) as VisualRow[]).map(rowToRecord));
+  const libraryRows = (libraryResult.data ?? []) as VisualRow[];
   const activeRows = (activeResult.data ?? []) as VisualRow[];
+  const activePaths = new Set(activeRows.map((row) => text(row.display_path)).filter(Boolean));
+  const pathsToResolve = libraryRows
+    .filter((row) => scope === "library" || activePaths.has(text(row.display_path)))
+    .map((row) => text(row.display_path))
+    .filter(Boolean);
+  const resolvedUrls = await resolveProfileMediaSignedUrls(userId, profileMediaBucket, pathsToResolve);
+  const libraryRecords = libraryRows.map((row) => {
+    const displayPath = text(row.display_path);
+    return rowToRecord(row, resolvedUrls.get(displayPath) ?? cachedProfileMediaSignedUrl(userId, profileMediaBucket, displayPath));
+  });
   const images: Partial<Record<ProfileVisualVariant, ProfileVisualImageRecord>> = {};
   for (const activeRow of activeRows) {
     const activeVariant = variant(activeRow.variant);
     const activePath = text(activeRow.display_path);
     images[activeVariant] = libraryRecords.find((record) => record.variant === activeVariant && record.displayPath === activePath)
-      ?? await rowToRecord(activeRow);
+      ?? rowToRecord(activeRow, resolvedUrls.get(activePath) ?? cachedProfileMediaSignedUrl(userId, profileMediaBucket, activePath));
   }
   return {
     images,
@@ -114,7 +130,14 @@ export async function loadRemoteProfileVisualLibrary(userId: string): Promise<Re
 }
 
 export async function loadRemoteProfileVisuals(userId: string): Promise<readonly ProfileVisualImageRecord[]> {
-  return Object.values((await loadRemoteProfileVisualLibrary(userId)).images).filter((record): record is ProfileVisualImageRecord => Boolean(record));
+  const result = await requireSupabase().from("profile_visuals").select("variant, source_path, display_path, source_filename, source_media_type, source_width, source_height, focal_x, focal_y, zoom, updated_at").eq("user_id", userId);
+  if (result.error) throw new Error(result.error.message);
+  const rows = (result.data ?? []) as VisualRow[];
+  const resolvedUrls = await resolveProfileMediaSignedUrls(userId, profileMediaBucket, rows.map((row) => text(row.display_path)).filter(Boolean));
+  return rows.map((row) => {
+    const displayPath = text(row.display_path);
+    return rowToRecord(row, resolvedUrls.get(displayPath) ?? cachedProfileMediaSignedUrl(userId, profileMediaBucket, displayPath));
+  });
 }
 
 async function activateVisual(record: ProfileVisualImageRecord): Promise<ProfileVisualImageRecord> {
@@ -147,11 +170,11 @@ export async function uploadRemoteProfileVisual(userId: string, record: ProfileV
 
   try {
     const sourceMediaType = record.sourceMediaType || record.sourceBlob.type;
-    const sourceUpload = await client.storage.from(bucket).upload(sourcePath, record.sourceBlob, { contentType: sourceMediaType, upsert: false });
+    const sourceUpload = await client.storage.from(profileMediaBucket).upload(sourcePath, record.sourceBlob, { contentType: sourceMediaType, upsert: false });
     if (sourceUpload.error) throw new Error(sourceUpload.error.message);
     createdPaths.push(sourcePath);
 
-    const displayUpload = await client.storage.from(bucket).upload(displayPath, record.displayBlob, { contentType: "image/webp", upsert: false });
+    const displayUpload = await client.storage.from(profileMediaBucket).upload(displayPath, record.displayBlob, { contentType: "image/webp", upsert: false });
     if (displayUpload.error) throw new Error(displayUpload.error.message);
     createdPaths.push(displayPath);
 
@@ -179,13 +202,13 @@ export async function uploadRemoteProfileVisual(userId: string, record: ProfileV
       sourceMediaType,
       sourcePath,
       displayPath,
-      displayUrl: await signedUrl(displayPath),
+      displayUrl: await resolveProfileMediaSignedUrl(userId, profileMediaBucket, displayPath),
       crop,
       updatedAt: new Date().toISOString(),
     });
   } catch (reason) {
     if (inserted) await client.from("profile_visual_images").delete().eq("id", id).eq("user_id", userId);
-    if (createdPaths.length) await client.storage.from(bucket).remove(createdPaths);
+    if (createdPaths.length) await client.storage.from(profileMediaBucket).remove(createdPaths);
     throw reason;
   }
 }
@@ -201,8 +224,9 @@ export async function deleteRemoteProfileVisualImage(userId: string, imageId: st
   const removed = result.data && typeof result.data === "object" ? result.data as RemovedVisual : {};
   const paths = [text(removed.sourcePath), text(removed.displayPath)].filter(Boolean);
   if (paths.length) {
-    const removal = await client.storage.from(bucket).remove(paths);
+    const removal = await client.storage.from(profileMediaBucket).remove(paths);
     if (removal.error) console.warn("The Profile visual was removed, but owned media cleanup must be retried.", removal.error);
+    evictProfileMediaSignedUrls(userId, profileMediaBucket, paths);
   }
   return loadRemoteProfileVisualLibrary(userId);
 }

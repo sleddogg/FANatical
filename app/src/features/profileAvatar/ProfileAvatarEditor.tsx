@@ -22,7 +22,7 @@ function cropsMatch(first: ProfileAvatarCrop, second: ProfileAvatarCrop) {
 }
 
 export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () => void; readonly onCancel: () => void }) {
-  const { avatar, photos, saveAvatar, removePhoto } = useProfileAvatar();
+  const { avatar, photos, resolveLibrary, saveAvatar, removePhoto } = useProfileAvatar();
   const { shape: savedShape, setShape: saveShape } = useProfileImageShape();
   const [draft, setDraft] = useState<ProfileAvatarRecord | null>(avatar);
   const [draftShape, setDraftShape] = useState(savedShape);
@@ -35,6 +35,8 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
   const shapeChanged = useRef(false);
   const previewUrl = useProfileAvatarUrl(draft);
   const crop = draft?.crop ?? defaultProfileAvatarCrop;
+
+  useEffect(() => { void resolveLibrary(); }, [resolveLibrary]);
 
   useEffect(() => {
     if (!draftChanged.current) setDraft(avatar);

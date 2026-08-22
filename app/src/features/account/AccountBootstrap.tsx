@@ -59,22 +59,23 @@ async function migratePrototypeAccount(userId: string) {
 
 export function AccountBootstrapProvider({ children }: PropsWithChildren) {
   const { configured, loading, user } = useAuth();
+  const userId = user?.id ?? null;
   const [state, setState] = useState<BootstrapState>({ ready: !configured, error: "", revision: 0 });
 
   useEffect(() => {
     let current = true;
-    if (!configured || loading || !user) {
+    if (!configured || loading || !userId) {
       setState((previous) => ({ ready: !loading, error: "", revision: previous.revision }));
       return () => { current = false; };
     }
     setState((previous) => ({ ready: false, error: "", revision: previous.revision }));
-    void migratePrototypeAccount(user.id).then(() => {
+    void migratePrototypeAccount(userId).then(() => {
       if (current) setState((previous) => ({ ready: true, error: "", revision: previous.revision + 1 }));
     }).catch((reason: unknown) => {
       if (current) setState((previous) => ({ ready: true, error: reason instanceof Error ? reason.message : "Account data could not be synchronized.", revision: previous.revision }));
     });
     return () => { current = false; };
-  }, [configured, loading, user]);
+  }, [configured, loading, userId]);
 
   const value = useMemo(() => state, [state]);
   return (

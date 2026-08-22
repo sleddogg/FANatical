@@ -1,5 +1,6 @@
 import { requireSupabase } from "../../lib/supabase/client";
 import { createUuid } from "../../lib/uuid";
+import { cachedProfileMediaSignedUrl, evictProfileMediaSignedUrls, profileMediaBucket, resolveProfileMediaSignedUrl, resolveProfileMediaSignedUrls } from "../profileMedia/profileMediaSignedUrlCache";
 import { clampProfileAvatarCrop, type ProfileAvatarRecord } from "./types";
 
 type ProfileRow = Readonly<{ active_profile_photo_id: unknown }>;
@@ -23,8 +24,6 @@ export type ProfileAvatarLibrary = Readonly<{
   active: ProfileAvatarRecord | null;
 }>;
 
-const bucket = "profile-media";
-
 function text(value: unknown) {
   return typeof value === "string" ? value : "";
 }
@@ -42,13 +41,7 @@ function safeExtension(file: Blob, filename: string) {
   return "jpg";
 }
 
-async function signedUrl(path: string) {
-  const result = await requireSupabase().storage.from(bucket).createSignedUrl(path, 60 * 60);
-  if (result.error) throw new Error(result.error.message);
-  return result.data.signedUrl;
-}
-
-async function recordFromRow(row: ProfilePhotoRow): Promise<ProfileAvatarRecord> {
+function recordFromRow(row: ProfilePhotoRow, displayUrl?: string): ProfileAvatarRecord {
   const displayPath = text(row.display_path);
   return {
     id: text(row.id),
@@ -56,7 +49,7 @@ async function recordFromRow(row: ProfilePhotoRow): Promise<ProfileAvatarRecord>
     sourceMediaType: text(row.source_media_type) || "image/jpeg",
     sourcePath: text(row.source_path),
     displayPath,
-    displayUrl: await signedUrl(displayPath),
+    ...(displayUrl ? { displayUrl } : {}),
     width: Math.max(1, number(row.source_width, 1)),
     height: Math.max(1, number(row.source_height, 1)),
     crop: clampProfileAvatarCrop({
@@ -69,6 +62,14 @@ async function recordFromRow(row: ProfilePhotoRow): Promise<ProfileAvatarRecord>
 }
 
 export async function loadRemoteProfileAvatarLibrary(userId: string): Promise<ProfileAvatarLibrary> {
+  return loadRemoteProfileAvatarLibraryWithScope(userId, "library");
+}
+
+export async function loadRemoteProfileAvatarSummary(userId: string): Promise<ProfileAvatarLibrary> {
+  return loadRemoteProfileAvatarLibraryWithScope(userId, "active");
+}
+
+async function loadRemoteProfileAvatarLibraryWithScope(userId: string, scope: "active" | "library"): Promise<ProfileAvatarLibrary> {
   const client = requireSupabase();
   const [profileResult, photosResult] = await Promise.all([
     client.from("profiles").select("active_profile_photo_id").eq("user_id", userId).maybeSingle(),
@@ -76,8 +77,17 @@ export async function loadRemoteProfileAvatarLibrary(userId: string): Promise<Pr
   ]);
   if (profileResult.error) throw new Error(profileResult.error.message);
   if (photosResult.error) throw new Error(photosResult.error.message);
-  const photos = await Promise.all(((photosResult.data ?? []) as ProfilePhotoRow[]).map(recordFromRow));
+  const rows = (photosResult.data ?? []) as ProfilePhotoRow[];
   const activeId = text((profileResult.data as ProfileRow | null)?.active_profile_photo_id);
+  const pathsToResolve = rows
+    .filter((row) => scope === "library" || text(row.id) === activeId)
+    .map((row) => text(row.display_path))
+    .filter(Boolean);
+  const resolvedUrls = await resolveProfileMediaSignedUrls(userId, profileMediaBucket, pathsToResolve);
+  const photos = rows.map((row) => {
+    const displayPath = text(row.display_path);
+    return recordFromRow(row, resolvedUrls.get(displayPath) ?? cachedProfileMediaSignedUrl(userId, profileMediaBucket, displayPath));
+  });
   return { photos, active: photos.find((photo) => photo.id === activeId) ?? null };
 }
 
@@ -110,11 +120,11 @@ export async function uploadRemoteProfileAvatar(userId: string, record: ProfileA
   let inserted = false;
 
   try {
-    const sourceUpload = await client.storage.from(bucket).upload(sourcePath, record.sourceBlob, { contentType: record.sourceMediaType, upsert: false });
+    const sourceUpload = await client.storage.from(profileMediaBucket).upload(sourcePath, record.sourceBlob, { contentType: record.sourceMediaType, upsert: false });
     if (sourceUpload.error) throw new Error(sourceUpload.error.message);
     createdPaths.push(sourcePath);
 
-    const displayUpload = await client.storage.from(bucket).upload(displayPath, record.displayBlob, { contentType: "image/webp", upsert: false });
+    const displayUpload = await client.storage.from(profileMediaBucket).upload(displayPath, record.displayBlob, { contentType: "image/webp", upsert: false });
     if (displayUpload.error) throw new Error(displayUpload.error.message);
     createdPaths.push(displayPath);
 
@@ -140,13 +150,13 @@ export async function uploadRemoteProfileAvatar(userId: string, record: ProfileA
       id,
       sourcePath,
       displayPath,
-      displayUrl: await signedUrl(displayPath),
+      displayUrl: await resolveProfileMediaSignedUrl(userId, profileMediaBucket, displayPath),
       crop,
       updatedAt: new Date().toISOString(),
     });
   } catch (reason) {
     if (inserted) await client.from("profile_photos").delete().eq("id", id).eq("user_id", userId);
-    if (createdPaths.length) await client.storage.from(bucket).remove(createdPaths);
+    if (createdPaths.length) await client.storage.from(profileMediaBucket).remove(createdPaths);
     throw reason;
   }
 }
@@ -163,8 +173,9 @@ export async function deleteRemoteProfilePhoto(userId: string, photoId: string):
     ? [text((result.data as Record<string, unknown>).sourcePath), text((result.data as Record<string, unknown>).displayPath)].filter(Boolean)
     : [];
   if (paths.length) {
-    const removal = await client.storage.from(bucket).remove(paths);
+    const removal = await client.storage.from(profileMediaBucket).remove(paths);
     if (removal.error) console.warn("The profile photo was removed, but owned media cleanup must be retried.", removal.error);
+    evictProfileMediaSignedUrls(userId, profileMediaBucket, paths);
   }
   return loadRemoteProfileAvatarLibrary(userId);
 }

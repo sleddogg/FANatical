@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   photos: [] as ProfileAvatarRecord[],
   saveAvatar: vi.fn(),
   removePhoto: vi.fn(),
+  resolveLibrary: vi.fn(),
   prepareImage: vi.fn(),
 }));
 
@@ -29,6 +30,7 @@ vi.mock("./ProfileAvatarContext", () => ({
     avatar: mocks.avatar,
     photos: mocks.photos,
     loading: false,
+    resolveLibrary: mocks.resolveLibrary,
     saveAvatar: mocks.saveAvatar,
     saveCrop: vi.fn(),
     removePhoto: mocks.removePhoto,
@@ -47,6 +49,7 @@ describe("ProfileAvatarEditor", () => {
     mocks.avatar = avatar;
     mocks.photos = [avatar];
     mocks.removePhoto.mockResolvedValue(null);
+    mocks.resolveLibrary.mockResolvedValue(undefined);
   });
 
   it("shows the fixed circular preview and saves zoom changes", async () => {

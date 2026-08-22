@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import type { User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase/client";
+import { clearProfileMediaSignedUrls } from "../profileMedia/profileMediaSignedUrlCache";
 
 type SignUpInput = Readonly<{
   email: string;
@@ -31,18 +32,25 @@ const AuthContext = createContext<AuthContextValue>(unavailableAuth);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  const authenticatedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
     let current = true;
+    const updateUser = (nextUser: User | null) => {
+      const previousUserId = authenticatedUserId.current;
+      if (previousUserId && previousUserId !== nextUser?.id) clearProfileMediaSignedUrls(previousUserId);
+      authenticatedUserId.current = nextUser?.id ?? null;
+      setUser(nextUser);
+    };
     void supabase.auth.getSession().then(({ data, error }) => {
       if (!current) return;
       if (error) console.error("FANatical could not restore the account session.", error);
-      setUser(data.session?.user ?? null);
+      updateUser(data.session?.user ?? null);
       setLoading(false);
     });
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      updateUser(session?.user ?? null);
       setLoading(false);
     });
     return () => {
