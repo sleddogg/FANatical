@@ -1,6 +1,6 @@
 # FANatical icon assets
 
-This folder contains two distinct asset groups.
+This folder contains three distinct asset groups.
 
 ## Original FANatical artwork
 
@@ -75,3 +75,35 @@ Local filenames include the Heroicons style so outline and solid variants can co
 | `ExclamationTriangleIcon` | 24 outline | `exclamation-triangle-outline.svg` |
 
 The Heroicons-derived files retain their upstream `24 × 24` view boxes and `currentColor` paint behavior. They are vendored assets only and are not yet wired into the FANatical UI.
+
+## Pictogrammers / Material Design Icons
+
+The files prefixed with `mdi-` below are vendored from the official Pictogrammers Material Design Icons SVG distribution.
+
+- Project: Material Design Icons
+- Publisher: Pictogrammers
+- Distribution: `@mdi/svg`
+- Release: `v7.4.47`
+- Pinned source revision: `9e04201d4557e729822fb57f62a316c3dea1d4a8`
+- Official repository: <https://github.com/Templarian/MaterialDesign-SVG>
+- Pinned source location: <https://github.com/Templarian/MaterialDesign-SVG/tree/v7.4.47/svg>
+- Upstream source path: `svg/`
+- Package artifact: `@mdi/svg@7.4.47` (`sha512-WQ2gDll12T9WD34fdRFgQVgO8bag3gavrAgJ0frN4phlwdJARpE6gO1YvLEMJR0KKgoc+/Ea/A0Pp11I00xBvw==`)
+- Icon license: Apache License 2.0; see `PICTOGRAMMERS-MDI-LICENSE.txt`
+
+| Upstream MDI icon name | Upstream file | Local FANatical file |
+| --- | --- | --- |
+| `hockey-sticks` | `svg/hockey-sticks.svg` | `mdi-hockey-sticks.svg` |
+| `hockey-puck` | `svg/hockey-puck.svg` | `mdi-hockey-puck.svg` |
+| `baseball-outline` | `svg/baseball-outline.svg` | `mdi-baseball-outline.svg` |
+| `baseball-bat` | `svg/baseball-bat.svg` | `mdi-baseball-bat.svg` |
+| `basketball` | `svg/basketball.svg` | `mdi-basketball.svg` |
+| `football` | `svg/football.svg` | `mdi-football.svg` |
+| `football-helmet` | `svg/football-helmet.svg` | `mdi-football-helmet.svg` |
+| `soccer` | `svg/soccer.svg` | `mdi-soccer.svg` |
+| `rugby` | `svg/rugby.svg` | `mdi-rugby.svg` |
+| `football-australian` | `svg/football-australian.svg` | `mdi-football-australian.svg` |
+| `strategy` | `svg/strategy.svg` | `mdi-strategy.svg` |
+| `locker-multiple` | `svg/locker-multiple.svg` | `mdi-locker-multiple.svg` |
+
+These assets retain the upstream IDs, `24 × 24` view boxes, and path geometry. FANatical adds only `fill="currentColor"` to each root SVG for compatibility with the shared `AppIcon` color behavior. They are registered under matching `mdi-` icon keys for use through the shared `AppIcon` component.

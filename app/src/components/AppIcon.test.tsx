@@ -16,6 +16,21 @@ const representativeIcons: readonly AppIconName[] = [
   "user",
 ];
 
+const materialDesignIcons: readonly AppIconName[] = [
+  "mdi-baseball-bat",
+  "mdi-baseball-outline",
+  "mdi-basketball",
+  "mdi-football",
+  "mdi-football-australian",
+  "mdi-football-helmet",
+  "mdi-hockey-puck",
+  "mdi-hockey-sticks",
+  "mdi-locker-multiple",
+  "mdi-rugby",
+  "mdi-soccer",
+  "mdi-strategy",
+];
+
 describe("AppIcon", () => {
   it.each(representativeIcons)("renders %s as an inline SVG shape", (name) => {
     const { container } = render(<AppIcon name={name} />);
@@ -27,5 +42,14 @@ describe("AppIcon", () => {
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
     expect(svg?.querySelector("path, rect, circle, polygon, polyline, line")).toBeInTheDocument();
     expect(wrapper).not.toHaveStyle({ backgroundColor: "currentColor" });
+  });
+
+  it.each(materialDesignIcons)("renders %s with the shared currentColor behavior", (name) => {
+    const { container } = render(<AppIcon name={name} />);
+    const svg = container.querySelector(".app-icon > svg");
+
+    expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
+    expect(svg).toHaveAttribute("fill", "currentColor");
+    expect(svg?.querySelector("path")).toBeInTheDocument();
   });
 });

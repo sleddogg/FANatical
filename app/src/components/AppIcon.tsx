@@ -49,6 +49,18 @@ import trophy from "../assets/icons/trophy-outline.svg?raw";
 import user from "../assets/icons/user-outline.svg?raw";
 import userGroup from "../assets/icons/user-group-outline.svg?raw";
 import xMark from "../assets/icons/x-mark-outline.svg?raw";
+import mdiBaseballBat from "../assets/icons/mdi-baseball-bat.svg?raw";
+import mdiBaseballOutline from "../assets/icons/mdi-baseball-outline.svg?raw";
+import mdiBasketball from "../assets/icons/mdi-basketball.svg?raw";
+import mdiFootball from "../assets/icons/mdi-football.svg?raw";
+import mdiFootballAustralian from "../assets/icons/mdi-football-australian.svg?raw";
+import mdiFootballHelmet from "../assets/icons/mdi-football-helmet.svg?raw";
+import mdiHockeyPuck from "../assets/icons/mdi-hockey-puck.svg?raw";
+import mdiHockeySticks from "../assets/icons/mdi-hockey-sticks.svg?raw";
+import mdiLockerMultiple from "../assets/icons/mdi-locker-multiple.svg?raw";
+import mdiRugby from "../assets/icons/mdi-rugby.svg?raw";
+import mdiSoccer from "../assets/icons/mdi-soccer.svg?raw";
+import mdiStrategy from "../assets/icons/mdi-strategy.svg?raw";
 
 const iconSources = {
   "adjustments-horizontal": adjustmentsHorizontal,
@@ -102,6 +114,18 @@ const iconSources = {
   user,
   "user-group": userGroup,
   "x-mark": xMark,
+  "mdi-baseball-bat": mdiBaseballBat,
+  "mdi-baseball-outline": mdiBaseballOutline,
+  "mdi-basketball": mdiBasketball,
+  "mdi-football": mdiFootball,
+  "mdi-football-australian": mdiFootballAustralian,
+  "mdi-football-helmet": mdiFootballHelmet,
+  "mdi-hockey-puck": mdiHockeyPuck,
+  "mdi-hockey-sticks": mdiHockeySticks,
+  "mdi-locker-multiple": mdiLockerMultiple,
+  "mdi-rugby": mdiRugby,
+  "mdi-soccer": mdiSoccer,
+  "mdi-strategy": mdiStrategy,
 } as const;
 
 export type AppIconName = keyof typeof iconSources;
