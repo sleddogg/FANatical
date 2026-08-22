@@ -34,6 +34,12 @@ The completed `FANatical_Master_Teams.xlsx` workbook is the current catalog
 seed/reference; the earlier incomplete import remains only as immutable
 migration history.
 
+The autonomous Team Color research interface and dedicated OpenClaw
+authentication/provisioning contract are documented in
+[`TEAM_COLOR_AGENT.md`](TEAM_COLOR_AGENT.md). Agent secrets stay in the external
+agent's encrypted secret configuration; they are never browser build variables
+and never belong in this repository.
+
 ## Portability
 
 The UI talks to account/profile repository modules rather than issuing queries

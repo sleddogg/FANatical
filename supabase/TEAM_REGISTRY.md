@@ -76,6 +76,13 @@ Operational agents authenticate through Supabase Auth and map to a
 do not receive a Supabase service-role key. A policy can require the verifier
 to be a different actor from the proposal builder.
 
+The production Team Color Agent queue, narrow read interface, source-candidate
+intake, expected-version replacement protection, mandatory verifier separation,
+trust-tier rubric, exact RPC sequence, and secure provisioning procedure are
+documented in [`TEAM_COLOR_AGENT.md`](TEAM_COLOR_AGENT.md). Team Color Agents use
+that interface rather than direct table writes or broad `catalog.read_internal`
+access.
+
 ## Read models
 
 - `team_catalog_read_model` is the flat browser/repository projection.
