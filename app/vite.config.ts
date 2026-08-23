@@ -7,6 +7,16 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     publicDir: adminBuild ? "public-admin" : "public",
+    server: {
+      proxy: {
+        "/supabase": {
+          target: "http://127.0.0.1:15421",
+          changeOrigin: true,
+          ws: true,
+          rewrite: (path) => path.replace(/^\/supabase/, ""),
+        },
+      },
+    },
     build: {
       outDir: adminBuild ? "dist-admin" : "dist",
     },

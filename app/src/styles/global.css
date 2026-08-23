@@ -64,6 +64,19 @@ a {
   transform: translateY(0);
 }
 
+.hosted-backend-warning {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 10000;
+  padding: 0.75rem 1rem;
+  border-bottom: 0.25rem solid #111111;
+  background: #ffd400;
+  color: #111111;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -22,8 +22,8 @@ const unavailableAuth: AuthContextValue = {
   configured: false,
   loading: false,
   user: null,
-  signIn: async () => { throw new Error("FANatical's hosted account service is not configured."); },
-  signUp: async () => { throw new Error("FANatical's hosted account service is not configured."); },
+  signIn: async () => { throw new Error("FANatical's account service is not configured."); },
+  signUp: async () => { throw new Error("FANatical's account service is not configured."); },
   signOut: async () => undefined,
 };
 
@@ -60,13 +60,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    if (!supabase) throw new Error("FANatical's hosted account service is not configured.");
+    if (!supabase) throw new Error("FANatical's account service is not configured.");
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
   }, []);
 
   const signUp = useCallback(async ({ email, password, displayName }: SignUpInput) => {
-    if (!supabase) throw new Error("FANatical's hosted account service is not configured.");
+    if (!supabase) throw new Error("FANatical's account service is not configured.");
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
