@@ -17,6 +17,37 @@ begin
 end;
 $$;
 
+create or replace function pg_temp.add_team_color_evidence(
+  proposal_id_value uuid,
+  source_registry_id text,
+  evidence_url_value text,
+  evidence_summary_value text,
+  observed_at_value timestamptz,
+  supports_proposal_value boolean
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  palette_value jsonb;
+begin
+  if supports_proposal_value then
+    select public.team_color_palette_from_payload(payload) into palette_value
+    from public.catalog_change_proposals where id = proposal_id_value;
+  else
+    palette_value := jsonb_build_array('#010101', '#020202');
+  end if;
+  return public.add_team_color_proposal_evidence(
+    proposal_id_value, source_registry_id, evidence_url_value,
+    evidence_summary_value, observed_at_value, supports_proposal_value,
+    jsonb_build_object(
+      'classification', 'current_canonical',
+      'palette', palette_value
+    )
+  );
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Isolated auth principals, actors, catalog records, and approved test sources
 -- ---------------------------------------------------------------------------
@@ -139,6 +170,36 @@ from (values
   ('team-color-test-tier-3-second', 3),
   ('team-color-test-tier-3-conflict', 3)
 ) fixture(source_id, trust_tier)
+join public.trusted_sources source on source.source_id = fixture.source_id;
+
+insert into public.source_applicability_versions(
+  source_id, data_type, applicability_kind, review_status, notes
+)
+select source.id, 'team_colors', 'global', 'approved',
+       'Transactional Team Color Agent global applicability.'
+from public.trusted_sources source
+where source.source_id like 'team-color-test-tier-%';
+
+insert into public.source_independence_group_assignment_versions(
+  source_id, independence_group_id, review_status, notes
+)
+select source.id, source.independence_group_id, 'approved',
+       'Transactional test ownership assignment.'
+from public.trusted_sources source
+where source.source_id like 'team-color-test-tier-%';
+
+insert into public.trusted_source_url_scope_versions(
+  source_id, hostname, include_subdomains, path_prefix, path_match,
+  scope_kind, review_status, review_notes
+)
+select source.id, fixture.hostname, false, '/', 'prefix',
+       'publisher', 'approved', 'Transactional test URL scope.'
+from (values
+  ('team-color-test-tier-1', 'official.example'),
+  ('team-color-test-tier-3', 'independent.example'),
+  ('team-color-test-tier-3-second', 'second-independent.example'),
+  ('team-color-test-tier-3-conflict', 'conflict.example')
+) fixture(source_id, hostname)
 join public.trusted_sources source on source.source_id = fixture.source_id;
 
 -- ---------------------------------------------------------------------------
@@ -264,7 +325,7 @@ begin
   perform pg_temp.assert_true(duplicate_rejected, 'database must reject a duplicate pending proposal for one team');
 
   begin
-    perform public.add_catalog_proposal_evidence(
+    perform pg_temp.add_team_color_evidence(
       proposal_id_value, 'team-color-agent-pending-candidate',
       'https://candidate.example/evidence', 'Must not attach before source review.', now(), true
     );
@@ -273,12 +334,12 @@ begin
   end;
   perform pg_temp.assert_true(pending_source_rejected, 'pending source candidate cannot be attached as proposal evidence');
 
-  perform public.add_catalog_proposal_evidence(
+  perform pg_temp.add_team_color_evidence(
     proposal_id_value, 'team-color-test-tier-3',
     'https://independent.example/team-colors/first',
     'First page from one independent owner supports the palette.', now(), true
   );
-  perform public.add_catalog_proposal_evidence(
+  perform pg_temp.add_team_color_evidence(
     proposal_id_value, 'team-color-test-tier-3',
     'https://independent.example/team-colors/second',
     'Second page under the same ownership group also supports the palette.', now(), true
@@ -305,7 +366,7 @@ begin
   perform pg_temp.assert_true(independence_rejected, 'two evidence pages from one ownership group must fail source independence');
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
-  perform public.add_catalog_proposal_evidence(
+  perform pg_temp.add_team_color_evidence(
     proposal_id_value, 'team-color-test-tier-3-second',
     'https://second-independent.example/team-colors',
     'A second independent Tier 3 source corroborates the palette.', now(), true
@@ -320,12 +381,12 @@ begin
   perform pg_temp.assert_true(high_trust_rejected, 'independent Tier 3-only evidence must fail the Tier 1/2 minimum');
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
-  perform public.add_catalog_proposal_evidence(
+  perform pg_temp.add_team_color_evidence(
     proposal_id_value, 'team-color-test-tier-1',
     'https://official.example/brand.pdf',
     'Official source lists #555555, #666666, and #FFFFFF.', now(), true
   );
-  perform public.add_catalog_proposal_evidence(
+  perform pg_temp.add_team_color_evidence(
     proposal_id_value, 'team-color-test-tier-3-conflict',
     'https://conflict.example/team-colors',
     'Conflicting source reports a different secondary color.', now(), false
@@ -350,7 +411,8 @@ begin
   perform pg_temp.assert_true((
     select jsonb_array_length(evidence_snapshot) = 5
        and evidence_snapshot::text like '%evidence_summary%'
-       and evidence_snapshot::text like '%trust_assignment_id%'
+       and evidence_snapshot::text like '%trust_tier_version_id%'
+       and evidence_snapshot::text like '%applicability_version_id%'
     from public.catalog_verification_decisions where proposal_id = proposal_id_value
   ), 'decision must snapshot supporting and conflicting evidence with immutable details');
 end;
@@ -414,8 +476,8 @@ begin
     jsonb_build_object('primary', '#777777', 'secondary', '#888888'),
     'Expected-current-version test proposal.'
   );
-  perform public.add_catalog_proposal_evidence(proposal_id_value, 'team-color-test-tier-1', 'https://official.example/version-guard', 'Official support.', now(), true);
-  perform public.add_catalog_proposal_evidence(proposal_id_value, 'team-color-test-tier-3', 'https://independent.example/version-guard', 'Independent support.', now(), true);
+  perform pg_temp.add_team_color_evidence(proposal_id_value, 'team-color-test-tier-1', 'https://official.example/version-guard', 'Official support.', now(), true);
+  perform pg_temp.add_team_color_evidence(proposal_id_value, 'team-color-test-tier-3', 'https://independent.example/version-guard', 'Independent support.', now(), true);
   perform public.finish_team_color_work(work_id, lease_token_value, 'submitted_for_verification', null, null, null, '{}'::jsonb);
 
   update public.team_color_versions

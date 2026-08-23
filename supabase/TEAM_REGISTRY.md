@@ -43,20 +43,53 @@ automatic stale state based only on age.
 The Trusted Source Registry is normalized into:
 
 - `trusted_sources`
+- `trusted_source_alias_versions`
+- `trusted_source_url_scope_versions`
+- `trusted_source_redirects`
 - `source_independence_groups`
-- `source_trust_assignments` (trust tier is specific to a data type)
+- `source_independence_group_assignment_versions`
+- `source_trust_assignments` (one versioned trust tier per publisher/data type)
+- `source_applicability_versions` (separate versioned
+  global/sport/league/team applicability)
 - `verification_policies` (immutable version records)
 - `catalog_change_proposals`
 - `catalog_proposal_evidence`
 - `catalog_verification_decisions`
 - `catalog_audit_events`
+- `team_color_source_reliability_observations`
 
-Workbook source rows are imported as `pending_review` with no ownership group
-or trust assignment. Candidate import cannot approve sources. A source reviewer
-must first identify common ownership/control and assign an independence group;
-trust is then assigned separately for each data type. Tier 4 sources are
+Workbook source rows are imported as `pending_review` with no ownership group,
+trust tier, or applicability. Candidate import cannot approve sources. A source
+reviewer must first identify common ownership/control and assign an independence
+group; trust is then assigned separately for each data type. Tier 4 sources are
 research leads that do not verify facts, and Tier 5 sources are blocked for the
 assigned data type.
+
+Trusted sources represent reusable publishers by default. Team-specific pages
+are evidence URLs, not separate publisher identities. Reviewed URL scopes
+explicitly model canonical/alias hosts, subdomain permission, path ownership,
+and CDN/document hosts. Resolution returns `none`, one canonical publisher, or
+an ambiguity that requires review. Source redirects preserve historical
+evidence and immutable decision snapshots rather than rewriting them.
+`trusted_source_duplicate_candidates_read_model` surfaces overlapping URL
+scopes or normalized publisher names to reviewers; it never merges records or
+constitutes a governance decision by itself.
+
+Trust tier and applicability are separate governance concepts. A publisher can
+have only one current tier for a data type, plus any number of independently
+versioned global, sport, league, or team applicability scopes. Evidence
+submission independently validates the tier, target applicability, URL
+ownership, and independence/policy requirements, then stores the exact
+trust-tier, applicability, URL-scope, and independence-assignment versions used
+at decision time. A more-specific applicability can be selected without ever
+changing tier. Hostname sharing never by itself proves common publisher
+identity or independence.
+
+Empirical Team Color reliability is derived only from later verification
+outcomes and never changes governance trust. Matches and contradictions require
+corroboration outside the source's own independence group; unresolved and
+not-assessable outcomes remain explicit. The read model includes sample size,
+breadth, recency, and a conservative match-rate estimate.
 
 The initial active, versioned policies cover team colours, primary-league
 membership, primary-venue relationships, and venue seat mappings. Each requires

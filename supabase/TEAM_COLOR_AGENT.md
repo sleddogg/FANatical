@@ -5,10 +5,16 @@ It extends the normalized catalog documented in `TEAM_REGISTRY.md`; it does not
 replace the team registry, Trusted Source Registry, proposal/evidence system,
 verification decisions, immutable fact versions, or catalog audit history.
 
-The interface is introduced by
-`202608210001_team_color_agent_interface.sql`. Before enabling an agent in any
-environment, verify that migration and all earlier catalog migrations are
-present in that environment.
+The queue interface is introduced by
+`202608210001_team_color_agent_interface.sql`; reusable publisher governance,
+URL ownership/applicability, structured evidence, and empirical reliability are
+introduced by `202608230001_trusted_source_publisher_reliability.sql`.
+Decision-time governance revalidation and the reviewer duplicate-candidate view
+are added by `202608230002_trusted_source_evaluation_hardening.sql`. Trust-tier
+and target-applicability versioning are structurally separated by
+`202608230003_trust_applicability_separation.sql`. Before enabling an agent,
+verify all four migrations and all earlier catalog migrations in that
+environment.
 
 ## Security boundary
 
@@ -20,8 +26,9 @@ A Team Color Agent:
   capabilities;
 - writes through security-definer RPCs with capability and ownership checks;
 - may add evidence only to proposals it owns;
-- cannot approve sources, classify common ownership, assign trust, verify a
-  proposal, write version tables directly, or use a service-role key.
+- cannot approve sources, classify common ownership, assign trust or
+  applicability, verify a proposal, write version tables directly, or use a
+  service-role key.
 
 The production capability set is:
 
@@ -31,9 +38,10 @@ The production capability set is:
 4. `team_colors.source_candidates.submit`
 5. `catalog.propose.team_colors`
 
-`catalog.evidence.add` is intentionally not required. The existing
-`add_catalog_proposal_evidence(...)` RPC authorizes the proposal owner without
-granting the agent permission to alter another actor's proposal.
+`catalog.evidence.add` is intentionally not required. The Team Color-specific
+`add_team_color_proposal_evidence(...)` RPC authorizes the proposal owner and
+requires governed source versions plus a structured claim. The generic
+evidence RPC rejects Team Color proposals.
 
 Do not grant the agent `catalog.read_internal`, `catalog.propose`,
 `catalog.verify`, `catalog.verify.team_colors`, `catalog.evidence.add`,
@@ -119,7 +127,8 @@ The returned JSON is the complete narrow research context:
 - exact current color version and verification status;
 - expected-current-version guard;
 - this work item's current proposal and evidence;
-- approved sources with current `team_colors` trust assignments;
+- approved sources with one current `team_colors` trust tier and the
+  applicability scopes valid for the target team;
 - source candidates already submitted for this work;
 - current immutable verification-policy requirements.
 
@@ -141,7 +150,25 @@ release_team_color_work(work_item_id, lease_token, retry_at, category, reason)
 Heartbeat before the lease expiry. Release without `retry_at` returns the item
 to `queued`; a future `retry_at` creates `retry_wait` and retains the reason.
 
-### 3. Retain a newly discovered source
+### 3. Resolve and reuse a publisher
+
+Before creating a source candidate, resolve the exact evidence URL:
+
+```text
+resolve_team_color_source(work_item_id, lease_token, evidence_url) -> jsonb
+```
+
+The result is `resolved`, `none`, or `ambiguous`. Resolution uses reviewed
+hostname aliases, explicit subdomain permission, path boundaries, and approved
+CDN/document-host scopes. It reports the current Team Color trust-tier version
+and the independently selected applicability version for the work item's team.
+Use the returned canonical publisher for a resolved URL. Do not create another
+publisher record for a team-specific page.
+
+An `ambiguous` result is a governance issue: report `needs_review`; never guess.
+Only `none` permits candidate submission.
+
+### 4. Retain a newly discovered source
 
 ```text
 submit_team_color_source_candidate(
@@ -157,20 +184,24 @@ submit_team_color_source_candidate(
 ) -> uuid
 ```
 
-A new source is created only as `pending_review`, with no independence group and
-no trust assignment. The association with the canonical team/work item is
-retained in `team_color_source_candidates`.
+A new source is created only as `pending_review`, with a pending exact-URL scope,
+no approved independence group, no trust tier, and no applicability. The
+association and the resolver result are retained in
+`team_color_source_candidates`. Candidate intake rejects URLs that already
+resolve, ambiguous overlaps, existing source IDs, and likely duplicate
+publisher names.
 
-The agent cannot promote the source. A Source Reviewer uses the existing
-`review_trusted_source(...)` and `admin_set_source_trust(...)` functions. The
-narrow `get_team_color_source_candidate_review_queue()` RPC shows reviewers the
+The agent cannot promote the source. A Source Reviewer uses
+`review_trusted_source(...)`, `admin_set_source_trust_tier(...)`, and
+`review_source_applicability(...)` as separate controlled actions. The narrow
+`get_team_color_source_candidate_review_queue()` RPC shows reviewers the
 candidate/team/work relationship without expanding the agent's permissions.
 
 Pending candidates cannot be attached to proposals. If required evidence is
 pending source review, finish the work as `needs_review` or `blocked`; requeue it
 after source governance is complete.
 
-### 4. Submit the controlled proposal
+### 5. Submit the controlled proposal
 
 ```text
 submit_team_color_proposal(
@@ -210,25 +241,48 @@ The wrapper records one of:
 A replacement that exactly matches the verified palette is rejected; finish
 that recheck as `no_change` instead.
 
-### 5. Attach evidence
+### 6. Attach structured evidence
 
-Use the existing owner-authorized RPC:
+Use the Team Color-specific owner-authorized RPC:
 
 ```text
-add_catalog_proposal_evidence(
+add_team_color_proposal_evidence(
   proposal_id,
   source_registry_id,
   evidence_url,
   evidence_summary,
   observed_at,
-  supports_proposal
+  supports_proposal,
+  structured_claim
 ) -> evidence_id
 ```
 
-Record opposing evidence with `supports_proposal = false`. It remains in the
-decision snapshot but does not count toward approval.
+The claim preserves exact palette values and order:
 
-### 6. Finish the research attempt
+```json
+{
+  "classification": "current_canonical",
+  "palette": ["#RRGGBB", "#RRGGBB", "#RRGGBB"],
+  "effective_from": "YYYY-MM-DD"
+}
+```
+
+Classification is `current_canonical`, `historical`, `alternate`,
+`special_treatment`, or `unresolved`. Supporting evidence must be
+`current_canonical` and its palette must exactly equal the proposal. Record
+opposing evidence with `supports_proposal = false`; it remains in the decision
+snapshot but does not count toward approval.
+
+The RPC resolves redirects to the canonical publisher, rejects a URL outside
+its approved scope, rejects ambiguous ownership, selects the one current
+publisher/data-type trust-tier version, independently selects the most-specific
+valid global/sport/league/team applicability version, and records both exact
+version IDs plus the URL-scope and ownership versions used. A worker cannot
+bypass these checks or write evidence directly. Approval revalidates all exact
+versions independently; governance suspension or reassignment therefore blocks
+a stale proposal instead of silently using old authority.
+
+### 7. Finish the research attempt
 
 ```text
 finish_team_color_work(
@@ -305,9 +359,37 @@ Multiple domains, pages, or brands under common ownership count as one
 independence group. An official source is the preferred evidence anchor but
 does not bypass the two-independent-source requirement.
 
+Each publisher has at most one current trust tier for `team_colors` regardless
+of target. Applicability is a separate versioned set of global, sport, league,
+or team scopes. The most-specific matching applicability may be selected, but
+it cannot alter the publisher's tier. A team-controlled source normally uses a
+team applicability; a league publisher may use league applicability; a
+genuinely reusable publisher may be global. Hostname sharing alone never
+establishes publisher identity, ownership, or applicability.
+
 The immutable decision snapshot retains evidence summary and timestamps, source
-review status, independence group, trust-assignment ID/tier/effective date, and
-both supporting and conflicting evidence.
+review status, independence group, the trust-tier version ID/tier/effective
+date, the independently selected applicability version ID/scope, and both
+supporting and conflicting evidence.
+
+## Empirical source reliability
+
+Reliability is append-only evidence about later verification outcomes and is
+strictly separate from governance trust. Workers can read it for research
+prioritization but cannot write it or change trust.
+
+For each structured evidence row, a resolved decision records `match`,
+`contradiction`, `unresolved`, or `not_assessable`. A match or contradiction is
+recorded only when the verified palette is corroborated by at least one other
+ownership group; a source cannot earn credit from its own contribution.
+Rejected proposals are unresolved, not contradictions. Historical, alternate,
+and special-treatment claims are not assessable against the current palette.
+
+`team_color_source_reliability_read_model` reports matches, contradictions,
+unresolved and not-assessable counts, assessed sample size, raw match rate, a
+Wilson conservative match rate, team/league/sport breadth, recency, and the
+number of independently corroborated observations. It never promotes,
+suspends, or changes a source trust tier.
 
 ## Failure categories and reporting
 
@@ -385,10 +467,11 @@ long-lived manually copied access token.
 
 ## Verification and tests
 
-The transactional integration test is:
+The transactional integration tests are:
 
 ```text
 supabase/tests/team_color_agent_workflow.sql
+supabase/tests/trusted_source_publisher_reliability.sql
 ```
 
 It covers scoped/deterministic claims, lease expiry, attempt/retry history,
@@ -396,6 +479,13 @@ direct-write denial, candidate-source restrictions, invalid payloads, duplicate
 pending proposals, ownership independence, Tier 1/2 minimum, agent verification
 denial, independent verifier policy, conflicting evidence retention,
 expected-current-version failure, and verified history supersession.
+
+The publisher/reliability suite covers normalization, host aliases,
+subdomains, paths, CDN scopes, ambiguity, global/sport/league/team
+applicability, wrong-domain and wrong-target denial, candidate reuse and
+duplicate prevention, redirects without history rewrite, ownership versioning,
+structured claims, reliability outcomes, circularity protection, sample-size
+behavior, RLS/capability denial, and transactional rollback.
 
 Run it only against a disposable/local database or through an approved
 transactional test connection. It starts a transaction and rolls back all
