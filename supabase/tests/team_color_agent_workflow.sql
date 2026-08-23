@@ -30,6 +30,8 @@ language plpgsql
 as $$
 declare
   palette_value jsonb;
+  result_id uuid;
+  lineage_version_id uuid;
 begin
   if supports_proposal_value then
     select public.team_color_palette_from_payload(payload) into palette_value
@@ -37,13 +39,50 @@ begin
   else
     palette_value := jsonb_build_array('#010101', '#020202');
   end if;
-  return public.add_team_color_proposal_evidence(
+  result_id := public.add_team_color_proposal_evidence(
     proposal_id_value, source_registry_id, evidence_url_value,
     evidence_summary_value, observed_at_value, supports_proposal_value,
     jsonb_build_object(
       'classification', 'current_canonical',
       'palette', palette_value
     )
+  );
+  select version.id into strict lineage_version_id
+  from public.information_lineages lineage
+  join public.information_lineage_versions version
+    on version.lineage_id = lineage.id and version.is_current
+  where lineage.lineage_key = 'lineage-' || source_registry_id;
+  update public.catalog_proposal_evidence
+  set information_lineage_version_id = lineage_version_id,
+      information_lineage_basis = 'Transactional source-specific lineage fixture.'
+  where id = result_id;
+  return result_id;
+end;
+$$;
+
+create or replace function pg_temp.add_team_color_verifier_evidence_pair(
+  verification_work_id uuid,
+  lease_token_value uuid,
+  palette_value jsonb,
+  url_suffix text
+)
+returns void
+language plpgsql
+as $$
+begin
+  perform public.add_team_color_verifier_evidence(
+    verification_work_id, lease_token_value, 'team-color-test-tier-1',
+    'https://official.example/' || url_suffix || '-official',
+    'Verifier independently found official evidence.', now(),
+    jsonb_build_object('classification','current_canonical','palette',palette_value),
+    'lineage-team-color-test-tier-1', 'Official document lineage.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verification_work_id, lease_token_value, 'team-color-test-tier-3-second',
+    'https://second-independent.example/' || url_suffix || '-independent',
+    'Verifier independently found corroborating evidence.', now(),
+    jsonb_build_object('classification','current_canonical','palette',palette_value),
+    'lineage-team-color-test-tier-3-second', 'Independent reference lineage.'
   );
 end;
 $$;
@@ -60,7 +99,8 @@ values
   ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'team-color-test-admin@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'team-color-test-agent-a@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
   ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'team-color-test-agent-b@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
-  ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'team-color-test-verifier@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
+  ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'team-color-test-verifier@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000000', '71000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'team-color-test-verifier-2@fanatical.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
 
 insert into public.staff_roles(user_id, role, permissions, is_active)
 values ('71000000-0000-0000-0000-000000000001', 'admin', array[]::text[], true);
@@ -69,12 +109,15 @@ insert into public.catalog_actors(actor_key, actor_type, auth_user_id, display_n
 values
   ('team-color-test-agent-a', 'agent', '71000000-0000-0000-0000-000000000002', 'Team Color Test Agent A'),
   ('team-color-test-agent-b', 'agent', '71000000-0000-0000-0000-000000000003', 'Team Color Test Agent B'),
-  ('team-color-test-verifier', 'human', '71000000-0000-0000-0000-000000000004', 'Team Color Test Verifier');
+  ('team-color-test-verifier', 'human', '71000000-0000-0000-0000-000000000004', 'Team Color Test Verifier'),
+  ('team-color-test-verifier-2', 'human', '71000000-0000-0000-0000-000000000005', 'Team Color Test Verifier 2');
 
 insert into public.catalog_teams(team_id, sport_id)
 select fixture.team_id, sport.id
 from (values
-  ('hockey-999991'), ('hockey-999992'), ('hockey-999993'), ('hockey-999994')
+  ('hockey-999991'), ('hockey-999992'), ('hockey-999993'), ('hockey-999994'),
+  ('hockey-999995'), ('hockey-999996'), ('hockey-999997'), ('hockey-999998'),
+  ('hockey-999999')
 ) fixture(team_id)
 cross join public.catalog_sports sport
 where sport.sport_id = 'hockey';
@@ -87,7 +130,12 @@ from (values
   ('hockey-999991', 'Agent Queue Test One'),
   ('hockey-999992', 'Agent Queue Test Two'),
   ('hockey-999993', 'Agent Version Guard Test'),
-  ('hockey-999994', 'Agent Verified Replacement Test')
+  ('hockey-999994', 'Agent Verified Replacement Test'),
+  ('hockey-999995', 'Agent Contradiction Test'),
+  ('hockey-999996', 'Agent No Change Test'),
+  ('hockey-999997', 'Agent Lineage Collision Test'),
+  ('hockey-999998', 'Agent Wake Recovery Test'),
+  ('hockey-999999', 'Agent Revalidation Test')
 ) fixture(team_id, display_name)
 join public.catalog_teams team on team.team_id = fixture.team_id;
 
@@ -106,7 +154,9 @@ select team.id, fixture.primary_color, fixture.secondary_color, '#FFFFFF',
        fixture.record_status, date '2020-01-01', 'day'
 from (values
   ('hockey-999993', '#111111', '#222222', 'imported_unverified'),
-  ('hockey-999994', '#333333', '#444444', 'verified')
+  ('hockey-999994', '#333333', '#444444', 'verified'),
+  ('hockey-999996', '#0A0A0A', '#0B0B0B', 'verified'),
+  ('hockey-999999', '#0C0C0C', '#0D0D0D', 'verified')
 ) fixture(team_id, primary_color, secondary_color, record_status)
 join public.catalog_teams team on team.team_id = fixture.team_id;
 
@@ -139,7 +189,7 @@ where actor.actor_key = 'team-color-test-agent-b'
 insert into public.catalog_actor_capabilities(actor_id, capability)
 select actor.id, 'catalog.verify.team_colors'
 from public.catalog_actors actor
-where actor.actor_key = 'team-color-test-verifier';
+where actor.actor_key in ('team-color-test-verifier','team-color-test-verifier-2');
 
 insert into public.source_independence_groups(group_id, display_name)
 values
@@ -202,6 +252,58 @@ from (values
 ) fixture(source_id, hostname)
 join public.trusted_sources source on source.source_id = fixture.source_id;
 
+insert into public.information_lineages(lineage_key, data_type)
+select 'lineage-' || source.source_id, 'team_colors'
+from public.trusted_sources source
+where source.source_id like 'team-color-test-tier-%';
+
+insert into public.information_lineage_versions(
+  lineage_id, version, display_name, review_status, notes
+)
+select lineage.id, 1, 'Lineage for ' || source.display_name, 'approved',
+       'Transactional information-lineage fixture.'
+from public.information_lineages lineage
+join public.trusted_sources source
+  on lineage.lineage_key = 'lineage-' || source.source_id
+where source.source_id like 'team-color-test-tier-%';
+
+insert into public.agent_job_runtime_policies(
+  policy_key, version, job_type, lease_seconds,
+  retryable_failure_categories, permanent_failure_categories,
+  retry_delay_seconds, maximum_attempts, exhaustion_status,
+  permanent_failure_status
+)
+values
+  ('test-team-color-specialist-runtime', 1, 'team_color_specialist', 900,
+   array['transient','rate_limited','lease_expired'], array['authorization_denied'],
+   array[300], 3, 'needs_review', 'failed'),
+  ('test-team-color-verifier-runtime', 1, 'catalog_verifier.team_colors', 900,
+   array['transient','rate_limited','lease_expired'], array['authorization_denied'],
+   array[300], 3, 'needs_review', 'failed');
+
+-- Rollback-only automated-adjudication values prove configurable multi-round
+-- behavior without establishing production verifier limits.
+update public.verification_policies
+set configuration = configuration || jsonb_build_object(
+  'automated_adjudication', jsonb_build_object(
+    'maximum_verifier_rounds', 3,
+    'required_matching_verifier_results', 2,
+    'consensus_strategy', 'specialist_match_or_verifier_consensus'
+  )
+)
+where data_type = 'team_colors' and is_current and active;
+
+insert into public.catalog_verification_round_policies(
+  verification_policy_id, verification_round, source_selection_policy
+)
+select id, 2, jsonb_build_object(
+  'prefer_empirically_reliable_applicable_sources', true,
+  'permit_independently_rediscovered_source_overlap', true,
+  'require_information_lineage_accounting', true
+)
+from public.verification_policies
+where data_type = 'team_colors' and is_current and active;
+
 -- ---------------------------------------------------------------------------
 -- Queue ordering, scoped claims, candidate-source restrictions, and retries
 -- ---------------------------------------------------------------------------
@@ -221,10 +323,27 @@ declare
   denied boolean := false;
 begin
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000003', true);
-  claim_value := public.claim_next_team_color_work(900);
+  claim_value := public.claim_next_team_color_work(60);
   perform pg_temp.assert_true(claim_value #>> '{team,team_id}' = 'hockey-999992', 'scoped agent must skip higher-priority out-of-scope teams');
   work_id := (claim_value #>> '{work,work_item_id}')::uuid;
   lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  perform pg_temp.assert_true((
+    select work.lease_expires_at = work.claimed_at
+      + make_interval(secs => policy.lease_seconds)
+    from public.team_color_work_items work
+    join public.agent_job_runtime_policies policy
+      on policy.job_type = 'team_color_specialist' and policy.is_current and policy.active
+    where work.id = work_id
+  ), 'specialist claim must ignore the legacy caller duration and use backend runtime policy');
+  perform public.renew_team_color_work_lease(work_id, lease_token_value, 60);
+  perform pg_temp.assert_true((
+    select event.details ->> 'backend_selected_lease' = 'true'
+       and event.details ->> 'legacy_requested_lease_seconds_ignored' = '60'
+       and event.details ->> 'runtime_policy_id' is not null
+    from public.team_color_work_events event
+    where event.work_item_id = work_id and event.event_type = 'lease_renewed'
+    order by event.id desc limit 1
+  ), 'specialist heartbeat must record that backend policy selected the lease');
 
   begin
     perform public.submit_team_color_source_candidate(
@@ -279,6 +398,10 @@ declare
   independence_rejected boolean := false;
   high_trust_rejected boolean := false;
   old_version_id uuid;
+  verifier_claim jsonb;
+  verifier_work_id uuid;
+  verifier_lease_token uuid;
+  verifier_result_uuid uuid;
 begin
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
   claim_value := public.get_my_team_color_work(
@@ -363,7 +486,7 @@ begin
   exception when others then
     independence_rejected := true;
   end;
-  perform pg_temp.assert_true(independence_rejected, 'two evidence pages from one ownership group must fail source independence');
+  perform pg_temp.assert_true(independence_rejected, 'direct Team Color approval must remain unavailable even to a verifier actor');
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
   perform pg_temp.add_team_color_evidence(
@@ -378,7 +501,7 @@ begin
   exception when others then
     high_trust_rejected := true;
   end;
-  perform pg_temp.assert_true(high_trust_rejected, 'independent Tier 3-only evidence must fail the Tier 1/2 minimum');
+  perform pg_temp.assert_true(high_trust_rejected, 'a verifier cannot replace backend comparison with a direct approval decision');
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
   perform pg_temp.add_team_color_evidence(
@@ -393,7 +516,41 @@ begin
   );
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000004', true);
-  perform public.review_catalog_proposal(proposal_id_value, 'approved', 'Independent verifier approved the tested palette.');
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verifier_work_id := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease_token := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform pg_temp.assert_true(
+    verifier_claim::text not like '%#555555%'
+    and verifier_claim::text not like '%official.example%'
+    and verifier_claim::text not like '%' || proposal_id_value::text || '%',
+    'blinded verifier context must not expose specialist palette, evidence, or proposal ID'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verifier_work_id, verifier_lease_token, 'team-color-test-tier-1',
+    'https://official.example/verifier-brand.pdf', 'Verifier independently found the official palette.', now(),
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#555555','#666666','#FFFFFF')),
+    'lineage-team-color-test-tier-1', 'Verifier identified the official brand document lineage.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verifier_work_id, verifier_lease_token, 'team-color-test-tier-3-second',
+    'https://second-independent.example/verifier-colors', 'Verifier independently corroborated the palette.', now(),
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#555555','#666666','#FFFFFF')),
+    'lineage-team-color-test-tier-3-second', 'Verifier identified the independent reference lineage.'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verifier_work_id, verifier_lease_token, 'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#555555','#666666','#FFFFFF')),
+    'Independent verifier research completed.'
+  );
+  perform pg_temp.assert_true(not exists (
+    select 1 from public.catalog_verification_comparisons comparison
+    where comparison.verifier_result_id = verifier_result_uuid
+  ), 'verifier result must be durable before a separate comparison step');
+  perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000001', true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'promoted',
+    'matching specialist and verifier palettes must promote deterministically'
+  );
 
   perform pg_temp.assert_true((
     select status = 'completed' from public.team_color_work_items where id = work_id
@@ -437,6 +594,12 @@ begin
 
   update public.team_color_work_items set lease_expires_at = now() - interval '1 second' where id = work_id;
   update public.team_color_work_attempts set lease_expires_at = now() - interval '1 second' where work_item_id = work_id and ended_at is null;
+  perform public.expire_team_color_work_leases();
+  perform pg_temp.assert_true((
+    select status = 'retry_wait' and available_at > now()
+    from public.team_color_work_items where id = work_id
+  ), 'expired lease must use backend-owned retry timing');
+  update public.team_color_work_items set available_at = now() where id = work_id;
   claim_value := public.claim_next_team_color_work(900);
   perform pg_temp.assert_true((claim_value #>> '{work,work_item_id}')::uuid = work_id, 'expired lease must return work to the retry queue');
   perform pg_temp.assert_true((claim_value #>> '{work,attempt_number}')::integer = 2, 'reclaimed work must retain attempt history');
@@ -462,8 +625,11 @@ declare
   work_id uuid;
   lease_token_value uuid;
   proposal_id_value uuid;
-  stale_rejected boolean := false;
   old_version_id uuid;
+  verifier_claim jsonb;
+  verifier_work_id uuid;
+  verifier_lease_token uuid;
+  verifier_result_uuid uuid;
 begin
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000002', true);
   claim_value := public.claim_next_team_color_work(900);
@@ -487,12 +653,31 @@ begin
   values (public.resolve_catalog_team_id('hockey-999993'), '#999999', '#AAAAAA', 'imported_unverified');
 
   perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000004', true);
-  begin
-    perform public.review_catalog_proposal(proposal_id_value, 'approved', 'Must fail because current version changed.');
-  exception when others then
-    stale_rejected := true;
-  end;
-  perform pg_temp.assert_true(stale_rejected, 'approval must fail after the expected current version changes');
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verifier_work_id := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease_token := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform public.add_team_color_verifier_evidence(
+    verifier_work_id, verifier_lease_token, 'team-color-test-tier-1',
+    'https://official.example/version-guard-verifier', 'Verifier official support.', now(),
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#777777','#888888')),
+    'lineage-team-color-test-tier-1', 'Official document lineage.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verifier_work_id, verifier_lease_token, 'team-color-test-tier-3',
+    'https://independent.example/version-guard-verifier', 'Verifier independent support.', now(),
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#777777','#888888')),
+    'lineage-team-color-test-tier-3', 'Independent reference lineage.'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verifier_work_id, verifier_lease_token, 'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#777777','#888888')),
+    'Independent verifier result for stale-version guard.'
+  );
+  perform set_config('request.jwt.claim.sub', '71000000-0000-0000-0000-000000000001', true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'stale_expected_version',
+    'backend comparison must reject a stale expected-current version'
+  );
 end;
 $$;
 
@@ -542,12 +727,685 @@ begin
 end;
 $$;
 
+-- ---------------------------------------------------------------------------
+-- Canonical backend architecture: exhaustion, contradiction, no-change,
+-- lineage independence, wake recovery, late-worker safety, and revalidation.
+-- Numeric values below are rollback-only test fixtures, not production policy.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare claim_value jsonb; work_id uuid; lease_token_value uuid;
+begin
+  update public.team_color_work_items set available_at = now()
+  where team_id = public.resolve_catalog_team_id('hockey-999991') and status = 'retry_wait';
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_team_color_work(900);
+  work_id := (claim_value #>> '{work,work_item_id}')::uuid;
+  lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  perform public.report_team_color_work_failure(
+    work_id, lease_token_value, 'rate_limited',
+    'Third rollback-only attempt reaches the configured test exhaustion boundary.', '{}'
+  );
+  perform pg_temp.assert_true((
+    select status = 'needs_review' and attempt_count = 3
+      and failure_category = 'rate_limited'
+    from public.team_color_work_items where id = work_id
+  ), 'backend policy must enforce retry exhaustion without a caller-selected timestamp');
+end;
+$$;
+
+do $$
+declare
+  claim_value jsonb; work_id uuid; lease_token_value uuid; proposal_uuid uuid;
+  verification_job_uuid uuid; verifier_claim jsonb; verifier_lease uuid;
+  verifier_result_uuid uuid; proposer_claim jsonb;
+begin
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  work_id := public.enqueue_team_color_work(
+    'hockey-999995',1000,null,'Durable verifier contradiction fixture.',now()
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_team_color_work(900);
+  lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  proposal_uuid := public.submit_team_color_proposal(
+    work_id,lease_token_value,
+    jsonb_build_object('primary','#121212','secondary','#343434'),
+    'Specialist contradiction fixture.'
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-1','https://official.example/contradiction-specialist',
+    'Specialist official evidence.',now(),true
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-3','https://independent.example/contradiction-specialist',
+    'Specialist independent evidence.',now(),true
+  );
+  -- Suppress trigger delivery only inside this rollback-only fixture to model a
+  -- lost transition between durable proposal submission and verifier-job creation.
+  execute 'alter table public.team_color_work_items disable trigger ensure_team_color_verification_work';
+  perform public.finish_team_color_work(
+    work_id,lease_token_value,'submitted_for_verification',null,null,null,'{}'
+  );
+  execute 'alter table public.team_color_work_items enable trigger ensure_team_color_verification_work';
+  perform pg_temp.assert_true(not exists (
+    select 1 from public.catalog_verification_work_items where proposal_id = proposal_uuid
+  ), 'fixture must begin with a stranded durable proposal and no verifier job');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform public.run_agent_backend_recovery();
+  perform pg_temp.assert_true((
+    select count(*) = 1 from public.catalog_verification_work_items
+    where proposal_id = proposal_uuid and status = 'queued'
+  ), 'watchdog recovery must recreate a stranded proposal verifier job idempotently');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  proposer_claim := public.claim_next_catalog_verification_work('team_colors');
+  perform pg_temp.assert_true(proposer_claim is null,
+    'proposal builder must be unable to claim its own verifier job');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000004',true);
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_job_uuid := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform pg_temp.add_team_color_verifier_evidence_pair(
+    verification_job_uuid,verifier_lease,jsonb_build_array('#565656','#787878'),'contradiction'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verification_job_uuid,verifier_lease,'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#565656','#787878')),
+    'Verifier independently found a contradictory palette.'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'additional_verifier_queued',
+    'ordinary disagreement must automatically queue another blinded verifier round'
+  );
+  perform pg_temp.assert_true((
+    select work.status = 'pending_verification'
+       and comparison.comparison_outcome = 'additional_verifier_queued'
+       and next_verification.status = 'queued'
+       and next_verification.verification_round = 2
+    from public.team_color_work_items work
+    join public.catalog_verification_work_items verification
+      on verification.originating_job_id = work.id
+     and verification.verification_round = 1
+    join public.catalog_verification_comparisons comparison
+      on comparison.verification_work_item_id = verification.id
+    join public.catalog_verification_work_items next_verification
+      on next_verification.parent_verification_work_item_id = verification.id
+    where work.id = work_id
+  ), 'disagreement escalation must remain autonomous rather than entering human review');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_job_uuid := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform pg_temp.add_team_color_verifier_evidence_pair(
+    verification_job_uuid,verifier_lease,jsonb_build_array('#121212','#343434'),'contradiction'
+  );
+  perform pg_temp.assert_true((
+    select count(*) = 2
+       and bool_and(source_reliability_snapshot ? 'empirical_reliability_status')
+       and bool_and(source_qualification_snapshot ->> 'production_evidence_eligible' = 'true')
+    from public.catalog_verifier_evidence
+    where verification_work_item_id = verification_job_uuid
+  ), 'later rounds may independently rediscover strong sources and retain reliability/qualification context');
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verification_job_uuid,verifier_lease,'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#121212','#343434')),
+    'Second verifier independently matched the specialist after the first disagreement.'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'promoted',
+    'a later independently researched match must resolve the disagreement automatically'
+  );
+  perform pg_temp.assert_true((
+    select work.status = 'completed'
+       and count(comparison.id) = 2
+       and count(comparison.id) filter (
+         where comparison.comparison_outcome = 'additional_verifier_queued'
+       ) = 1
+       and count(comparison.id) filter (
+         where comparison.comparison_outcome = 'promoted'
+       ) = 1
+    from public.team_color_work_items work
+    join public.catalog_verification_work_items verification
+      on verification.originating_job_id = work.id
+    join public.catalog_verification_comparisons comparison
+      on comparison.verification_work_item_id = verification.id
+    where work.id = work_id
+    group by work.status
+  ), 'multi-round verification must finish through deterministic backend adjudication');
+end;
+$$;
+
+do $$
+declare
+  claim_value jsonb; work_id uuid; lease_token_value uuid; proposal_uuid uuid;
+  old_version_uuid uuid; verifier_claim jsonb; verification_job_uuid uuid;
+  verifier_lease uuid; verifier_result_uuid uuid;
+begin
+  select id into old_version_uuid from public.team_color_versions
+  where team_id = public.resolve_catalog_team_id('hockey-999996') and is_current;
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  work_id := public.enqueue_team_color_work(
+    'hockey-999996',1000,'manual_request','No-change verification fixture.',now()
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_team_color_work(900);
+  lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  proposal_uuid := public.submit_team_color_proposal(
+    work_id,lease_token_value,
+    jsonb_build_object('primary','#0A0A0A','secondary','#0B0B0B','tertiary','#FFFFFF'),
+    'Specialist independently found no change.'
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-1','https://official.example/no-change-specialist',
+    'Fresh official recheck evidence.',now(),true
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-3','https://independent.example/no-change-specialist',
+    'Fresh independent recheck evidence.',now(),true
+  );
+  perform public.finish_team_color_work(
+    work_id,lease_token_value,'submitted_for_verification',null,null,null,'{}'
+  );
+  perform pg_temp.assert_true((
+    select status = 'pending_verification' and completed_at is null
+    from public.team_color_work_items where id = work_id
+  ), 'specialist no-change result must remain pending independent verification');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000004',true);
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_job_uuid := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform pg_temp.add_team_color_verifier_evidence_pair(
+    verification_job_uuid,verifier_lease,
+    jsonb_build_array('#0A0A0A','#0B0B0B','#FFFFFF'),'no-change'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verification_job_uuid,verifier_lease,'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#0A0A0A','#0B0B0B','#FFFFFF')),
+    'Verifier independently confirmed the current palette.'
+  );
+  perform pg_temp.assert_true((
+    select status = 'result_submitted' from public.catalog_verification_work_items
+    where id = verification_job_uuid
+  ), 'submitted verifier result must remain durable before watchdog comparison');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform public.run_agent_backend_recovery();
+  perform pg_temp.assert_true((
+    select work.status = 'completed'
+       and comparison.comparison_outcome = 'confirmed_no_change'
+    from public.team_color_work_items work
+    join public.catalog_verification_work_items verification
+      on verification.originating_job_id = work.id
+    join public.catalog_verification_comparisons comparison
+      on comparison.verification_work_item_id = verification.id
+    where work.id = work_id
+  ), 'watchdog must process a stranded verifier result into confirmed no-change');
+  perform pg_temp.assert_true((
+    select id = old_version_uuid and is_current and record_status = 'verified'
+    from public.team_color_versions
+    where team_id = public.resolve_catalog_team_id('hockey-999996') and is_current
+  ), 'confirmed no-change must retain the existing verified version');
+end;
+$$;
+
+do $$
+declare
+  claim_value jsonb; work_id uuid; lease_token_value uuid; proposal_uuid uuid;
+  second_evidence_uuid uuid; first_lineage_uuid uuid;
+  verifier_claim jsonb; verification_job_uuid uuid; verifier_lease uuid;
+  verifier_result_uuid uuid;
+begin
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  work_id := public.enqueue_team_color_work(
+    'hockey-999997',1000,null,'Information-lineage collision fixture.',now()
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_team_color_work(900);
+  lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  proposal_uuid := public.submit_team_color_proposal(
+    work_id,lease_token_value,
+    jsonb_build_object('primary','#ABABAB','secondary','#CDCDCD'),
+    'Two publishers repeat one originating lineage.'
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-1','https://official.example/lineage-specialist',
+    'First publisher evidence.',now(),true
+  );
+  second_evidence_uuid := pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-3','https://independent.example/lineage-specialist',
+    'Second publisher repeats the same originating information.',now(),true
+  );
+  select version.id into first_lineage_uuid
+  from public.information_lineages lineage
+  join public.information_lineage_versions version
+    on version.lineage_id = lineage.id and version.is_current
+  where lineage.lineage_key = 'lineage-team-color-test-tier-1';
+  update public.catalog_proposal_evidence
+  set information_lineage_version_id = first_lineage_uuid,
+      information_lineage_basis = 'Both pages derive from one originating document.'
+  where id = second_evidence_uuid;
+  perform public.finish_team_color_work(
+    work_id,lease_token_value,'submitted_for_verification',null,null,null,'{}'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000004',true);
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_job_uuid := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform pg_temp.add_team_color_verifier_evidence_pair(
+    verification_job_uuid,verifier_lease,jsonb_build_array('#ABABAB','#CDCDCD'),'lineage-collision'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verification_job_uuid,verifier_lease,'determinate',
+    jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#ABABAB','#CDCDCD')),
+    'Verifier result has independent lineage support.'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'insufficient_evidence',
+    'different owners sharing one information lineage must not satisfy independence'
+  );
+end;
+$$;
+
+do $$
+declare work_uuid uuid; claim_value jsonb; lease_token_value uuid; recovery_one jsonb; recovery_two jsonb; late_denied boolean := false;
+begin
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  work_uuid := public.enqueue_team_color_work(
+    'hockey-999998',1000,null,'Wake and late-worker recovery fixture.',now()
+  );
+  recovery_one := public.run_agent_backend_recovery();
+  recovery_two := public.run_agent_backend_recovery();
+  perform pg_temp.assert_true((
+    select count(*) = 1 and bool_and(status = 'pending')
+    from public.agent_work_wake_outbox
+    where queue_name = 'team_color_specialist' and work_item_id = work_uuid
+  ), 'at-least-once wake reconciliation must remain idempotent per eligibility state');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_team_color_work(900);
+  lease_token_value := (claim_value #>> '{work,lease_token}')::uuid;
+  update public.team_color_work_items set lease_expires_at = now() - interval '1 second' where id = work_uuid;
+  update public.team_color_work_attempts set lease_expires_at = now() - interval '1 second'
+  where work_item_id = work_uuid and ended_at is null;
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform public.run_agent_backend_recovery();
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  begin
+    perform public.renew_team_color_work_lease(work_uuid,lease_token_value,900);
+  exception when others then late_denied := true; end;
+  perform pg_temp.assert_true(late_denied,
+    'late worker must be denied after watchdog expires and requeues its lease');
+end;
+$$;
+
+do $$
+declare policy_uuid uuid; inserted_count integer;
+begin
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  policy_uuid := public.admin_create_catalog_revalidation_policy(
+    'test-team-color-cadence',1,'team_colors',interval '1 day','{}',true
+  );
+  update public.catalog_fact_revalidation_state
+  set next_review_at = now() - interval '1 second'
+  where data_type = 'team_colors'
+    and subject_type = 'catalog_team'
+    and subject_id = public.resolve_catalog_team_id('hockey-999999')::text;
+  inserted_count := public.enqueue_due_catalog_revalidations('team_colors');
+  perform pg_temp.assert_true(inserted_count >= 1 and exists (
+    select 1 from public.team_color_work_items work
+    where work.team_id = public.resolve_catalog_team_id('hockey-999999')
+      and work.work_kind = 'verified_recheck'
+      and work.recheck_trigger = 'scheduled_review'
+      and work.expected_current_color_version_id = (
+        select current_fact_version_id from public.catalog_fact_revalidation_state
+        where data_type = 'team_colors'
+          and subject_type = 'catalog_team'
+          and subject_id = public.resolve_catalog_team_id('hockey-999999')::text
+      )
+  ), 'domain cadence policy must create due Team Color recheck work without un-verifying the fact');
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Minimal non-Team-Color determinate adapter proving genericity for Quiz/Seat.
+-- This entire adapter and its authoritative table are transaction-local.
+-- ---------------------------------------------------------------------------
+
+create temporary table mock_determinate_authoritative_versions (
+  id uuid primary key default gen_random_uuid(),
+  subject_id text not null,
+  payload jsonb not null,
+  is_current boolean not null default true,
+  adjudication_id uuid not null,
+  created_at timestamptz not null default now(),
+  superseded_at timestamptz
+);
+create unique index mock_determinate_authoritative_current_idx
+on mock_determinate_authoritative_versions(subject_id) where is_current;
+
+create temporary table mock_domain_recovery_calls (
+  id bigint generated always as identity primary key,
+  called_at timestamptz not null default now()
+);
+
+create or replace function pg_temp.mock_determinate_build_context(
+  specialist_result_kind_value text,
+  specialist_result_uuid uuid,
+  verification_round_value integer
+)
+returns jsonb language sql stable as $$
+  select jsonb_build_object(
+    'subject_type', result.subject_type,
+    'subject_id', result.subject_id,
+    'subject_reference', result.subject_reference,
+    'capability_scope', '{}'::jsonb,
+    'verifier_context', jsonb_build_object(
+      'question', 'Independently determine the mock factual answer.',
+      'verification_round', verification_round_value,
+      'subject', result.subject_reference
+    )
+  )
+  from public.agent_specialist_results result
+  where specialist_result_kind_value = 'agent_specialist_result'
+    and result.id = specialist_result_uuid;
+$$;
+
+create or replace function pg_temp.mock_determinate_finalize(
+  specialist_result_kind_value text,
+  specialist_result_uuid uuid,
+  adjudication_uuid uuid,
+  authoritative_payload_value jsonb,
+  finalization_outcome_value text
+)
+returns uuid language plpgsql as $$
+declare specialist_record public.agent_specialist_results%rowtype; version_uuid uuid;
+begin
+  select * into strict specialist_record from public.agent_specialist_results
+  where id = specialist_result_uuid
+    and specialist_result_kind_value = 'agent_specialist_result';
+  if finalization_outcome_value <> 'promoted' or not exists (
+    select 1 from public.catalog_determinate_adjudications adjudication
+    where adjudication.id = adjudication_uuid
+      and adjudication.specialist_result_id = specialist_result_uuid
+      and adjudication.authoritative_result_payload = authoritative_payload_value
+  ) then
+    raise exception 'Mock finalizer requires its deterministic adjudication';
+  end if;
+  update mock_determinate_authoritative_versions
+  set is_current = false, superseded_at = now()
+  where subject_id = specialist_record.subject_id and is_current;
+  insert into mock_determinate_authoritative_versions(
+    subject_id,payload,adjudication_id
+  ) values (
+    specialist_record.subject_id,authoritative_payload_value,adjudication_uuid
+  ) returning id into version_uuid;
+  return version_uuid;
+end;
+$$;
+
+create or replace function pg_temp.mock_determinate_compare(verifier_result_uuid uuid)
+returns text language plpgsql as $$
+declare
+  result_record public.catalog_verifier_results%rowtype;
+  work_record public.catalog_verification_work_items%rowtype;
+  specialist_record public.agent_specialist_results%rowtype;
+  adjudication_uuid uuid;
+begin
+  select * into strict result_record from public.catalog_verifier_results
+  where id = verifier_result_uuid;
+  select * into strict work_record from public.catalog_verification_work_items
+  where id = result_record.verification_work_item_id for update;
+  select * into strict specialist_record from public.agent_specialist_results
+  where id = work_record.specialist_result_id;
+  if work_record.status <> 'result_submitted'
+     or result_record.result_kind <> 'determinate'
+     or result_record.result_payload <> specialist_record.result_payload then
+    raise exception 'Mock deterministic results did not match';
+  end if;
+  insert into public.catalog_determinate_adjudications(
+    data_type,subject_type,subject_id,specialist_result_kind,
+    specialist_result_id,verification_policy_id,resolving_verifier_result_id,
+    outcome,authoritative_result_payload,resolution_snapshot,decided_by_actor_id
+  ) values (
+    work_record.data_type,work_record.subject_type,work_record.subject_id,
+    work_record.specialist_result_kind,work_record.specialist_result_id,
+    work_record.verification_policy_id,result_record.id,'promoted',
+    result_record.result_payload,jsonb_build_object('mock_adapter',true),
+    result_record.verifier_actor_id
+  ) returning id into adjudication_uuid;
+  perform public.finalize_catalog_authoritative_result(
+    work_record.data_type,work_record.specialist_result_kind,
+    work_record.specialist_result_id,adjudication_uuid,
+    result_record.result_payload,'promoted'
+  );
+  insert into public.catalog_verification_comparisons(
+    verification_work_item_id,proposal_id,specialist_result_kind,
+    specialist_result_id,verification_round,verifier_result_id,policy_id,
+    comparison_outcome,normalized_specialist_result,normalized_verifier_result,
+    adjudication_id,details
+  ) values (
+    work_record.id,null,work_record.specialist_result_kind,
+    work_record.specialist_result_id,work_record.verification_round,
+    result_record.id,work_record.verification_policy_id,'promoted',
+    specialist_record.result_payload,result_record.result_payload,
+    adjudication_uuid,jsonb_build_object('mock_adapter',true)
+  );
+  update public.catalog_verification_work_items
+  set status = 'completed',completed_at = now()
+  where id = work_record.id;
+  return 'promoted';
+end;
+$$;
+
+create or replace function pg_temp.mock_determinate_enqueue_revalidation(state_uuid uuid)
+returns uuid language plpgsql as $$
+declare job_uuid uuid := gen_random_uuid();
+begin
+  update public.catalog_fact_revalidation_state
+  set active_job_type = 'mock_determinate_specialist',active_job_id = job_uuid,
+      updated_at = now()
+  where id = state_uuid;
+  return job_uuid;
+end;
+$$;
+
+create or replace function pg_temp.mock_determinate_recover()
+returns jsonb language plpgsql as $$
+begin
+  insert into mock_domain_recovery_calls default values;
+  return jsonb_build_object('mock_recovery_called',true);
+end;
+$$;
+
+create or replace function pg_temp.mock_determinate_reconcile_wakes()
+returns integer language sql as $$ select 0; $$;
+
+do $$
+declare
+  specialist_actor_uuid uuid;
+  policy_uuid uuid;
+  specialist_result_uuid uuid;
+  verification_work_uuid uuid;
+  claim_value jsonb;
+  lease_uuid uuid;
+  verifier_result_uuid uuid;
+  authoritative_version_uuid uuid;
+  revalidation_state_uuid uuid;
+  revalidation_enqueued_count integer;
+  lineage_work_uuid uuid;
+  lineage_claim jsonb;
+  lineage_lease_uuid uuid;
+  recovery_result jsonb;
+begin
+  select id into specialist_actor_uuid from public.catalog_actors
+  where actor_key = 'team-color-test-agent-a';
+  insert into public.catalog_actor_capabilities(actor_id,capability)
+  select id,'catalog.verify.mock_determinate' from public.catalog_actors
+  where actor_key = 'team-color-test-verifier-2';
+  insert into public.catalog_actor_capabilities(actor_id,capability)
+  select id,'information_lineage.resolve' from public.catalog_actors
+  where actor_key = 'team-color-test-verifier-2';
+  insert into public.verification_policies(
+    policy_key,version,data_type,minimum_evidence_count,allowed_trust_tiers,
+    require_independent_sources,require_independent_verifier,configuration,
+    is_current,active
+  ) values (
+    'mock-determinate-policy',1,'mock_determinate',0,'{}'::smallint[],
+    false,true,jsonb_build_object(
+      'automated_adjudication',jsonb_build_object(
+        'maximum_verifier_rounds',2,
+        'required_matching_verifier_results',2,
+        'consensus_strategy','specialist_match_or_verifier_consensus'
+      )
+    ),true,true
+  ) returning id into policy_uuid;
+  insert into public.agent_job_runtime_policies(
+    policy_key,version,job_type,lease_seconds,retryable_failure_categories,
+    permanent_failure_categories,retry_delay_seconds,maximum_attempts,
+    exhaustion_status,permanent_failure_status
+  ) values (
+    'mock-determinate-verifier-runtime',1,'catalog_verifier.mock_determinate',900,
+    array['transient'],array['authorization_denied'],array[300],2,
+    'needs_review','failed'
+  );
+  insert into public.agent_job_runtime_policies(
+    policy_key,version,job_type,lease_seconds,retryable_failure_categories,
+    permanent_failure_categories,retry_delay_seconds,maximum_attempts,
+    exhaustion_status,permanent_failure_status
+  ) values (
+    'mock-determinate-lineage-runtime',1,
+    'information_lineage_resolver.mock_determinate',900,
+    array['lease_expired'],array['authorization_denied'],array[300],2,
+    'needs_review','failed'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform public.admin_register_catalog_domain_adapter(
+    'mock_determinate','quiz_question','mock_determinate_specialist',
+    'catalog_verifier.mock_determinate','catalog.verify.mock_determinate',
+    'pg_temp.mock_determinate_build_context'::regproc,
+    'pg_temp.mock_determinate_compare'::regproc,
+    'pg_temp.mock_determinate_finalize'::regproc,
+    'pg_temp.mock_determinate_enqueue_revalidation'::regproc,
+    'pg_temp.mock_determinate_recover'::regproc,
+    'pg_temp.mock_determinate_reconcile_wakes'::regproc,
+    jsonb_build_object('test_adapter',true),true
+  );
+  insert into public.agent_specialist_results(
+    data_type,job_type,subject_type,subject_id,subject_reference,
+    result_kind,result_payload,provenance_summary,submitted_by_actor_id
+  ) values (
+    'mock_determinate','mock_determinate_specialist','quiz_question','quiz-test-1',
+    jsonb_build_object('question_id','quiz-test-1','prompt','Which answer is canonical?'),
+    'determinate',jsonb_build_object('answer','A'),
+    'Mock specialist independently researched the answer.',specialist_actor_uuid
+  ) returning id into specialist_result_uuid;
+  verification_work_uuid := public.ensure_catalog_verification_work_for_result(
+    'agent_specialist_result',specialist_result_uuid,1,null
+  );
+  perform pg_temp.assert_true((
+    select subject_type = 'quiz_question'
+       and proposal_id is null
+       and originating_job_type = 'mock_determinate_specialist'
+    from public.catalog_verification_work_items where id = verification_work_uuid
+  ), 'generic verifier work must not require Team Color, a catalog team, or a catalog proposal');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  claim_value := public.claim_next_catalog_verification_work('mock_determinate');
+  lease_uuid := (claim_value #>> '{work,lease_token}')::uuid;
+  perform pg_temp.assert_true(
+    claim_value #>> '{subject,question_id}' = 'quiz-test-1'
+    and claim_value::text not like '%"answer": "A"%',
+    'generic verifier context must remain blinded while supporting a Quiz-shaped subject'
+  );
+  verifier_result_uuid := public.submit_catalog_verifier_result(
+    verification_work_uuid,lease_uuid,'determinate',jsonb_build_object('answer','A'),
+    'Mock verifier independently determined the same answer.'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid) = 'promoted',
+    'registered non-Team domain comparison adapter must process generically'
+  );
+  select id into authoritative_version_uuid
+  from mock_determinate_authoritative_versions
+  where subject_id = 'quiz-test-1' and is_current;
+  perform pg_temp.assert_true(authoritative_version_uuid is not null and (
+    select count(*) = 1 from mock_determinate_authoritative_versions
+    where subject_id = 'quiz-test-1' and is_current
+  ), 'domain finalizer must leave exactly one current authoritative fact');
+  insert into public.catalog_revalidation_policies(
+    policy_key,version,data_type,review_cadence,is_current,active
+  ) values ('mock-determinate-cadence',1,'mock_determinate',interval '1 day',true,true);
+  insert into public.catalog_fact_revalidation_state(
+    data_type,subject_type,subject_id,subject_reference,current_fact_version_id,
+    cadence_policy_id,last_verified_at,next_review_at,last_review_outcome
+  ) select 'mock_determinate','quiz_question','quiz-test-1',
+           jsonb_build_object('question_id','quiz-test-1'),authoritative_version_uuid,
+           policy.id,now() - interval '2 days',now() - interval '1 day','verified'
+    from public.catalog_revalidation_policies policy
+    where policy.data_type = 'mock_determinate' and policy.is_current
+  returning id into revalidation_state_uuid;
+  revalidation_enqueued_count := public.enqueue_due_catalog_revalidations('mock_determinate');
+  perform pg_temp.assert_true(
+    revalidation_enqueued_count = 1 and exists (
+      select 1 from public.catalog_fact_revalidation_state
+      where id = revalidation_state_uuid
+        and active_job_type = 'mock_determinate_specialist'
+        and active_job_id is not null
+    ), 'generic revalidation must dispatch through its registered adapter without Team Color work');
+  insert into public.information_lineage_resolution_work_items(
+    data_type,evidence_kind,evidence_id,subject_type,subject_id
+  ) values (
+    'mock_determinate','verifier_evidence',gen_random_uuid(),
+    'quiz_question','quiz-test-lineage'
+  ) returning id into lineage_work_uuid;
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  lineage_claim := public.claim_next_information_lineage_resolution_work('mock_determinate');
+  lineage_lease_uuid := (lineage_claim ->> 'lease_token')::uuid;
+  perform pg_temp.assert_true(
+    (lineage_claim ->> 'work_item_id')::uuid = lineage_work_uuid
+    and public.renew_information_lineage_resolution_work_lease(
+      lineage_work_uuid,lineage_lease_uuid
+    ) > now(),
+    'lineage-resolution work must support a durable renewable lease'
+  );
+  update public.information_lineage_resolution_work_items
+  set lease_expires_at = now() - interval '1 second'
+  where id = lineage_work_uuid;
+  update public.information_lineage_resolution_attempts
+  set lease_expires_at = now() - interval '1 second'
+  where work_item_id = lineage_work_uuid and ended_at is null;
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  recovery_result := public.run_agent_backend_recovery();
+  perform pg_temp.assert_true(
+    (recovery_result ->> 'lineage_expired')::integer = 1 and exists (
+      select 1 from public.information_lineage_resolution_work_items
+      where id = lineage_work_uuid and status = 'retry_wait'
+        and claimed_by_actor_id is null and lease_token is null
+    ), 'generic watchdog must recover an expired lineage-resolution worker through backend policy');
+  perform pg_temp.assert_true((select count(*) > 0 from mock_domain_recovery_calls),
+    'generic watchdog must invoke registered domain recovery adapters');
+  perform pg_temp.assert_true(not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'catalog_fact_revalidation_state'
+      and column_name in ('target_team_id','active_work_item_id')
+  ), 'generic revalidation state must contain no Team Color structural dependency');
+end;
+$$;
+
 -- Direct grants remain read-only; all mutations are capability-checked RPCs.
 do $$
 begin
   perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.team_color_work_items', 'INSERT'), 'authenticated role must not insert queue rows directly');
   perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.team_color_work_items', 'UPDATE'), 'authenticated role must not update queue rows directly');
   perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.team_color_source_candidates', 'INSERT'), 'authenticated role must not insert source candidates directly');
+  perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.catalog_verification_work_items', 'INSERT'), 'authenticated role must not insert verifier jobs directly');
+  perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.catalog_verifier_results', 'INSERT'), 'authenticated role must not insert verifier results directly');
+  perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.catalog_verification_comparisons', 'INSERT'), 'authenticated role must not insert comparison outcomes directly');
+  perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.agent_work_wake_outbox', 'UPDATE'), 'authenticated role must not mutate wake records directly');
+  perform pg_temp.assert_true(not has_table_privilege('authenticated', 'public.information_lineage_versions', 'UPDATE'), 'authenticated role must not mutate lineage governance directly');
 end;
 $$;
 

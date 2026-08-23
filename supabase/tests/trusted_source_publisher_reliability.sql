@@ -41,6 +41,27 @@ insert into public.catalog_actor_capabilities(actor_id,capability)
 select id,'catalog.verify.team_colors' from public.catalog_actors
 where actor_key = 'publisher-test-verifier';
 
+-- Rollback-only runtime fixture. These values exercise policy behavior and do
+-- not configure a production lease, retry count, or retry delay.
+insert into public.agent_job_runtime_policies(
+  policy_key,version,job_type,lease_seconds,retryable_failure_categories,
+  permanent_failure_categories,retry_delay_seconds,maximum_attempts,
+  exhaustion_status,permanent_failure_status
+) values (
+  'publisher-test-team-color-runtime',1,'team_color_specialist',900,
+  array['transient','lease_expired'],array['authorization_denied'],
+  array[300],3,'needs_review','failed'
+);
+insert into public.agent_job_runtime_policies(
+  policy_key,version,job_type,lease_seconds,retryable_failure_categories,
+  permanent_failure_categories,retry_delay_seconds,maximum_attempts,
+  exhaustion_status,permanent_failure_status
+) values (
+  'publisher-test-team-color-verifier-runtime',1,'catalog_verifier.team_colors',900,
+  array['transient','lease_expired'],array['authorization_denied'],
+  array[300],3,'needs_review','failed'
+);
+
 insert into public.catalog_teams(team_id,sport_id)
 select fixture.team_id,sport.id
 from (values ('hockey-999981'),('hockey-999982'),('hockey-999983')) fixture(team_id)
@@ -167,6 +188,24 @@ left join public.catalog_leagues league on fixture.scope_kind = 'league'
   and league.league_id = fixture.scope_identifier
 left join public.catalog_teams team on fixture.scope_kind = 'team'
   and team.team_id = fixture.scope_identifier;
+
+insert into public.information_lineages(lineage_key,data_type)
+select 'lineage-' || source.source_id,'team_colors'
+from public.trusted_sources source
+where source.source_id in (
+  'publisher-test-global','publisher-test-sport','publisher-test-league',
+  'publisher-test-team','publisher-test-other-team','publisher-test-conflict',
+  'publisher-test-special'
+);
+insert into public.information_lineage_versions(
+  lineage_id,version,display_name,review_status,notes
+)
+select lineage.id,1,'Lineage for ' || source.display_name,'approved',
+       'Transactional source-governance lineage fixture.'
+from public.information_lineages lineage
+join public.trusted_sources source
+  on lineage.lineage_key = 'lineage-' || source.source_id
+where lineage.data_type = 'team_colors';
 
 -- URL normalization, aliases, subdomains, paths, CDN scopes, and ambiguity.
 do $$
@@ -320,6 +359,10 @@ declare
   work_id uuid;
   lease uuid;
   proposal uuid;
+  verifier_claim jsonb;
+  verification_work_id uuid;
+  verifier_lease uuid;
+  verifier_result_id uuid;
   denied boolean;
   palette jsonb := jsonb_build_array('#112233','#445566','#FFFFFF');
 begin
@@ -418,6 +461,15 @@ begin
     proposal,'publisher-test-special','https://special.example/heritage','Special treatment is not canonical.',now(),false,
     jsonb_build_object('classification','special_treatment','palette',palette)
   );
+  update public.catalog_proposal_evidence evidence
+  set information_lineage_version_id = lineage_version.id,
+      information_lineage_basis = 'Transactional source-specific lineage fixture.'
+  from public.trusted_sources source
+  join public.information_lineages lineage
+    on lineage.lineage_key = 'lineage-' || source.source_id
+  join public.information_lineage_versions lineage_version
+    on lineage_version.lineage_id = lineage.id and lineage_version.is_current
+  where evidence.proposal_id = proposal and evidence.source_id = source.id;
   perform public.finish_team_color_work(work_id,lease,'submitted_for_verification',null,null,null,'{}');
 
   perform set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000003',true);
@@ -425,17 +477,43 @@ begin
   set is_current = false, effective_to = current_date, superseded_at = now()
   where source_id = (select id from public.trusted_sources where source_id = 'publisher-test-team')
     and data_type = 'team_colors' and is_current;
-  denied := false;
-  begin
-    perform public.review_catalog_proposal(proposal,'approved','Stale governance must fail.');
-  exception when others then denied := true; end;
-  perform pg_temp.assert_true(denied,
-    'approval must revalidate that the exact evidence trust assignment is still current');
+  perform pg_temp.assert_true(
+    public.current_source_trust_tier_assignment(
+      (select id from public.trusted_sources where source_id = 'publisher-test-team'),
+      'team_colors'
+    ) is null,
+    'qualification must reject evidence whose exact trust assignment is no longer current'
+  );
   update public.source_trust_assignments
   set is_current = true, effective_to = null, superseded_at = null
   where source_id = (select id from public.trusted_sources where source_id = 'publisher-test-team')
     and data_type = 'team_colors' and not is_current;
-  perform public.review_catalog_proposal(proposal,'approved','Governed source reliability fixture approved.');
+
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_work_id := (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform public.add_team_color_verifier_evidence(
+    verification_work_id,verifier_lease,'publisher-test-team',
+    'https://team.example/verifier-colors','Verifier independently found the official palette.',now(),
+    jsonb_build_object('classification','current_canonical','palette',palette),
+    'lineage-publisher-test-team','Official team lineage.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verification_work_id,verifier_lease,'publisher-test-global',
+    'https://publisher.example/verifier-colors','Verifier independently found corroborating evidence.',now(),
+    jsonb_build_object('classification','current_canonical','palette',palette),
+    'lineage-publisher-test-global','Independent publisher lineage.'
+  );
+  verifier_result_id := public.submit_team_color_verifier_result(
+    verification_work_id,verifier_lease,'determinate',
+    jsonb_build_object('classification','current_canonical','palette',palette),
+    'Independent verifier matched the specialist palette.'
+  );
+  perform set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_id) = 'promoted',
+    'Team Color reliability observations require the protected independent-verification finalization path'
+  );
 
   perform pg_temp.assert_true(not exists (
     select 1
@@ -495,9 +573,20 @@ begin
     proposal,'publisher-test-other-team','https://other-team.example/colors','Single unconfirmed claim.',now(),true,
     jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#778899','#AABBCC'))
   );
+  update public.catalog_proposal_evidence evidence
+  set information_lineage_version_id = lineage_version.id,
+      information_lineage_basis = 'Transactional source-specific lineage fixture.'
+  from public.trusted_sources source
+  join public.information_lineages lineage
+    on lineage.lineage_key = 'lineage-' || source.source_id
+  join public.information_lineage_versions lineage_version
+    on lineage_version.lineage_id = lineage.id and lineage_version.is_current
+  where evidence.proposal_id = proposal and evidence.source_id = source.id;
   perform public.finish_team_color_work(work_id,lease,'submitted_for_verification',null,null,null,'{}');
   perform set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000003',true);
-  perform public.review_catalog_proposal(proposal,'rejected','Insufficient corroboration.');
+  perform public.review_catalog_proposal_pre_independent_verification(
+    proposal,'rejected','Insufficient corroboration.'
+  );
   perform pg_temp.assert_true((
     select count(*) = 1 and bool_and(outcome = 'unresolved')
     from public.team_color_source_reliability_observations where proposal_id = proposal
