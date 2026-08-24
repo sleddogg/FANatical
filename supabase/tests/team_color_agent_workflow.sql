@@ -835,12 +835,16 @@ declare
 begin
   select * into strict policy_record from public.verification_policies
   where data_type = 'team_colors' and is_current and active;
-  perform pg_temp.assert_true(policy_record.version = 3, 'approved Team Color policy v3 must be current');
+  perform pg_temp.assert_true(policy_record.version = 4, 'approved Team Color policy v4 must be current');
   perform pg_temp.assert_true(policy_record.require_independent_verifier, 'Team Color policy must require an independent verifier');
   perform pg_temp.assert_true(policy_record.minimum_evidence_count = 3, 'normal Team Color research must require three independent lineages');
   perform pg_temp.assert_true(policy_record.require_independent_sources, 'Team Color policy must require independent ownership groups');
   perform pg_temp.assert_true(policy_record.configuration ? 'trust_tier_rubric', 'policy must retain the Tier 1-5 rubric');
   perform pg_temp.assert_true((policy_record.configuration ->> 'minimum_tier_1_or_2_evidence_count')::integer = 1, 'policy must require one Tier 1/2 source');
+  perform pg_temp.assert_true(
+    policy_record.configuration -> 'recheck_triggers' @> '["bootstrap_revalidation"]'::jsonb,
+    'Team Color policy must recognize the one-time bootstrap revalidation trigger'
+  );
   perform pg_temp.assert_true(
     policy_record.maximum_verifier_rounds = 2
     and policy_record.required_matching_verifier_results = 2

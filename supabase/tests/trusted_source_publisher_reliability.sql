@@ -663,16 +663,22 @@ begin
       and left_source_id in ('publisher-test-ambiguous-a','publisher-test-ambiguous-b')
       and right_source_id in ('publisher-test-ambiguous-a','publisher-test-ambiguous-b')
   ),'reviewer duplicate detector must surface ambiguous overlapping publisher scopes');
-  perform pg_temp.assert_true(exists (
+  perform pg_temp.assert_true(not exists (
     select 1 from public.catalog_verification_decisions
     where evidence_snapshot::text like '%brand-color-code-edmonton-oilers%'
-      and evidence_snapshot::text like '%edmonton-oilers-brand-book%'
-  ),'historical Edmonton verification snapshot must remain unchanged');
-  perform pg_temp.assert_true(exists (
+       or evidence_snapshot::text like '%edmonton-oilers-brand-book%'
+  ) and not exists (
     select 1 from public.catalog_proposal_evidence evidence
     join public.trusted_sources source on source.id = evidence.source_id
-    where source.source_id in ('brand-color-code-edmonton-oilers','edmonton-oilers-brand-book')
-  ),'historical Edmonton evidence must retain its original source records');
+    where source.source_id in (
+      'brand-color-code-edmonton-oilers','edmonton-oilers-brand-book'
+    )
+  ),'approved rollout reset must remove historical Edmonton Team Color results and evidence');
+  perform pg_temp.assert_true((
+    select count(*) = 2
+    from public.trusted_sources
+    where source_id in ('brand-color-code-edmonton-oilers','edmonton-oilers-brand-book')
+  ),'rollout reset must preserve retired source-registry provenance records');
 end;
 $$;
 
