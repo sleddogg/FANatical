@@ -81,13 +81,23 @@ for missing workflow design.
 
 ## Numeric operating policy
 
-This architecture currently contains exactly two approved numeric operating
+This architecture currently contains these approved numeric operating
 decisions:
 
 - 10% of eligible source-research checks/slots are reserved for exploration;
-  and
 - 10 independently adjudicated applicable shadow cases are required before a
-  probationary source receives its first empirical reliability rating.
+  probationary source receives its first empirical reliability rating;
+- Team Color specialist and determinate verifier leases are 15 minutes and may
+  be renewed by healthy workers;
+- transient specialist and verifier execution failures retry immediately, with
+  at most two total execution attempts before `needs_review`;
+- Team Color uses at most two blinded verifier rounds, with three independent
+  information lineages normally and four for the escalated second round;
+- the initial Team Color specialist and verifier pools each permit one worker,
+  with two workers total across those pools;
+- backend watchdog/recovery runs every 15 minutes; and
+- verified Team Color data receives scheduled revalidation every six months,
+  without age alone invalidating the verified value.
 
 Existing deployed numbers may be documented as facts about that implementation,
 but they do not automatically become canonical defaults for another agent. Any
@@ -306,12 +316,14 @@ workers cannot exhaust the OpenClaw host, source rate limits, or Supabase.
 
 ### Lease and retry responsibility
 
-Team Color currently uses a 900-second default lease clamped to 60–3,600
-seconds. Those are deployed Team Color implementation facts, not canonical
-defaults for another agent. Every contract must use explicitly approved lease,
-heartbeat, retry, and exhaustion policy. If implementation requires a numeric
-operating value that Brad has not approved, the implementation task must ask
-Brad rather than silently inventing a default.
+Team Color specialist and determinate verifier work use the approved renewable
+900-second lease. Their approved execution policy allows at most two total
+attempts with immediate retry for classified transient technical failures;
+permanent/configuration failures do not retry blindly. These values do not
+become defaults for another agent contract. Every contract must use explicitly
+approved lease, heartbeat, retry, and exhaustion policy. If implementation
+requires a numeric operating value that Brad has not approved, the
+implementation task must ask Brad rather than silently inventing a default.
 
 Deterministic backend policy owns:
 

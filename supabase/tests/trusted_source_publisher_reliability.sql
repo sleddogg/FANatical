@@ -41,27 +41,6 @@ insert into public.catalog_actor_capabilities(actor_id,capability)
 select id,'catalog.verify.team_colors' from public.catalog_actors
 where actor_key = 'publisher-test-verifier';
 
--- Rollback-only runtime fixture. These values exercise policy behavior and do
--- not configure a production lease, retry count, or retry delay.
-insert into public.agent_job_runtime_policies(
-  policy_key,version,job_type,lease_seconds,retryable_failure_categories,
-  permanent_failure_categories,retry_delay_seconds,maximum_attempts,
-  exhaustion_status,permanent_failure_status
-) values (
-  'publisher-test-team-color-runtime',1,'team_color_specialist',900,
-  array['transient','lease_expired'],array['authorization_denied'],
-  array[300],3,'needs_review','failed'
-);
-insert into public.agent_job_runtime_policies(
-  policy_key,version,job_type,lease_seconds,retryable_failure_categories,
-  permanent_failure_categories,retry_delay_seconds,maximum_attempts,
-  exhaustion_status,permanent_failure_status
-) values (
-  'publisher-test-team-color-verifier-runtime',1,'catalog_verifier.team_colors',900,
-  array['transient','lease_expired'],array['authorization_denied'],
-  array[300],3,'needs_review','failed'
-);
-
 insert into public.catalog_teams(team_id,sport_id)
 select fixture.team_id,sport.id
 from (values ('hockey-999981'),('hockey-999982'),('hockey-999983')) fixture(team_id)
@@ -454,6 +433,10 @@ begin
     jsonb_build_object('classification','current_canonical','palette',palette)
   );
   perform public.add_team_color_proposal_evidence(
+    proposal,'publisher-test-sport','https://sport.example/colors','Applicable sport publisher evidence.',now(),true,
+    jsonb_build_object('classification','current_canonical','palette',palette)
+  );
+  perform public.add_team_color_proposal_evidence(
     proposal,'publisher-test-conflict','https://conflict.example/colors','Conflicting current palette.',now(),false,
     jsonb_build_object('classification','current_canonical','palette',jsonb_build_array('#AABBCC','#DDEEFF'))
   );
@@ -504,6 +487,12 @@ begin
     jsonb_build_object('classification','current_canonical','palette',palette),
     'lineage-publisher-test-global','Independent publisher lineage.'
   );
+  perform public.add_team_color_verifier_evidence(
+    verification_work_id,verifier_lease,'publisher-test-sport',
+    'https://sport.example/verifier-colors','Verifier independently found applicable sport evidence.',now(),
+    jsonb_build_object('classification','current_canonical','palette',palette),
+    'lineage-publisher-test-sport','Independent sport publisher lineage.'
+  );
   verifier_result_id := public.submit_team_color_verifier_result(
     verification_work_id,verifier_lease,'determinate',
     jsonb_build_object('classification','current_canonical','palette',palette),
@@ -525,7 +514,7 @@ begin
   ),'verification evidence must snapshot tier and applicability versions independently');
 
   perform pg_temp.assert_true((
-    select count(distinct (entry ->> 'independence_group_id')) = 4
+    select count(distinct (entry ->> 'independence_group_id')) = 5
     from public.catalog_verification_decisions decision,
          jsonb_array_elements(decision.evidence_snapshot) entry
     where decision.proposal_id = proposal
