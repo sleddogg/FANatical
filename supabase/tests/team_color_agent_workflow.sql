@@ -185,7 +185,8 @@ cross join (values
   ('team_colors.work.read'),
   ('team_colors.work.update'),
   ('team_colors.source_candidates.submit'),
-  ('catalog.propose.team_colors')
+  ('catalog.propose.team_colors'),
+  ('source.qualification.work')
 ) capability(capability)
 where actor.actor_key = 'team-color-test-agent-a';
 
@@ -213,7 +214,9 @@ values
   ('team-color-test-official-owner', 'Test Official Owner'),
   ('team-color-test-independent-owner', 'Test Independent Owner'),
   ('team-color-test-second-independent-owner', 'Test Second Independent Owner'),
-  ('team-color-test-third-owner', 'Test Third Owner');
+  ('team-color-test-third-owner', 'Test Third Owner'),
+  ('team-color-test-holdout-owner', 'Test Holdout Owner'),
+  ('team-color-test-shared-holdout-owner', 'Test Shared-Lineage Holdout Owner');
 
 insert into public.trusted_sources(
   source_id, display_name, base_url, reference_url,
@@ -225,7 +228,9 @@ from (values
   ('team-color-test-tier-1', 'Test Official Brand Guide', 'https://official.example', 'https://official.example/brand.pdf', 'team-color-test-official-owner'),
   ('team-color-test-tier-3', 'Test Independent Color Reference', 'https://independent.example', 'https://independent.example/team-colors', 'team-color-test-independent-owner'),
   ('team-color-test-tier-3-second', 'Test Second Independent Reference', 'https://second-independent.example', 'https://second-independent.example/team-colors', 'team-color-test-second-independent-owner'),
-  ('team-color-test-tier-3-conflict', 'Test Conflicting Reference', 'https://conflict.example', 'https://conflict.example/team-colors', 'team-color-test-third-owner')
+  ('team-color-test-tier-3-conflict', 'Test Conflicting Reference', 'https://conflict.example', 'https://conflict.example/team-colors', 'team-color-test-third-owner'),
+  ('team-color-test-holdout', 'Test Qualification Holdout', 'https://holdout.example', 'https://holdout.example/team-colors', 'team-color-test-holdout-owner'),
+  ('team-color-test-shared-holdout', 'Test Shared-Lineage Qualification Holdout', 'https://shared-holdout.example', 'https://shared-holdout.example/team-colors', 'team-color-test-shared-holdout-owner')
 ) fixture(source_id, display_name, base_url, reference_url, group_id)
 join public.source_independence_groups independence on independence.group_id = fixture.group_id;
 
@@ -235,7 +240,9 @@ from (values
   ('team-color-test-tier-1', 1),
   ('team-color-test-tier-3', 3),
   ('team-color-test-tier-3-second', 3),
-  ('team-color-test-tier-3-conflict', 3)
+  ('team-color-test-tier-3-conflict', 3),
+  ('team-color-test-holdout', 3),
+  ('team-color-test-shared-holdout', 3)
 ) fixture(source_id, trust_tier)
 join public.trusted_sources source on source.source_id = fixture.source_id;
 
@@ -245,7 +252,7 @@ insert into public.source_applicability_versions(
 select source.id, 'team_colors', 'global', 'approved',
        'Transactional Team Color Agent global applicability.'
 from public.trusted_sources source
-where source.source_id like 'team-color-test-tier-%';
+where source.source_id like 'team-color-test-%';
 
 insert into public.source_independence_group_assignment_versions(
   source_id, independence_group_id, review_status, notes
@@ -253,7 +260,7 @@ insert into public.source_independence_group_assignment_versions(
 select source.id, source.independence_group_id, 'approved',
        'Transactional test ownership assignment.'
 from public.trusted_sources source
-where source.source_id like 'team-color-test-tier-%';
+where source.source_id like 'team-color-test-%';
 
 insert into public.trusted_source_url_scope_versions(
   source_id, hostname, include_subdomains, path_prefix, path_match,
@@ -265,14 +272,16 @@ from (values
   ('team-color-test-tier-1', 'official.example'),
   ('team-color-test-tier-3', 'independent.example'),
   ('team-color-test-tier-3-second', 'second-independent.example'),
-  ('team-color-test-tier-3-conflict', 'conflict.example')
+  ('team-color-test-tier-3-conflict', 'conflict.example'),
+  ('team-color-test-holdout', 'holdout.example'),
+  ('team-color-test-shared-holdout', 'shared-holdout.example')
 ) fixture(source_id, hostname)
 join public.trusted_sources source on source.source_id = fixture.source_id;
 
 insert into public.information_lineages(lineage_key, data_type)
 select 'lineage-' || source.source_id, 'team_colors'
 from public.trusted_sources source
-where source.source_id like 'team-color-test-tier-%';
+where source.source_id like 'team-color-test-%';
 
 insert into public.information_lineage_versions(
   lineage_id, version, display_name, review_status, notes
@@ -282,7 +291,30 @@ select lineage.id, 1, 'Lineage for ' || source.display_name, 'approved',
 from public.information_lineages lineage
 join public.trusted_sources source
   on lineage.lineage_key = 'lineage-' || source.source_id
-where source.source_id like 'team-color-test-tier-%';
+where source.source_id like 'team-color-test-%';
+
+-- These fixtures represent sources that completed qualification before the
+-- production workflow being exercised. Governance setup alone is deliberately
+-- insufficient.
+with created as (
+  insert into public.source_qualification_evaluations(
+    enrollment_id,policy_id,
+    assessed_case_count,match_count,contradiction_count,raw_match_rate,
+    evaluation_kind,decision_basis,resulting_status,prior_status
+  )
+  select enrollment.id,enrollment.current_policy_id,
+         20,20,0,1,'decision','standard_case_threshold',
+         'qualified','probationary'
+  from public.source_qualification_enrollments enrollment
+  join public.trusted_sources source on source.id = enrollment.source_id
+  where source.source_id like 'team-color-test-tier-%'
+  returning id,enrollment_id
+)
+update public.source_qualification_enrollments enrollment
+set qualification_status = 'qualified', assessed_case_count = 20,
+    match_count = 20, contradiction_count = 0, raw_match_rate = 1,
+    latest_evaluation_id = created.id, updated_at = now()
+from created where enrollment.id = created.enrollment_id;
 
 do $$
 declare specialist_policy public.agent_job_runtime_policies%rowtype;
@@ -713,6 +745,124 @@ begin
        and evidence_snapshot::text like '%applicability_version_id%'
     from public.catalog_verification_decisions where proposal_id = proposal_id_value
   ), 'decision must snapshot supporting and conflicting evidence with immutable details');
+end;
+$$;
+
+-- A current verified fact is the preferred qualification reference when the
+-- tested source and current lineage were absent from the complete decision
+-- provenance. Direct and shared-lineage contributors cannot use that fact to
+-- grade themselves.
+do $$
+declare
+  team_uuid uuid := public.resolve_catalog_team_id('hockey-999994');
+  adjudication_uuid uuid;
+  enrollment_uuid uuid;
+  claim_value jsonb;
+  result_uuid uuid;
+begin
+  select adjudication.id into strict adjudication_uuid
+  from public.catalog_determinate_adjudications adjudication
+  where adjudication.data_type = 'team_colors'
+    and adjudication.subject_id = team_uuid::text
+    and adjudication.outcome = 'promoted'
+  order by adjudication.decided_at desc limit 1;
+  perform pg_temp.assert_true((
+    select count(*) = 8
+       and count(distinct public.current_information_lineage_root(
+             contribution.information_lineage_version_id
+           )) = 4
+       and count(*) filter (where contribution.supports_authoritative_result) = 7
+       and count(distinct public.current_information_lineage_root(
+             contribution.information_lineage_version_id
+           )) filter (where contribution.supports_authoritative_result) = 3
+       and bool_and(contribution.information_lineage_version_id is not null)
+    from public.catalog_adjudication_source_contributions contribution
+    where contribution.adjudication_id = adjudication_uuid
+  ), 'authoritative adjudication must retain every specialist and contributing-verifier source lineage');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  select enrollment.id into strict enrollment_uuid
+  from public.source_qualification_enrollments enrollment
+  join public.trusted_sources source on source.id = enrollment.source_id
+  where source.source_id = 'team-color-test-holdout'
+    and enrollment.data_type = 'team_colors';
+  perform public.enqueue_source_qualification_work(
+    enrollment_uuid,'catalog_team',team_uuid::text,
+    'https://holdout.example/team-999994','lineage-team-color-test-holdout'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_source_qualification_work('team_colors');
+  result_uuid := public.submit_source_qualification_result(
+    (claim_value #>> '{work,work_item_id}')::uuid,
+    (claim_value #>> '{work,lease_token}')::uuid,
+    'determinate',jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#555555','#666666','#FFFFFF')
+    ),'Blinded holdout claim against an existing verified fact.'
+  );
+  perform pg_temp.assert_true((
+    select reference.reference_kind = 'verified_fact'
+       and reference.authoritative_adjudication_id = adjudication_uuid
+       and reference.non_production
+       and reference.contributing_information_lineage_count = 3
+       and observation.outcome = 'match'
+    from public.source_qualification_references reference
+    join public.source_qualification_observations observation
+      on observation.reference_id = reference.id
+    where reference.tested_result_id = result_uuid
+  ), 'an independent holdout source must be graded directly from the existing verified fact');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  select enrollment.id into strict enrollment_uuid
+  from public.source_qualification_enrollments enrollment
+  join public.trusted_sources source on source.id = enrollment.source_id
+  where source.source_id = 'team-color-test-tier-1'
+    and enrollment.data_type = 'team_colors';
+  perform public.enqueue_source_qualification_work(
+    enrollment_uuid,'catalog_team',team_uuid::text,
+    'https://official.example/qualification-self-check',
+    'lineage-team-color-test-tier-1'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_source_qualification_work('team_colors');
+  result_uuid := public.submit_source_qualification_result(
+    (claim_value #>> '{work,work_item_id}')::uuid,
+    (claim_value #>> '{work,lease_token}')::uuid,
+    'determinate',jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#555555','#666666','#FFFFFF')
+    ),'Direct-contributor exclusion claim.'
+  );
+  perform pg_temp.assert_true(not exists (
+    select 1 from public.source_qualification_references
+    where tested_result_id = result_uuid
+  ), 'a source that contributed to the specialist or verifier must not use that verified fact');
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  select enrollment.id into strict enrollment_uuid
+  from public.source_qualification_enrollments enrollment
+  join public.trusted_sources source on source.id = enrollment.source_id
+  where source.source_id = 'team-color-test-shared-holdout'
+    and enrollment.data_type = 'team_colors';
+  perform public.enqueue_source_qualification_work(
+    enrollment_uuid,'catalog_team',team_uuid::text,
+    'https://shared-holdout.example/team-999994',
+    'lineage-team-color-test-tier-1'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  claim_value := public.claim_next_source_qualification_work('team_colors');
+  result_uuid := public.submit_source_qualification_result(
+    (claim_value #>> '{work,work_item_id}')::uuid,
+    (claim_value #>> '{work,lease_token}')::uuid,
+    'determinate',jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#555555','#666666','#FFFFFF')
+    ),'Shared-lineage exclusion claim.'
+  );
+  perform pg_temp.assert_true(not exists (
+    select 1 from public.source_qualification_references
+    where tested_result_id = result_uuid
+  ), 'a source sharing any contributing lineage must not use that verified fact');
 end;
 $$;
 

@@ -327,6 +327,29 @@ begin
 end;
 $$;
 
+-- These fixtures represent sources that completed qualification before the
+-- production workflow being exercised. Governance and trust tiers alone are
+-- deliberately insufficient.
+with created as (
+  insert into public.source_qualification_evaluations(
+    enrollment_id,policy_id,
+    assessed_case_count,match_count,contradiction_count,raw_match_rate,
+    evaluation_kind,decision_basis,resulting_status,prior_status
+  )
+  select enrollment.id,enrollment.current_policy_id,
+         20,20,0,1,'decision','standard_case_threshold',
+         'qualified','probationary'
+  from public.source_qualification_enrollments enrollment
+  join public.trusted_sources source on source.id = enrollment.source_id
+  where source.source_id like 'publisher-test-%'
+  returning id,enrollment_id
+)
+update public.source_qualification_enrollments enrollment
+set qualification_status = 'qualified', assessed_case_count = 20,
+    match_count = 20, contradiction_count = 0, raw_match_rate = 1,
+    latest_evaluation_id = created.id, updated_at = now()
+from created where enrollment.id = created.enrollment_id;
+
 -- Candidate reuse, evidence ownership/applicability, structured claims, and
 -- independently verified reliability outcomes.
 select set_config('request.jwt.claim.sub','72000000-0000-0000-0000-000000000001',true);

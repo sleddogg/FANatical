@@ -568,8 +568,17 @@ When a legitimate candidate is discovered:
 5. record its structured claim for each case without exposing the authoritative
    answer to the shadow worker;
 6. compare each claim with the independently verified FANatical outcome; and
-7. after 10 adjudicated cases, calculate the first empirical reliability result
-   and apply the predefined automated qualification policy.
+7. after 10 adjudicated cases, calculate the first empirical reliability rating;
+   and
+8. normally make the first qualification decision after 20 adjudicated cases,
+   then reassess after every additional 10 cases under the approved policy.
+
+Team Color has one approved narrow-source exception: when the backend determines
+from approved applicability that a source's entire legitimate universe is 10–19
+teams, exhaustive distinct-team coverage may produce a qualification decision
+before 20 cases. The source qualifies only at a clean match rate of at least
+95%. Fewer than 10 cases remains insufficient, and duplicate testing of one
+team does not increase coverage. The normal first decision remains at 20 cases.
 
 Do not wait for nine later 10% exploration opportunities. Once discovered, the
 10-case qualification program is a separate durable workflow. If 10 applicable
