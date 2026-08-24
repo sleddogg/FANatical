@@ -129,7 +129,7 @@ values
 insert into public.catalog_teams(team_id, sport_id)
 select fixture.team_id, sport.id
 from (values
-  ('hockey-999989'), ('hockey-999990'),
+  ('hockey-999988'), ('hockey-999989'), ('hockey-999990'),
   ('hockey-999991'), ('hockey-999992'), ('hockey-999993'), ('hockey-999994'),
   ('hockey-999995'), ('hockey-999996'), ('hockey-999997'), ('hockey-999998'),
   ('hockey-999999')
@@ -142,6 +142,7 @@ insert into public.team_identity_versions(
 )
 select team.id, fixture.display_name, fixture.display_name, true, 'imported_unverified'
 from (values
+  ('hockey-999988', 'Agent Lineage Barrier Test'),
   ('hockey-999989', 'Agent Unresolved Consensus Test'),
   ('hockey-999990', 'Agent Permanent Failure Test'),
   ('hockey-999991', 'Agent Queue Test One'),
@@ -160,7 +161,7 @@ insert into public.team_primary_league_versions(team_id, league_id, record_statu
 select team.id, league.id, 'imported_unverified'
 from public.catalog_teams team
 cross join public.catalog_leagues league
-where team.team_id like 'hockey-99999%'
+where (team.team_id like 'hockey-99999%' or team.team_id = 'hockey-999988')
   and league.league_id = 'hockey-nhl';
 
 insert into public.team_color_versions(
@@ -208,6 +209,11 @@ insert into public.catalog_actor_capabilities(actor_id, capability)
 select actor.id, 'catalog.verify.team_colors'
 from public.catalog_actors actor
 where actor.actor_key in ('team-color-test-verifier','team-color-test-verifier-2');
+
+insert into public.catalog_actor_capabilities(actor_id, capability)
+select actor.id, 'information_lineage.resolve'
+from public.catalog_actors actor
+where actor.actor_key = 'team-color-test-verifier-2';
 
 insert into public.source_independence_groups(group_id, display_name)
 values
@@ -1164,6 +1170,196 @@ begin
 end;
 $$;
 
+-- Generic comparison barrier, proposal side: unresolved evidence must pause,
+-- then resume through lineage assignment and recovery without consuming a
+-- verifier round or creating an exception comparison. The verifier side is
+-- exercised below by the non-Team determinate adapter.
+do $$
+declare
+  work_uuid uuid;
+  specialist_claim jsonb;
+  specialist_lease_uuid uuid;
+  proposal_uuid uuid;
+  unresolved_proposal_evidence_uuid uuid;
+  unresolved_proposal_lineage_work_uuid uuid;
+  verification_work_uuid uuid;
+  verifier_claim jsonb;
+  verifier_lease_uuid uuid;
+  verifier_result_uuid uuid;
+  lineage_claim jsonb;
+  recovery_value jsonb;
+begin
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  work_uuid := public.enqueue_team_color_work(
+    'hockey-999988',1200,null,'Information-lineage comparison barrier fixture.',now()
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000002',true);
+  specialist_claim := public.claim_next_team_color_work(900);
+  specialist_lease_uuid := (specialist_claim #>> '{work,lease_token}')::uuid;
+  proposal_uuid := public.submit_team_color_proposal(
+    work_uuid,specialist_lease_uuid,
+    jsonb_build_object('primary','#717171','secondary','#818181'),
+    'Specialist proposal with one lineage awaiting resolution.'
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-1',
+    'https://official.example/lineage-barrier-specialist',
+    'Known official specialist lineage.',now(),true
+  );
+  perform pg_temp.add_team_color_evidence(
+    proposal_uuid,'team-color-test-tier-3',
+    'https://independent.example/lineage-barrier-specialist',
+    'Known independent specialist lineage.',now(),true
+  );
+  unresolved_proposal_evidence_uuid := public.add_team_color_proposal_evidence(
+    proposal_uuid,'team-color-test-tier-3-second',
+    'https://second-independent.example/lineage-barrier-specialist',
+    'Specialist evidence whose origin still requires resolution.',now(),true,
+    jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#717171','#818181')
+    )
+  );
+  select id into strict unresolved_proposal_lineage_work_uuid
+  from public.information_lineage_resolution_work_items
+  where evidence_kind = 'proposal_evidence'
+    and evidence_id = unresolved_proposal_evidence_uuid;
+  perform public.finish_team_color_work(
+    work_uuid,specialist_lease_uuid,'submitted_for_verification',
+    null,null,null,'{}'
+  );
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000004',true);
+  verifier_claim := public.claim_next_catalog_verification_work('team_colors');
+  verification_work_uuid :=
+    (verifier_claim #>> '{work,verification_work_item_id}')::uuid;
+  verifier_lease_uuid := (verifier_claim #>> '{work,lease_token}')::uuid;
+  perform public.add_team_color_verifier_evidence(
+    verification_work_uuid,verifier_lease_uuid,'team-color-test-tier-1',
+    'https://official.example/lineage-barrier-verifier',
+    'Known official verifier lineage.',now(),
+    jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#717171','#818181')
+    ),
+    'lineage-team-color-test-tier-1','Known official origin.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verification_work_uuid,verifier_lease_uuid,'team-color-test-tier-3',
+    'https://independent.example/lineage-barrier-verifier',
+    'Known independent verifier lineage.',now(),
+    jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#717171','#818181')
+    ),
+    'lineage-team-color-test-tier-3','Known independent origin.'
+  );
+  perform public.add_team_color_verifier_evidence(
+    verification_work_uuid,verifier_lease_uuid,'team-color-test-tier-3-second',
+    'https://second-independent.example/lineage-barrier-verifier',
+    'Known second independent verifier lineage.',now(),
+    jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#717171','#818181')
+    ), 'lineage-team-color-test-tier-3-second','Known second independent origin.'
+  );
+  verifier_result_uuid := public.submit_team_color_verifier_result(
+    verification_work_uuid,verifier_lease_uuid,'determinate',
+    jsonb_build_object(
+      'classification','current_canonical',
+      'palette',jsonb_build_array('#717171','#818181')
+    ),
+    'Verifier independently matched the specialist while lineage resolution remained pending.'
+  );
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  perform pg_temp.assert_true(
+    public.process_catalog_verification_result(verifier_result_uuid)
+      = 'waiting_on_information_lineage',
+    'unresolved proposal evidence must prevent deterministic comparison'
+  );
+  perform pg_temp.assert_true(
+    not exists (
+      select 1 from public.catalog_verification_comparisons
+      where verifier_result_id = verifier_result_uuid
+    )
+    and exists (
+      select 1 from public.catalog_verification_work_items
+      where id = verification_work_uuid and status = 'result_submitted'
+        and failure_category is null
+    )
+    and exists (
+      select 1 from public.team_color_work_items
+      where id = work_uuid and status = 'pending_verification'
+    )
+    and not exists (
+      select 1 from public.catalog_verification_work_items
+      where specialist_result_kind = 'catalog_proposal'
+        and specialist_result_id = proposal_uuid and verification_round > 1
+    )
+    and exists (
+      select 1 from public.catalog_verification_work_events
+      where verification_work_item_id = verification_work_uuid
+        and event_type = 'waiting_on_information_lineage'
+    ),
+    'lineage waiting must not create insufficient evidence, escalation, or needs-review state'
+  );
+
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  lineage_claim := public.claim_next_information_lineage_resolution_work('team_colors');
+  perform pg_temp.assert_true(
+    (lineage_claim #>> '{work,work_item_id}')::uuid
+      = unresolved_proposal_lineage_work_uuid,
+    'proposal lineage work must remain independently claimable'
+  );
+  perform public.submit_information_lineage_resolution_result(
+    unresolved_proposal_lineage_work_uuid,
+    (lineage_claim #>> '{work,lease_token}')::uuid,
+    'assign_existing','lineage-team-color-test-tier-3-second',
+    'Resolver established the proposal evidence origin.', '{}'
+  );
+  perform pg_temp.assert_true((
+    select count(*) = 1 and bool_and(status = 'pending')
+    from public.agent_work_wake_outbox
+    where queue_name = 'catalog_verification_comparison'
+      and work_item_id = verification_work_uuid
+      and eligibility_key = verifier_result_uuid::text
+  ), 'final required lineage assignment must automatically emit one idempotent comparison wake');
+
+  -- Model lost delivery after the automatic resume wake. Generic recovery must
+  -- restore the same wake and safely process it.
+  update public.agent_work_wake_outbox
+  set status = 'cancelled'
+  where queue_name = 'catalog_verification_comparison'
+    and work_item_id = verification_work_uuid
+    and eligibility_key = verifier_result_uuid::text;
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  recovery_value := public.run_agent_backend_recovery();
+  perform pg_temp.assert_true(
+    (recovery_value ->> 'comparison_wakes_reconciled')::integer >= 1
+    and exists (
+      select 1 from public.catalog_verification_comparisons
+      where verifier_result_id = verifier_result_uuid
+        and comparison_outcome = 'promoted'
+    )
+    and exists (
+      select 1 from public.catalog_verification_work_items
+      where id = verification_work_uuid and status = 'completed'
+    )
+    and exists (
+      select 1 from public.team_color_work_items
+      where id = work_uuid and status = 'completed'
+    )
+    and not exists (
+      select 1 from public.catalog_verification_work_items
+      where specialist_result_kind = 'catalog_proposal'
+        and specialist_result_id = proposal_uuid and verification_round > 1
+    ),
+    'recovery must restore a missed ready comparison wake without premature escalation or review'
+  );
+end;
+$$;
+
 do $$
 declare
   claim_value jsonb; work_id uuid; lease_token_value uuid; proposal_uuid uuid;
@@ -1672,19 +1868,18 @@ declare
   authoritative_version_uuid uuid;
   revalidation_state_uuid uuid;
   revalidation_enqueued_count integer;
+  lineage_evidence_uuid uuid;
   lineage_work_uuid uuid;
   lineage_claim jsonb;
   lineage_lease_uuid uuid;
   recovery_result jsonb;
+  comparison_outcome text;
 begin
   select id into specialist_actor_uuid from public.catalog_actors
   where actor_key = 'team-color-test-agent-a';
   insert into public.catalog_actor_capabilities(actor_id,capability)
   select id,'catalog.verify.mock_determinate' from public.catalog_actors
-  where actor_key = 'team-color-test-verifier-2';
-  insert into public.catalog_actor_capabilities(actor_id,capability)
-  select id,'information_lineage.resolve' from public.catalog_actors
-  where actor_key = 'team-color-test-verifier-2';
+  where actor_key = 'team-color-test-verifier';
   insert into public.verification_policies(
     policy_key,version,data_type,minimum_evidence_count,allowed_trust_tiers,
     require_independent_sources,require_independent_verifier,configuration,
@@ -1718,6 +1913,18 @@ begin
     array['lease_expired'],array['authorization_denied'],array[300],2,
     'needs_review','failed'
   );
+  insert into public.information_lineage_resolution_policies(
+    policy_key,version,data_type,automatically_permitted_actions,
+    configuration,active,is_current
+  ) values (
+    'mock-determinate-lineage-policy',1,'mock_determinate',
+    array['assign_existing']::text[],
+    jsonb_build_object(
+      'new_lineage_requires_governance',true,
+      'lineage_merge_requires_governance',true,
+      'test_adapter',true
+    ),true,true
+  );
   perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
   perform public.admin_register_catalog_domain_adapter(
     'mock_determinate','quiz_question','mock_determinate_specialist',
@@ -1748,7 +1955,21 @@ begin
        and originating_job_type = 'mock_determinate_specialist'
     from public.catalog_verification_work_items where id = verification_work_uuid
   ), 'generic verifier work must not require Team Color, a catalog team, or a catalog proposal');
-  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  insert into public.source_trust_assignments(
+    source_id,data_type,trust_tier,is_current
+  ) select id,'mock_determinate',3,true
+    from public.trusted_sources where source_id = 'team-color-test-tier-1';
+  insert into public.source_applicability_versions(
+    source_id,data_type,applicability_kind,review_status,is_current
+  ) select id,'mock_determinate','global','approved',true
+    from public.trusted_sources where source_id = 'team-color-test-tier-1';
+  perform public.admin_review_information_lineage(
+    'mock-determinate-origin','mock_determinate','Mock determinate origin',
+    'https://official.example/mock-determinate-origin','approved',null,
+    'Approved mock lineage for the generic comparison barrier test.',
+    jsonb_build_object('test',true)
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000004',true);
   claim_value := public.claim_next_catalog_verification_work('mock_determinate');
   lease_uuid := (claim_value #>> '{work,lease_token}')::uuid;
   perform pg_temp.assert_true(
@@ -1756,14 +1977,94 @@ begin
     and claim_value::text not like '%"answer": "A"%',
     'generic verifier context must remain blinded while supporting a Quiz-shaped subject'
   );
+  insert into public.catalog_verifier_evidence(
+    verification_work_item_id,attempt_number,submitted_by_actor_id,
+    source_id,evidence_url,evidence_summary,observed_at,
+    source_url_scope_version_id,source_trust_assignment_id,
+    source_applicability_version_id,source_independence_assignment_id,
+    structured_claim
+  )
+  select verification_work_uuid,1,actor.id,source.id,
+         'https://official.example/mock-determinate-barrier',
+         'Mock determinate evidence whose lineage is initially unresolved.',now(),
+         scope.id,trust.id,applicability.id,ownership.id,
+         jsonb_build_object('answer','A')
+  from public.trusted_sources source
+  join public.catalog_actors actor
+    on actor.actor_key = 'team-color-test-verifier'
+  join public.trusted_source_url_scope_versions scope
+    on scope.source_id = source.id and scope.is_current
+       and scope.review_status = 'approved'
+  join public.source_trust_assignments trust
+    on trust.source_id = source.id and trust.data_type = 'mock_determinate'
+       and trust.is_current
+  join public.source_applicability_versions applicability
+    on applicability.source_id = source.id
+       and applicability.data_type = 'mock_determinate'
+       and applicability.is_current and applicability.review_status = 'approved'
+  join public.source_independence_group_assignment_versions ownership
+    on ownership.source_id = source.id and ownership.is_current
+       and ownership.review_status = 'approved'
+  where source.source_id = 'team-color-test-tier-1'
+  order by scope.created_at desc, ownership.created_at desc
+  limit 1
+  returning id into lineage_evidence_uuid;
+  select id into strict lineage_work_uuid
+  from public.information_lineage_resolution_work_items
+  where evidence_kind = 'verifier_evidence'
+    and evidence_id = lineage_evidence_uuid;
   verifier_result_uuid := public.submit_catalog_verifier_result(
     verification_work_uuid,lease_uuid,'determinate',jsonb_build_object('answer','A'),
     'Mock verifier independently determined the same answer.'
   );
   perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
+  comparison_outcome := public.process_catalog_verification_result(
+    verifier_result_uuid
+  );
+  perform pg_temp.assert_true(
+    comparison_outcome = 'waiting_on_information_lineage'
+    and not exists (
+      select 1 from public.catalog_verification_comparisons
+      where verifier_result_id = verifier_result_uuid
+    )
+    and not exists (
+      select 1 from public.catalog_determinate_adjudications
+      where resolving_verifier_result_id = verifier_result_uuid
+    )
+    and exists (
+      select 1 from public.catalog_verification_work_items
+      where id = verification_work_uuid and status = 'result_submitted'
+        and failure_category is null
+    )
+    and exists (
+      select 1 from public.catalog_verification_work_events
+      where verification_work_item_id = verification_work_uuid
+        and event_type = 'waiting_on_information_lineage'
+    ),
+    'unresolved verifier evidence must generically pause Quiz-shaped determinate comparison without adjudication or escalation'
+  );
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
+  lineage_claim := public.claim_next_information_lineage_resolution_work('mock_determinate');
+  perform pg_temp.assert_true(
+    (lineage_claim #>> '{work,work_item_id}')::uuid = lineage_work_uuid,
+    'generic mock verifier evidence must use normal lineage resolver work'
+  );
+  perform public.submit_information_lineage_resolution_result(
+    lineage_work_uuid,(lineage_claim #>> '{work,lease_token}')::uuid,
+    'assign_existing','mock-determinate-origin',
+    'Resolver established the mock verifier evidence origin.','{}'
+  );
+  perform pg_temp.assert_true((
+    select count(*) = 1 and bool_and(status = 'pending')
+    from public.agent_work_wake_outbox
+    where queue_name = 'catalog_verification_comparison'
+      and work_item_id = verification_work_uuid
+      and eligibility_key = verifier_result_uuid::text
+  ), 'generic lineage completion must resume the same non-Team comparison path');
+  perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000001',true);
   perform pg_temp.assert_true(
     public.process_catalog_verification_result(verifier_result_uuid) = 'promoted',
-    'registered non-Team domain comparison adapter must process generically'
+    'lineage-ready non-Team domain comparison adapter must process generically'
   );
   select id into authoritative_version_uuid
   from mock_determinate_authoritative_versions
@@ -1792,17 +2093,48 @@ begin
         and active_job_type = 'mock_determinate_specialist'
         and active_job_id is not null
     ), 'generic revalidation must dispatch through its registered adapter without Team Color work');
-  insert into public.information_lineage_resolution_work_items(
-    data_type,evidence_kind,evidence_id,subject_type,subject_id
-  ) values (
-    'mock_determinate','verifier_evidence',gen_random_uuid(),
-    'quiz_question','quiz-test-lineage'
-  ) returning id into lineage_work_uuid;
+  insert into public.catalog_verifier_evidence(
+    verification_work_item_id,attempt_number,submitted_by_actor_id,
+    source_id,evidence_url,evidence_summary,observed_at,
+    source_url_scope_version_id,source_trust_assignment_id,
+    source_applicability_version_id,source_independence_assignment_id,
+    structured_claim
+  )
+  select verification_work_uuid,1,actor.id,source.id,
+         'https://official.example/mock-determinate-recovery-lineage',
+         'Mock determinate evidence requiring lineage resolution.',now(),
+         scope.id,trust.id,applicability.id,ownership.id,
+         jsonb_build_object('answer','A')
+  from public.trusted_sources source
+  join public.catalog_actors actor
+    on actor.actor_key = 'team-color-test-verifier'
+  join public.trusted_source_url_scope_versions scope
+    on scope.source_id = source.id and scope.is_current
+       and scope.review_status = 'approved'
+  join public.source_trust_assignments trust
+    on trust.source_id = source.id and trust.data_type = 'mock_determinate'
+       and trust.is_current
+  join public.source_applicability_versions applicability
+    on applicability.source_id = source.id
+       and applicability.data_type = 'mock_determinate'
+       and applicability.is_current and applicability.review_status = 'approved'
+  join public.source_independence_group_assignment_versions ownership
+    on ownership.source_id = source.id and ownership.is_current
+       and ownership.review_status = 'approved'
+  where source.source_id = 'team-color-test-tier-1'
+  order by scope.created_at desc, ownership.created_at desc
+  limit 1
+  returning id into lineage_evidence_uuid;
+  select id into strict lineage_work_uuid
+  from public.information_lineage_resolution_work_items
+  where evidence_kind = 'verifier_evidence'
+    and evidence_id = lineage_evidence_uuid;
   perform set_config('request.jwt.claim.sub','71000000-0000-0000-0000-000000000005',true);
   lineage_claim := public.claim_next_information_lineage_resolution_work('mock_determinate');
-  lineage_lease_uuid := (lineage_claim ->> 'lease_token')::uuid;
+  lineage_lease_uuid := (lineage_claim #>> '{work,lease_token}')::uuid;
   perform pg_temp.assert_true(
-    (lineage_claim ->> 'work_item_id')::uuid = lineage_work_uuid
+    (lineage_claim #>> '{work,work_item_id}')::uuid = lineage_work_uuid
+    and (lineage_claim #>> '{evidence,evidence_id}')::uuid = lineage_evidence_uuid
     and public.renew_information_lineage_resolution_work_lease(
       lineage_work_uuid,lineage_lease_uuid
     ) > now(),
