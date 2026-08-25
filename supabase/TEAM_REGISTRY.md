@@ -162,3 +162,21 @@ source candidate.
 
 Seed import batches store source filenames, SHA-256 hashes, counts, and an
 explicit `verified_source_data = false` marker.
+
+The governed Team Color publisher reference is applied by
+`202608230009_team_color_source_seed.sql`, reproducibly generated from
+`FANatical_Team_Color_Source_Seed_Reference.xlsx` with:
+
+```bash
+python3 supabase/scripts/generate_team_color_source_seed.py \
+  --workbook /path/to/FANatical_Team_Color_Source_Seed_Reference.xlsx \
+  --output supabase/migrations/202608230009_team_color_source_seed.sql
+```
+
+That seed contains 125 active-league mappings, 113 canonical official Tier 1
+publisher families, and three broad Tier 2 publishers. Governance approval and
+applicability enroll all 116 publishers as empirically probationary/unrated;
+the seed contains no Team Color facts, qualification observations or ratings,
+or information lineages. Historical page-level candidates from the completed
+master-team import are preserved through canonical redirects when the supplied
+league mapping and publisher URL identify exactly one workbook source family.
