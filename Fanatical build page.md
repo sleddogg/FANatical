@@ -53,24 +53,24 @@ Components
 
 ## **3\. News System**
 
-Completeness: 10/10
+Authority status: reconciled for the approved News foundation. Later engagement details remain explicitly deferred in the News To-Do List.
 
 Components
 
-*  	✓ News 	feed purpose 	  
-* 	✓ Static 	article card structure 	  
-* 	✓ Dynamic 	feed concept 	  
-* 	✓ Source-selected 	feed concept 	  
-* 	✓ SSV 	/ source bundle concept 	  
-* 	✓ RSS 	integration concept 	  
-* 	✓ Chronological 	feed rule 	  
-* 	✓ Mixed 	content types 	  
-* 	✓ Source 	Manager / Add Feed behavior 	  
-* 	✓ In-app 	article view 	  
-* 	✓ External 	fallback behavior 	  
-* 	✓ Article-to-FANbase 	thread connection 	  
-* 	— News 	notification rules 	  
-* 	✓ Source 	Catalog / Source Manager rules
+* ✓ Chronological personal feed purpose
+* ✓ Explicit Author, podcast Show, and organizational-contributor follows
+* ✓ Optional factual coverage scopes on News follows
+* ✓ Temporary News filters that never mutate global Team context
+* ✓ Add to Feed discovery and request behavior
+* ✓ Zero-follow EXAMPLE onboarding card
+* ✓ Feed, Sitemap, Web Page, Newsletter, and opportunistic API monitoring methods
+* ✓ Public written journalism and podcast episodes in v1
+* ✓ Publisher-site article destination
+* ✓ Canonical News Item-to-FANbase discussion connection
+* ✓ In-app notification when a requested News identity becomes available
+* ✓ Reversible, evidence-preserving deduplication
+* — Signed-out News behavior
+* — Exact News rating, reaction, and poll behavior
 
 ## **4\. FANbase / Community System**
 
@@ -233,7 +233,7 @@ Components
 * 	✓ Reporting 	flow	  
 * 	✓ Moderation 	queue	  
 * 	✓ Admin 	dashboard requirements	  
-* 	✓ Source 	Catalog / Source Manager	  
+* ✓ News Catalog / Resolution administration
 * 	✓ Quiz 	approval / review	  
 * 	✓ Cheer 	moderation / management	  
 * 	✓ Event 	management	  
@@ -285,7 +285,7 @@ Components
 
 Core Platform Spec — 9/10  
  App Shell / Navigation / Team Context — 8/10  
- News System — 10/10  
+ News System — authority reconciled; later engagement details explicitly deferred
  FANbase / Community System — 10/10  
  Cheer / Live Events — 10/10  
  Quiz System — 10/10  
@@ -320,7 +320,7 @@ Keep users inside the FANatical ecosystem whenever FANatical can provide the exp
 
 ### **Engagement Model**
 
-FANatical is designed to be the first sports news aggregator built by the fans themselves. Fans curate their own sports News feed by choosing the teams, writers, creators, and sources they want FANatical to bring to them. Instead of sending fans into disconnected comment sections across the internet, News discussions live inside FANbase, creating one connected place for fans to talk about the stories they follow.
+FANatical is designed to be a sports news aggregator built by the fans themselves. Fans curate their personal News feed by explicitly following human Authors, podcast Shows, and legitimate organizational contributors. Global Team context helps fans discover those News identities but does not silently subscribe them to News. Instead of sending fans into disconnected comment sections across the internet, News discussions live inside FANbase, creating one connected place for fans to talk about the stories they follow.
 
 Engagement extends beyond news into comments, conversations, FANfotos, quizzes, cheers, events, rivalry, and other shared fan experiences. Participation across these systems contributes to a fan’s Profile, giving them a place on the internet to build and display a recognizable fan identity.
 
@@ -344,7 +344,7 @@ Basic users receive FANatical’s default ad experience. Full Members can choose
 
 ### **Ad Strategy**
 
-Advertising will focus primarily around high-engagement areas such as FANbase discussions and quizzes. FANbase discussions also give FANatical a concrete way to show journalists and publishers how many fans are viewing, reacting to, and discussing their work, helping us demonstrate the additional visibility and audience FANatical can bring them.
+Advertising will focus primarily around high-engagement areas such as FANbase discussions and quizzes. FANbase discussions also give FANatical a concrete way to show journalists and publishers the engagement FANatical actually owns, such as reactions, ratings, discussions, and FANatical-generated outbound opens. FANatical must not present those opens as the publisher's total article views or readers.
 
 ---
 
@@ -352,7 +352,7 @@ Advertising will focus primarily around high-engagement areas such as FANbase di
 
 Start with independent bloggers, creators, and smaller sports outlets, then use FANatical’s growing audience and FANbase engagement to attract larger publishers. The goal is to become the aggregation and interaction layer between sports content and the fans who follow it.
 
-Long term, FANatical should increasingly host participating publishers’ content directly in-app, keeping the reading experience, discussion, and engagement inside FANatical instead of sending users back to external websites.
+Normal written journalism remains on the publisher's site. Long term, FANatical may host participating publishers' content directly only where the publisher has explicitly provided the necessary content and permission; FANatical discussion and other FANatical-owned engagement remain inside FANatical.
 
 ---
 
@@ -501,25 +501,25 @@ Still to define:
 * primary team  
 * secondary teams  
 * rival team  
-* default team on first login  
-* whether users can follow players, leagues, or sources separately from teams \- working idea right now is to have news option display \- selected team only, all teams/news
+* default team on first login
 
 ## **Team Context Note**
 
 The selected team is the default app context.
 
-News should default to the currently selected team.
+News may use the currently selected Team as its initial temporary context and for onboarding, Add to Feed discovery, and relevant News-identity suggestions. Global Team context does not create a News follow or make otherwise-unfollowed journalism eligible for the personal News feed.
 
-Users can expand the News view using filters:
+News uses its own temporary filters, which may include:
 
 * Selected Team  
-* League  
+* another Team
+* Competition
 * Sport  
 * All Followed News
 
-Selected Team is the default filter, not a hard content limit.
+Changing a temporary News filter must not mutate the selected/global Team context used elsewhere in FANatical. Temporary filters constrain News Items that already qualify through an explicit News follow; they never independently grant feed eligibility.
 
-Detailed source tagging and feed behavior belongs in the News System section.
+Detailed News identity, follow-scope, classification, discovery, and feed behavior belongs in the News System section.
 
 ---
 
@@ -563,523 +563,559 @@ Each feature section defines what happens inside its own page.
 
 # **News System**
 
-## **1\. Purpose**
+## **1. Purpose and Personal Feed**
 
-### News is the content hub of FANatical.
+News is FANatical's chronological personal sports-news feed and connects each canonical News Item to FANatical discussion and engagement.
 
-### It gives users one place to follow sports news, writers, creators, athletes, teams, leagues, podcasts, blogs, and media sources without jumping between multiple apps.
+The normal feed is ordered by publication time. No relevance-ranking algorithm controls normal feed order.
 
-### News should feel like a clean, customizable sports feed that connects directly into FANbase ‘article comments’ section
+A News Item enters the personal feed only through a News identity the fan explicitly follows:
 
-### The goal is not to create another algorithm-heavy social feed.
+* human Author
+* podcast Show
+* organizational contributor
 
-### The goal is to let users choose their sources, then let FANatical organize that content around the teams, sports, leagues, and people they care about.
+Temporary News filters may narrow that eligible set. They never add otherwise-unfollowed journalism.
 
-### News uses one unified feed for supported content types, with labels and filters used to organize different formats where needed.
+## **2. Followable News Identities**
 
-### ---
+### Human Authors
 
-### 2\.  Main Areas / Screens
+A human Author is a persistent person identity that survives publisher changes. Publisher-specific contributor profiles and bylines remain linked evidence rather than replacement people.
 
-### News Feed \- main body of page; scrollable feed of articles, videos, podcasts, blogs, and updates
+### Podcast Shows
 
-### News Item Card \- preview card for each item inside the News Feed
+A podcast Show is followable independently of its hosts or other contributors.
 
-### News Item Action Row \- reaction, discussion, share/forward, and view count; lives on News Item Cards and Local News Item View; discussion links to FANbase ‘article comments’ section
+### Organizational Contributors
 
-### Local News Item View \- full-page in-app view for articles and items FANatical can display directly
+Legitimate organizational identities are followable without being fabricated as humans. Examples include:
 
-### External News Item View \- source-controlled destination for podcasts, videos, social posts, paywalled articles, and external pages
+* TSN Staff
+* Sportsnet Staff
+* Canadian Press
+* Associated Press
+* Reuters
+* official Team or newsroom organizations
 
-### Filter Bar \- top-left button; filters feed by Selected Team, League, Sport, or All Followed News
+Following an organizational contributor qualifies only work actually attributed to that identity. Following **TSN Staff** is not the same as following every item TSN publishes.
 
-### Source Manager / Add Feed \- top-right button; add new sources and manage existing followed sources
+Written-news publishers such as TSN, ESPN, and Sportsnet are not broad publisher-follow targets merely because they publish News. The previously considered exception for publications with one to three writers is removed.
 
-### ---
+## **3. Scoped News Follows**
 
-3\. UI Components
+A follow for a human Author, podcast Show where applicable, or organizational contributor may be narrowed by factual observed coverage.
 
-News Page Header:
+Available scope kinds may include:
 
-* Filter button \- upper-left  
-* News Header \- centered page title  
-* News Subheader \- centered feed context, example: Latest from your team  
-* Source Manager / Add Feed button \- upper-right; opens three-tab screen:  
-  * Add Source \- default tab; search bar for finding sources in the FANatical Source Catalog, matching integrated sources appear as search results, user can follow available catalog sources, if multiple content types are available user can choose which ones to follow, if only one content type is available source is followed as-is, if source does not exist user can select Request Source, Request Source opens the Source Request form  
-  * Manage Sources \- existing followed sources, content types, source status, mute/remove/edit  
-  * How To \- plain-English guide for creating a feed and understanding source status
+* All coverage
+* Sport
+* Competition
+* Competition Edition where useful
+* Team
 
-Main Body:
+For example, **TSN Staff — NHL only** qualifies TSN Staff items only when the item's current approved factual classification matches NHL.
 
-* News Feed \- main vertical scroll area  
-* News Item Cards \- individual content cards inside the feed
+The scope belongs to the fan's follow preference. FANatical must not invent identities such as **TSN NHL** or **Sportsnet Baseball** unless a genuinely distinct published identity exists.
 
-News Item Card:
+Several selected scopes match with OR behavior. No selected scope means All coverage.
 
-* source logo/avatar  
-* source name  
-* headline/title  
-* author/byline where available  
-* content type label  
-* content type examples: Article, News, Blog, Video, Podcast, Athlete Post, Team Update, League Update  
-* time/date posted  
-* image or thumbnail where available  
-* News Action Item Row \- attached to each News Item Card
+## **4. Classification and Feed Eligibility**
 
-News Action Item Row \- attached to each news item card:
+News Item classification describes factual sporting scope, including:
 
-* reaction  
-* discussion \- links to FANbase article comments section  
-* share/forward  
-* view count
+* Sport
+* Competition
+* Competition Edition where useful
+* Team or Teams
 
-When clicked/selected the News Item Card opens to:
+Classification determines:
 
-Local News Item View:
+* where content factually belongs
+* whether it matches an optional follow scope
+* whether it matches a temporary News filter
+* observed coverage shown during discovery
 
-* in-app article/item view  
-* used when FANatical can display the item directly  
-* includes News Action Item Row
+Classification by itself never creates personal-feed eligibility.
 
-External News Item View:
+The required order is:
 
-* source-controlled page or external web view  
-* used for paywalled articles, podcasts, videos, social posts, unsupported formats, and source-owned pages
+**explicit News follow**
+→ **matching selected follow scope, if any**
+→ **temporary News filter, if any**
+→ **chronological display**
 
-Bottom App Footer:
+## **5. Global Team Context and Temporary News Filters**
 
-* FANatical logo / Home button \- bottom-left  
-* App navigation \- bottom-center  
-* Profile button \- bottom-right
+Global FANatical Team follows and selected Team context remain application-wide preferences.
 
-Visual References to Add:
+News uses separate temporary navigation and filter state. Entering News through a Team may establish the initial temporary News context, but changing that News filter must not mutate the rest of FANatical's selected/global Team state.
 
-* News Page  
-* News Item Card  
-* Local News Item View  
-* External News Item View  
-* Source Manager / Add Feed Screen
+For example, a Manchester United fan may enter through Manchester United and temporarily filter eligible News to Champions League without changing the rest of the app's Manchester United context.
 
-### ---
+Global Team context supports:
 
-4. ### User Flow
+* News onboarding
+* Add to Feed discovery
+* relevant News-identity suggestions
+* initial temporary News context
+* selection of the zero-follow EXAMPLE card
 
-### Default News Flow:
+Global Team context does not create a News follow or make official Team, organizational, wire, or other journalism automatically eligible.
 
-* ### News loads under the selected team context
+Temporary filters may include Sport, Competition, Team, and All Followed News.
 
-* ### News Feed displays News Item Cards matching the current feed context
+## **6. Zero-Follow EXAMPLE Onboarding**
 
-* ### News Subheader reflects the current feed context
+When a signed-in fan has zero actual News follows, News shows one onboarding example rather than a blank personal feed or a silent subscription.
 
-* ### User can scroll the feed, open News Item Cards, or use News Item actions
+Use the current/global Team context to:
 
-### News Item Action Flow:
+* select the latest usable story from that Team's canonical official newsroom organization when available
+* render it with the normal News-card presentation
+* clearly stamp the card **EXAMPLE**
+* make **+ Add to Feed** visually prominent
+* create no News follow and no personal-feed eligibility
 
-* ### Reaction saves the user’s reaction and updates the item reaction state
+If no usable current official-Team story exists, use a controlled static example. Do not silently substitute unrelated third-party journalism.
 
-* ### Discussion opens the linked FANbase thread in the article comments section
+The EXAMPLE card is outside the real feed result. Its presence depends on the fan having zero News follows, not merely on a filtered feed returning no items.
 
-* ### Share/forward opens the device/app share flow
+The Add to Feed action opens the relevant discovery context, such as:
 
-* ### View count is displayed as passive item information
+**Hockey**
+→ **NHL**
+→ **Edmonton Oilers**
 
-### Filter Flow:
+Once the fan creates their first real News follow, the EXAMPLE state disappears and the chronological personal feed becomes the normal page state.
 
-* ### Filter opens current feed filter options
+Detailed engagement behavior for the EXAMPLE card remains deferred until that UI is implemented.
 
-* ### Filter options: Selected Team, League, Sport, All Followed News
+## **7. Add to Feed, Discovery, and Requests**
 
-* ### Selecting a filter updates the News Feed and News Subheader
+Fans can discover followable News identities from either direction.
 
-* ### Back/close exits the filter without applying changes
+### Hierarchical Discovery
 
-### Open News Item Flow:
+Sport, Competition, and Team navigation can expose available:
 
-* ### Opening a News Item Card sends the user to either Local News Item View or External News Item View
+* Writers
+* Podcasts
+* Organizational, Staff, and Wire sources
+* official Team or newsroom sources
 
-* ### Local News Item View opens as a full-page in-app view when FANatical can display the item directly
+The identities shown for a scope come from real canonical relationships and observed, approved item classifications.
 
-* ### External News Item View opens when the item must remain source-controlled or external
+### Direct Search
 
-* ### User can return to the News Feed
+Direct search supports:
 
-### Discussion Flow:
+* human Author
+* podcast Show
+* organizational contributor
 
-* ### Discussion opens the linked FANbase thread in the article comments section
+After resolving an identity such as **TSN Staff**, Add to Feed presents its real observed coverage as optional follow scopes. A broad organizational contributor must not be permanently assigned to one Sport or Competition merely because it publishes some work there.
 
-* ### Discussion lives in FANbase article comments
+### Requests
 
-* ### Discussion stays connected to the original News Item
+If an identity is not found:
 
-### Add Source Flow:
+**Not found**
+→ **Submit Request**
 
-* ### Source Manager opens to Add Source by default
+The request retains the requesting fan and the request-to-candidate relationship.
 
-* ### User searches for a source
+When Resolution later makes the requested identity available:
 
-* ### Search checks the FANatical Source Catalog
+* update the request status in Add to Feed and Requests
+* create an idempotent in-app notification for that fan
 
-* ### If the source exists, user can follow it
+Email, browser, and push notification delivery are not part of the current News requirement.
 
-* ### If multiple content types are available, user can choose which ones to follow
+Manage Feed allows fans to inspect and change their explicit follows and coverage scopes.
 
-* ### If only one content type is available, source is followed as-is
+## **8. News Page and Card Presentation**
 
-* ### If the source does not exist, user can select Request Source
+The News page retains the responsive FANatical inner-page frame.
 
-* ### Submitted Source Requests are saved for review
+Primary areas are:
 
-### Manage Sources Flow:
+* temporary News Filter
+* centered News title and current filter context
+* Add to Feed and Manage Feed
+* chronological News Feed
+* News Item Cards
+* zero-follow EXAMPLE onboarding state
 
-* ### Manage Sources shows followed sources and saved source requests
+A normal News Item Card includes available:
 
-* ### Editing a source updates available source settings
+* publisher or contributor logo/avatar
+* headline or episode title
+* human or organizational attribution
+* podcast Show where applicable
+* publication time
+* content-type label
+* publisher-provided preview image or fallback
+* factual scope context where useful
+* FANatical-owned action row
 
-* ### Temporary mute hides a source for the selected time period
+The action row may expose:
 
-* ### Mute options: one week, one month
+* Discussion
+* Share
+* Polls when implemented
+* Ratings when implemented
+* Reactions when implemented
+* Add to Feed or identity-profile access where appropriate
 
-* ### Removing a source removes it from the user’s feed
+Do not display a publisher-style article view count.
 
-### How To Flow:
+## **9. Original Content Destination**
 
-* ### How To explains how to build a feed
+For normal third-party written journalism, FANatical does not republish the article body.
 
-* ### How To explains source status labels
+The article remains on the publisher's public site. Selecting the article headline, image, or read target opens the chosen public publisher manifestation directly.
 
-* ### How To explains why some sources can be added directly and others need review, support, or partnership
+FANatical-owned destinations include:
 
-### 
+* canonical Discussion
+* Polls
+* Ratings
+* Reactions
+* Author, Show, or organizational profiles
+* Add to Feed
 
-### ---
+No separate FANatical article-detail screen is required for ordinary third-party journalism. The canonical FANatical discussion retains enough News Item context to remain understandable.
 
-### 
+## **10. Resolution**
 
-### ---
+The conceptual responsibilities remain distinct:
 
-5. ### Rules
+**Source Discovery**
+= Who or what is this identity or work?
 
-### Default Rule:
+**Monitoring Setup**
+= How can FANatical reliably detect future work from it?
 
-* ### Selected team is the default News context
+Operationally, one Resolution investigation may produce both identity and Monitoring Endpoint evidence when the same fetch or investigation supports both. FANatical must not require redundant processing merely to preserve conceptual terminology.
 
-* ### News Subheader displays the current feed context
+Resolution can produce durable:
 
-### Filter Rule:
+* identity evidence
+* publisher identity and URL ownership
+* publisher-specific contributor profiles
+* organizational-contributor identities
+* affiliations and relationships
+* observed coverage
+* candidate Monitoring Endpoints
+* tested Monitoring Setups
+* review work
 
-* ### Available feed contexts: Selected Team, League, Sport, All Followed News
+## **11. Byline Resolution**
 
-* ### Applied filters control both News Feed content and News Subheader text
+Byline Resolution is a first-class News responsibility and supports:
 
-* ### Closing the filter without applying changes leaves the current feed unchanged
+* named human Authors
+* publisher-specific contributor or byline profiles
+* coauthors
+* organizational contributors
+* Staff or Newsroom attribution
+* missing or ambiguous bylines
+* persistent human identity across publisher changes
 
-### Source Rule:
+Do not assume every publisher relationship is employment. It may be employee, freelance, contract, guest, columnist, contributor, or another relationship.
 
-* ### News Feed is built from user-selected sources
+Historical attribution remains attached to the correct item even after later identity or affiliation changes.
 
-* ### Sources can be added through the Source Manager
+Ambiguous identity resolution must be reviewable rather than guessed. Merge and split decisions must preserve history and be reversible.
 
-* ### Source status labels: Usable, Partial, Restricted, Unavailable
+The policy for hidden-only metadata versus visible publisher attribution must be approved before the Byline Resolution implementation phase.
 
-* ### Usable sources can be followed
+## **12. Competition and Classification Model**
 
-* ### Partial, Restricted, and Unavailable sources can be saved as source requests
+News is not permanently constrained to a literal **Sport → League → Team** hierarchy.
 
-* ### Source requests are saved for review, future support, and possible source outreach
+The canonical system supports Competition structures appropriate to each sport. Competition kinds may include:
 
-### Feed Rule:
+* league
+* cup
+* championship
+* tournament
+* tour
+* series
+* another controlled kind
 
-* ### Chronological order is the default feed order
+Examples include:
 
-* ### News uses chronological ordering by default rather than heavy algorithmic feed selection
+* NHL
+* World Juniors
+* World Championship
+* Olympic Hockey
+* Premier League
+* Champions League
+* PGA Tour
+* individual golf tournaments
+* ATP and WTA structures
+* individual tennis tournaments
 
-* ### FANatical does not host source-owned media by default
+Existing League identities remain valid and map additively into the generalized Competition model.
 
-### News Item Rule:
+**team_primary_league** represents a Team's primary League context. It is not a complete list of every Competition in which that Team participates.
 
-* ### News Item Cards open as either Local News Item View or External News Item View
+Classification must represent the factual scope of each News Item rather than infer every current Team Competition from a Team mention.
 
-* ### Local News Item View is used when FANatical can display the item directly
+Player-level News classification is not required in v1, but the canonical model must not prevent it later.
 
-* ### External News Item View is used for source-controlled, paywalled, video, podcast, social, unsupported, or external-only items
+## **13. Filter Groups**
 
-Discussion Rule:
+Fan-facing groupings are presentation and navigation structures, not canonical factual Competitions.
 
-* News discussions live in the FANbase article comments section  
-* Each News Item can have only one linked FANbase discussion thread  
-* The linked discussion thread is created when any user first submits a comment after clicking the discussion button  
-* Discussion always stays connected to the original News Item
+Examples include:
 
-### Refresh Rule:
+* Junior Hockey
+* European Club Soccer
+* National Teams
+* Second Tier
 
-* ### News refresh is scheduled, not constant
+A group references real canonical Competition identities. For example, **Junior Hockey** may present WHL, OHL, and QMJHL. Selecting WHL and OHL retains WHL and OHL as the factual selections; the item is not classified into a synthetic Junior Hockey Competition.
 
-* ### target refresh timing is approximately every 15 minutes for standard source checks
+Useful filter groups should evolve from bootstrap data rather than being exhaustively invented before implementation.
 
-* ### Exact refresh timing is a system/admin setting
+## **14. Monitoring Methods and Endpoints**
 
-### ---
+Normal Monitoring Methods include:
 
-6. ### Data / Labels / Filters
+* Feed using RSS or Atom
+* Sitemap or News Sitemap
+* Web Page or Index
+* Newsletter or Email
+* Publisher API where genuinely available
 
-### Integrated News sources live in the FANatical Source Catalog. News Items are created from Source Catalog entries. New source candidates can come from user source requests, FANatical/admin research, or direct source submissions from outlets, creators, teams, podcasts, and blogs that want to be listed in FANatical.
+Author-specific feeds are especially useful when reliably exposed. Broader publisher or section endpoints may remain active as overlapping sensors.
 
-### News Item Data
+Several approved Monitoring Endpoints may monitor the same contributor, Show, or expected scope. There is no universal runtime ranking among endpoint types and no opaque endpoint-quality score.
 
-### All content displayed in the News Feed appears as a News Item.
+The first endpoint to detect a new work may trigger processing. Later observations become:
 
-### All following News Item data will be included where available: News Item ID, Source ID, headline/title, source name, author/byline, content type, published time, original URL, image/thumbnail, summary/snippet, tags, view type, and FANbase discussion thread ID.
+* redundancy evidence
+* Gap Detection evidence
+* explicit endpoint-health evidence
 
-### Tags:
+Implementation priority does not create runtime precedence:
 
-* ### sport
+* Feed is implemented first
+* Sitemap follows early
+* Newsletter is required for v1
+* Web Page monitoring is added where needed
+* Publisher API is opportunistic and is not a v1 prerequisite
 
-* ### league
+Monitoring schedules are configurable. No stale fixed or approximate News refresh interval is authoritative.
 
-* ### team
+## **15. Newsletter and Email**
 
-### Content type options:
+Newsletter or Email is a v1 Monitoring Method, particularly for independent writers.
 
-* ### Article
+If a newsletter points to a public publisher-hosted work, resolve the stable public destination and pass it through the normal content pipeline.
 
-* ### News
+If content exists only inside an email:
 
-* ### Blog
+* do not republish it without permission
+* do not expose subscriber tokens or personalized links
+* retain only what is operationally required
 
-* ### Video
+Tracking wrappers must resolve to stable canonical public destinations where possible.
 
-* ### Podcast
+Email ingestion is distinct from fan notification delivery.
 
-* ### Athlete Post
+## **16. Public Podcasts in v1**
 
-* ### Team Update
+Public podcast episodes ship in v1.
 
-* ### League Update
+A podcast Show is a followable identity independently of its hosts. Podcast RSS is a Feed Monitoring Endpoint.
 
-* ### Social Post
+The News domain supports:
 
-### View type options:
+* Show identity
+* Episode identity
+* contributors and hosts
+* RSS GUID and enclosure where appropriate
+* public episode destination
+* publication timestamp
+* factual classifications
+* canonical FANatical discussion
+* later Polls, Ratings, and Reactions
 
-* ### Local
+If the same Episode is embedded or referenced from a written page, it remains one Episode.
 
-* ### External
+Private or paid feeds, full transcript requirements, generalized social ingestion, and generalized video ingestion are outside v1.
 
-### Source Catalog Data
+## **17. Gap Detection**
 
-### Source Catalog data includes: Source ID, source name, source URL, source category, source access status, available content types, tags, and source input type.
+Primary Gap Detection comes from FANatical's own overlapping Monitoring Endpoints.
 
-### Tags:
+Only compare endpoints whose expected coverage meaningfully overlaps. An entire publisher Sitemap must not be compared with a narrowly scoped Author feed as though every unrelated URL were a miss.
 
-* ### sport
+Gap evidence distinguishes stages such as:
 
-* ### league
+* endpoint did not expose the URL
+* URL was observed but fetch failed
+* extraction failed
+* Byline Resolution failed
+* Classification failed
+* dedupe suppressed the item
+* policy intentionally excluded the item
+* another processing stage failed
 
-* ### team
+Intentional terminal policy states must not repeatedly reappear as false gaps.
 
-### Source category options:
+Fan-submitted missed items are another signal.
 
-* ### Team
+External aggregators may expose a missed work but are never FANatical feed sources. FANatical resolves and ingests the original contributor, publisher, and public manifestation and investigates the internal miss.
 
-* ### League
+## **18. Deduplication and Wire Content**
 
-* ### Sport
+Deduplication is reversible and evidence-preserving.
 
-* ### Media Outlet
+Distinguish:
 
-* ### Journalist
+1. alternate URLs for the same manifestation
+2. syndicated or rehosted manifestations of the same underlying work
+3. independent journalism covering the same event
 
-* ### Creator
+Do not collapse independent journalism merely because its event, topic, headline, or opening text is similar.
 
-* ### Blogger
+Retain all manifestations and supporting evidence internally. Suppression of duplicate display must not destructively delete records.
 
-* ### Podcast
+If a decision is reversed, restore the independent News Item going forward while leaving historical discussion, Polls, Ratings, and other community activity on the item where fans originally interacted.
 
-* ### Show
+For wire services such as Canadian Press, Associated Press, and Reuters:
 
-* ### Athlete
+* represent the organizational contributor truthfully
+* identify matching syndicated manifestations
+* retain every manifestation internally
+* display one stable accessible public manifestation
+* keep the representative destination sticky unless it becomes unavailable
 
-* ### General Sports
+FANatical need not determine which republisher legally owns or first published the wire work merely to select a deterministic fan-facing destination.
 
-### Source input type options:
+## **19. Preview Images**
 
-* ### RSS feed
+Use publisher-provided preview metadata such as **og:image** where appropriate.
 
-* ### podcast RSS
+Do not scrape arbitrary body images. Remote-reference preview images rather than automatically copying or caching them.
 
-* ### API
+Retain publisher-level preview disable and takedown capability and preserve publisher/article context.
 
-* ### direct external link
+If no usable image exists or image loading fails, use the relevant FANatical Sport visual or icon in the same card image area.
 
-* ### manual/admin entry
+## **20. Outbound Opens**
 
-* ### unknown
+FANatical cannot know a publisher's total article readership and must not display publisher-style article view or reader counts.
 
-* ### unsupported
+FANatical may record outbound article opens that FANatical itself generates. Call them **opens**, not publisher views or readers.
 
-### Source Request Data
+## **21. Canonical Discussion, Polls, Ratings, and Reactions**
 
-### Source Requests use the same data fields as Source Catalog entries where available. Source Request data also tracks Source Request Count, showing how many users have requested the same source.
+Each canonical News Item has one canonical FANatical discussion. The database relationship must prevent duplicate canonical discussions.
 
-### Additional Source Request data: requesting user ID, optional user note, request status, and date requested.
+A discussion may contain multiple Polls.
 
-### Multiple tags are allowed and encouraged. Selecting a team should auto-select the related league and sport where possible.
+Article Ratings are retained as individual events so later Author ratings, awards, rankings, and abuse controls can be derived without losing history.
 
-### Feed Filters
+The following require product approval before their implementation phase:
 
-### Filter options:
+* rating scale
+* rating revision and withdrawal behavior
+* News reaction set
+* Poll creation, voting, and moderation rules
 
-* ### Selected Team
+These deferred engagement details do not block Competition, identity, News Item, feed, monitoring, UI conversion, Resolution, or runtime foundations.
 
-* ### League
+## **22. Publisher Identity and Factual Trust**
 
-* ### Sport
+News may reuse the existing canonical publisher identity registry, including aliases, URL scopes, ownership relationships, redirects, and provenance.
 
-* ### All Followed News
+News availability and monitoring policy remain completely independent from factual-verification trust tiers and applicability.
 
-### Selected Team means the global app team selected before entering News.
+A publisher may be valid for News without any factual trust assignment. Factual-verification approval does not automatically make a publisher available to News.
 
-### Source Access Status
+The registry's historical **trusted_sources** name must not be presented to fans as an editorial judgment. News policy must not describe a publisher's journalism or opinions as trusted merely because the canonical identity is shared.
 
-### Usable \- source can create News Item Cards automatically.
+## **23. Runtime Architecture**
 
-### Partial \- source can be added or linked, but only some content types or items can be supported.
+The settled runtime boundary is:
 
-### Restricted \- source needs API access, source cooperation, partnership, or admin setup before normal use.
+**Cloudflare executes News background work. Supabase/Postgres owns canonical state and the durable work ledger.**
 
-### Unavailable \- source cannot be processed at this time; request is saved for review or future outreach.
+Cloudflare will eventually provide:
 
-### Example
+* Workers
+* Cron Triggers
+* Queues
+* Email Worker capability
+* exceptional browser rendering later where genuinely necessary
 
-### Source Catalog entry: Oilers Nation
+Supabase/Postgres owns:
 
-### Source Catalog data:
+* canonical News identities and content
+* durable work items and leases
+* idempotency and evidence
+* Monitoring Endpoint observations and state
+* Resolution and review state
+* Byline Resolution and Classification decisions
+* deduplication decisions
+* recovery state
+* in-app notifications
 
-* ### Source name: Oilers Nation
+Cloudflare Queue messages reference durable Supabase work IDs. Queue delivery must not become a second source of job truth, and duplicate delivery must be harmless.
 
-* ### Source URL: oilersnation.com
+Reuse the existing FANatical work-ledger, lease, wake, recovery, and duplicate-safety patterns where appropriate without reopening or completing the parked agent/backend product work.
 
-* ### Source category: Media Outlet, Blogger
+News runtime code remains separate from the current asset-only web Worker.
 
-* ### Source access status: Usable or Partial depending on connected source inputs
+## **24. Bootstrap Direction**
 
-* ### Available content types: Article, Blog, Podcast, Video where supported
+Before beta, bootstrap a useful, intentionally varied set of real:
 
-* ### Tags: Hockey, NHL, Edmonton Oilers
+* publishers
+* human Authors
+* organizational contributors
+* podcast Shows
+* Feed endpoints
+* Sitemap endpoints
+* Newsletter endpoints
+* other useful Monitoring Endpoints
 
-* ### Source input type: RSS feed, podcast RSS, direct external link, or other connected input
+Use incoming content to exercise:
 
-### News Item created from source:
+* publisher-specific contributor identities
+* official Team or newsroom identities
+* organizational and wire attribution
+* human affiliations and publisher changes
+* actual Competition and Team classifications
+* observed Author, Show, and organizational coverage
+* scoped follows
+* Monitoring Setups
+* alternate URL, syndication, and wire deduplication
+* filter-group requirements
+* missing metadata and card fallbacks
 
-* ### Source name: Oilers Nation
+Include deliberately difficult cases such as cross-competition writers, independent newsletter writers, multi-sport Staff identities, official Team content, wire-heavy publishers, shared-owner publications, podcasts, junior hockey, soccer cups, golf, and tennis.
 
-* ### Headline/title: article or episode title
+## **25. News To-Do List**
 
-* ### Content type: Article, Blog, Podcast, or Video
+The following are intentionally deferred and are not blockers to the approved foundation phases:
 
-* ### Published time: source-provided publish time
+* signed-out News behavior
+* hidden-only metadata versus visible publisher attribution
+* exact article rating scale
+* rating revision and withdrawal behavior
+* exact News reaction set
+* detailed Poll creation, voting, and moderation rules
+* configured monitoring schedules, concurrency, response limits, timeouts, and retry values established from implementation and bootstrap evidence
+* final visual treatment for Add to Feed, profiles, and the EXAMPLE onboarding card
 
-* ### Original URL: source link
-
-* ### Tags: Hockey, NHL, Edmonton Oilers
-
-* ### View type: Local or External
-
-* ### FANbase discussion thread ID: created after first discussion comment
-
-### 
-
-### ---
-
-7. ### Backend / Scale Notes
-
-### Immediate App Actions
-
-### Feed Loading:
-
-* ### News Feed loads News Items from FANatical based on selected feed context, filters, followed sources, and tags
-
-### Filter Loading:
-
-* ### Filter changes reload the News Feed using the selected filter and update the News Subheader
-
-### Open News Item:
-
-* ### News Item Cards open as either Local News Item View or External News Item View based on stored view type
-
-### Discussion Count:
-
-* ### News Item Cards display the current FANbase discussion/comment count
-
-### Add Source:
-
-* ### Add Source searches the FANatical Source Catalog first
-
-* ### Existing catalog sources can be followed
-
-* ### Missing sources create Source Requests
-
-### Scheduled Source Refresh
-
-### Source Refresh:
-
-* ### FANatical checks integrated sources every 15 minutes
-
-* ### RSS/feed checks use conditional requests where supported, including ETag, Last-Modified, and 304 Not Modified
-
-* ### If the source has not changed, no News Item work is done
-
-* ### Push-style RSS updates may be supported where available
-
-### News Item Creation:
-
-* ### When Source Refresh finds new or changed source content, FANatical immediately creates or updates a News Item using the data labels listed in Section 6
-
-* ### FANatical checks existing News Items before creating a new one to avoid duplicates
-
-* ### Image/thumbnail is pulled from the source where available; otherwise the News Item uses the source logo or default fallback image
-
-### Queued / Review Work
-
-### Source Requests:
-
-* ### Source Requests are saved for review
-
-* ### Source Requests can come from user requests, FANatical/admin research, or direct source submissions
-
-* Source Requests for the same source are grouped together and counted. Source Request Count will be used for admin prioritization, source outreach, and future partnership discussions.
-
-### Source Failures:
-
-* ### Failed or unavailable sources stay saved
-
-* ### Source issues are marked for review instead of deleting the source automatically
-
-### Scale Notes
-
-### News is high-read and low-write. Source refresh creates or updates News Items once. All users with that item in their feed will have the new item loaded into their FANatical feed.
-
-### Source Requests and Source Failures are review work and should not slow down normal News Feed loading.
-
-### Pure news-aggregator sources are not treated as primary News sources.
-
-### 
-
-### ---
-
-8. ### To-Do List
-
-* ### Final Source Manager / Add Feed visual mockup
-
-* ### Final Local News Item View visual mockup
-
-* ### Final External News Item View behavior/mockup
-
-* ### Future News notification support, if added later
-
-### 
-
-### 
+No deferred item silently restores publisher follows, automatic Team eligibility, classification-created eligibility, local third-party article bodies, fixed refresh intervals, or publisher-style view counts.
 
 # Fanbase / Community System
 
@@ -3809,7 +3845,7 @@ Example: user account, permissions, profile ownership.
 Example: reports, spam, abusive content, photo review.
 
 **Notifications** \= alerts, reminders, push messages  
-Example: breaking news or major event alerts.
+Example: an in-app alert that a requested News identity is now available, or an approved major-event reminder.
 
 **Analytics** \= tracks usage, retention, revenue, and cost drivers.
 
@@ -3847,10 +3883,10 @@ Handles slower work such as image processing, moderation scans, notifications, b
 Controls user content, reports, spam, abuse, photo review, and community safety.
 
 **Notifications**  
-Handles limited, intentional alerts. News/breaking news is the main notification use case.
+Handles limited, intentional alerts. The currently approved News notification is an in-app alert when Resolution makes a fan-requested News identity available; broader News notification channels and triggers require separate approval.
 
 **Admin Tools**  
-Internal controls for reviewing reports, managing sources, approving quizzes, managing cheers, handling users, and checking app health
+Internal controls for reviewing reports, managing the News catalog and Resolution work, approving quizzes, managing cheers, handling users, and checking app health
 
 **Membership / Entitlements**
 
@@ -3938,7 +3974,7 @@ Do not run heavy ranking calculations during live events.
 
 ### **Notification Flow**
 
-User action, news update, or scheduled event creates notification trigger  
+Approved user, Resolution, or scheduled-event action creates a notification trigger
 Backend checks user settings  
 Backend checks rate limits  
 Notification enters queue  
@@ -3946,10 +3982,12 @@ Notification sends only when useful
 
 Notifications should be limited and intentional.
 
-Primary notification use case:
+Currently approved News notification use case:
 
-* breaking News  
-* major team/source updates  
+* requested Author, podcast Show, or organizational contributor becomes available through Resolution; notify the requesting fan in-app
+
+Other approved application notification use cases may include:
+
 * important event reminders where approved
 
 Do not send notifications by default for:
@@ -3979,8 +4017,8 @@ Live moments are for coordination, not calculation.
 ### **Admin Flow**
 
 Admin opens internal tools  
-Admin reviews reports, sources, quizzes, photos, cheers, or user issues  
-Admin reviews reports, sources, quizzes, photos, cheers, or user issues.
+Admin reviews reports, News catalog/Resolution work, quizzes, photos, cheers, or user issues
+Admin reviews reports, News catalog/Resolution work, quizzes, photos, cheers, or user issues.
 
 Admin approves or rejects content where pre-review applies, and can hide, flag, remove, or escalate user content through moderation where appropriate.
 
@@ -4000,7 +4038,7 @@ Admin components:
 * quiz approval queue  
 * Cheer moderation/management   
 * venue mapping / Seat Resolver management
-* source catalog / source manager  
+* News catalog / Resolution manager
 * event manager  
 * notification manager  
 * reward/ad event review  
@@ -4149,7 +4187,7 @@ The app should encourage photo viewing, rating, ranking, and reacting more than 
 
 Notifications are limited and intentional.
 
-News is the main notification use case.
+The current News requirement is the in-app request-resolution notification. Breaking-News, email, browser, and push delivery are not approved by this News authority.
 
 Routine comments, reactions, ratings, and ranking movement do not create default notifications.
 
@@ -4250,10 +4288,10 @@ Moderation statuses:
 ### **Feature Load Map**
 
 **News**  
-Data: articles, sources, clicks  
-Scale: high views, low writes  
-Backend move: cache feeds and refresh sources on schedule  
-Notification priority: highest, especially breaking news
+Data: canonical News Items and manifestations, News identities, follows, classifications, discussions, and FANatical-generated outbound opens
+Scale: high reads with durable ingestion and comparatively lower direct fan-write volume
+Backend move: query/cache chronological eligible feeds and monitor configured endpoints through durable work
+Notification scope: in-app request-resolution notification only unless later News notification behavior is separately approved
 
 **Quiz**  
 Data: questions, answers, scores, attempts  
