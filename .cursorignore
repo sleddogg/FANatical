@@ -1,0 +1,20 @@
+# secrets
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# generated/runtime bulk
+supabase/.temp/
+app/node_modules/
+app/dist/
+app/dist-admin/
+app/test-results/
+app/.wrangler/
+images/
