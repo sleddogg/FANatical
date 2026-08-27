@@ -1,15 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from "react";
-import { loadFollowedTeams } from "../../data/followedTeams";
+import { followedTeamsStorageKey, loadFollowedTeams } from "../../data/followedTeams";
 import { loadNavigationSide } from "../../data/navigationSideStorage";
 import { loadProfileImageShape } from "../../data/profileImageShapeStorage";
 import { loadHomeCustomization } from "../../data/homeCustomizationStorage";
 import { loadThemePreference } from "../../data/themePreferenceStorage";
 import { localSelectedTeamPreferenceStore } from "../../data/selectedTeamPreference";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
-import { initialProfile } from "../profile/mockProfileData";
 import { loadProfileVisualImages } from "../profileVisual/profileVisualStorage";
 import { loadRemoteProfileVisuals, uploadRemoteProfileVisual } from "../profileVisual/profileVisualRepository";
-import { loadAccountSettings, replaceAccountFollowedTeams, saveAccountSettings, saveOwnedProfile } from "./accountRepository";
+import { loadAccountSettings, replaceAccountFollowedTeams, saveAccountSettings } from "./accountRepository";
 import { useAuth } from "./AuthContext";
 
 type BootstrapState = Readonly<{
@@ -21,24 +20,38 @@ type BootstrapState = Readonly<{
 const AccountBootstrapContext = createContext<BootstrapState>({ ready: true, error: "", revision: 0 });
 const migrationVersion = 1;
 
+function hasStoredFollowedTeamState() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(followedTeamsStorageKey) !== null;
+  } catch {
+    return false;
+  }
+}
+
 async function migratePrototypeAccount(userId: string) {
   const settings = await loadAccountSettings(userId);
   if (settings.prototypeMigrationVersion >= migrationVersion) return;
 
-  const followedTeamIds = loadFollowedTeams()
+  const hasStoredFollowedTeams = hasStoredFollowedTeamState();
+  const storedFollowedTeams = hasStoredFollowedTeams ? loadFollowedTeams() : [];
+  const followedTeamIds = storedFollowedTeams
     .map((team) => team.officialTeamId)
     .filter((teamId): teamId is OfficialTeamId => Boolean(teamId));
-  const selectedLegacyId = await localSelectedTeamPreferenceStore.loadSelectedTeamId();
-  const selectedTeamId = loadFollowedTeams().find((team) => team.id === selectedLegacyId)?.officialTeamId ?? followedTeamIds[0] ?? null;
+  const selectedLegacyId = hasStoredFollowedTeams
+    ? await localSelectedTeamPreferenceStore.loadSelectedTeamId()
+    : null;
+  const selectedTeamId = storedFollowedTeams.find((team) => team.id === selectedLegacyId)?.officialTeamId
+    ?? followedTeamIds[0]
+    ?? null;
 
-  await saveOwnedProfile(userId, { ...initialProfile, id: userId });
-  await replaceAccountFollowedTeams(userId, followedTeamIds);
+  if (hasStoredFollowedTeams) await replaceAccountFollowedTeams(userId, followedTeamIds);
   await saveAccountSettings(userId, {
     navigationSide: loadNavigationSide(),
     profileImageShape: loadProfileImageShape(),
     homeCustomization: loadHomeCustomization(),
     themePreference: loadThemePreference(),
-    selectedTeamId,
+    ...(hasStoredFollowedTeams ? { selectedTeamId } : {}),
   });
 
   let localVisuals = [] as Awaited<ReturnType<typeof loadProfileVisualImages>>;
