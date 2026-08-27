@@ -26,9 +26,11 @@ There are eight currently untracked image files under `images/icons` and `images
 
 ## Workflow
 
-FANatical development has returned to frontend styling and UX.
+FANatical development follows the active project/build-page phase and the
+established architecture authority in `Fanatical build page.md` and directly
+applicable repository documentation.
 
-- Work on one page or feature at a time.
+- Work on one page, feature, or approved architecture phase at a time.
 - Do not make unrelated cleanup, refactors, architecture changes, dependency upgrades, or speculative improvements.
 
 Before editing:

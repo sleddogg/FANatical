@@ -112,8 +112,8 @@ role assignment is restricted to trusted database/service-role operations.
 Future admin policies and RPCs should use `has_staff_access(...)` and grant the
 minimum role or permission required by each operation.
 
-The canonical team/source/venue registry, active verification policies, and
-Trusted Source Registry review workflow are documented in
+The canonical team/competition/source/venue registry, active verification
+policies, and Trusted Source Registry review workflow are documented in
 [`TEAM_REGISTRY.md`](TEAM_REGISTRY.md). Its seed workbook data is deliberately
 marked imported and unverified. Catalog agents authenticate normally and use
 narrow proposal/evidence RPCs; they never receive the service-role key.

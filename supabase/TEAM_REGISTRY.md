@@ -1,9 +1,9 @@
-# FANatical canonical team registry
+# FANatical canonical team and competition registry
 
-The PostgreSQL registry is the canonical backend model for team identity and
-team-maintained data. The React `officialSportsDatabase` remains a temporary
-compatibility fallback while feature consumers are moved to the repository
-adapter in focused passes.
+The PostgreSQL registry is the canonical backend model for Team and Competition
+identity and governed facts. The React `officialSportsDatabase` remains a
+temporary compatibility fallback while feature consumers are moved to the
+repository adapter in focused passes.
 
 ## Identity
 
@@ -19,6 +19,111 @@ adapter in focused passes.
 
 FANatical currently models one mutable primary league per team. Prior primary
 league rows remain as history after a verified successor is promoted.
+
+## Competition foundation
+
+The generalized Competition model is additive. Existing `catalog_leagues`
+identities and references remain authoritative for legacy League consumers,
+and every existing or newly inserted League has one explicit
+`catalog_league_competition_mappings` row to a league-kind canonical
+Competition with the same public ID and Sport. A database trigger creates the
+Competition identity, initial version, and mapping in the League insert's own
+transaction; failure rolls back the League. The mapping is durable, and later
+League compatibility identifiers are mirrored to the mapped Competition in
+the same transaction. Backfilled and newly generated Competition facts are
+`imported_unverified`, even when the legacy League has a verified status,
+because League evidence is not silently promoted into a new factual record.
+
+Canonical Competition data is separated into:
+
+- `competition_kinds`, the controlled and extensible kind catalog initially
+  covering league, cup, championship, tournament, tour, series, and other;
+- `catalog_competitions`, the stable Competition identities;
+- `competition_identity_versions`, `competition_alias_versions`, and
+  `catalog_competition_identifiers`, which hold mutable names, aliases, and
+  namespaced compatibility/external IDs;
+- `catalog_competition_editions` and `competition_edition_versions`, which keep
+  a stable Competition distinct from each season or occurrence;
+- `team_competition_edition_participation_versions`, which records time-bounded
+  Team participation in any number of Competition Editions without duplicating
+  or changing the Team identity; and
+- `competition_relationship_versions` and
+  `competition_edition_relationship_versions`, which are many-to-many graphs
+  rather than mandatory parent trees. Relationships are constrained to one
+  Sport, while a Tournament or Tournament Edition can still relate to multiple
+  same-Sport Tours or Tour Editions.
+
+A Competition's permanent public ID, Sport, and kind are identity-defining and
+cannot be directly changed. A correction that would alter Sport or kind must
+use a future governed replacement/correction workflow that also revalidates
+relationships, Editions, participation, and League compatibility; Phase 1 does
+not expose a casual mutation path.
+
+`team_primary_league_versions` and Competition participation answer different
+questions. Primary League is the Team's singular primary app/team-context
+League. `team_competition_edition_participation_versions` is the factual,
+time-bounded record of every Competition Edition in which the Team
+participates. News and other Competition-aware features must use participation
+when answering Competition-membership questions; neither model replaces the
+other.
+
+`resolve_catalog_competition(...)` checks immutable public IDs, namespaced
+external identifiers, current names, and current aliases. It returns
+`resolved`, `none`, or every candidate for an `ambiguous` result rather than
+guessing. `resolve_catalog_competition_id(...)` is the strict convenience form
+and raises when a match is ambiguous.
+
+Competition filter groups are separate presentation identities in
+`catalog_competition_filter_groups`. Their versioned memberships reference real
+canonical Competitions. A group such as Junior Hockey can therefore present
+WHL, OHL, and QMJHL without creating a synthetic factual Competition. A filter
+group may optionally be Sport-scoped; scoped groups accept only Competitions
+from that Sport, while unscoped presentation groups may span Sports. The member
+Competitions always retain their own Sport identities.
+
+The Competition foundation adds Golf and Tennis to `catalog_sports`. It does
+not add a complete Competition or filter-group bootstrap catalog; representative
+Hockey, Soccer, Golf, Tennis, and Junior Hockey examples remain transactional
+test fixtures until approved bootstrap data is supplied.
+
+## Competition expansion and deferred governance
+
+Phase 1 provides a safe expansion base but not the complete Competition
+governance interface:
+
+- a reviewed migration or privileged import may add a stable Sport ID;
+- every League insert, including the existing approved
+  `league_registration` path, is automatically Competition-complete;
+- reviewed imports may add stable non-League Competition and Edition IDs,
+  aliases, relationships, and participation as `imported_unverified`; and
+- version successors preserve history through the established
+  current-to-superseded transition used by Team governance.
+
+Competition rows must remain `imported_unverified` until a Competition-specific
+proposal, evidence, verification-policy, decision, and audit path exists.
+Direct casual verification is not permitted. That governed promotion path must
+be implemented before automated or agent promotion of Competition facts.
+
+The following work is intentionally deferred to the earliest dependent News
+implementation milestone:
+
+- before provider-specific ingestion, assess an optional namespace argument
+  for Competition resolution and decide whether commercial/private provider
+  identifiers may be exposed through the public identifier catalog;
+- before the first News consumer needs them, add a shared Team-participation
+  read model and provider-appropriate Competition Edition resolver;
+- during the first real-source/provider mapping spike, verify how incoming
+  Competition, Edition, and participant metadata maps to these canonical
+  records before ingestion depends heavily on Edition resolution; and
+- when the first filter-group UI/API consumer is built, choose deliberately
+  between the current row-per-membership view and a group-level JSON aggregate
+  instead of changing the Phase 1 shape speculatively.
+
+Separately, the existing frontend regression suite has timing-sensitive
+Profile/Cheer cases under its default five-second timeout. The established
+single-worker, longer-timeout invocation is the reliable full-suite check; this
+is a repository-quality backlog item, not a Competition or News behavior
+change.
 
 ## Current facts and history
 
@@ -37,6 +142,10 @@ Mutable facts use append-only version tables:
 Verified values cannot be deleted or edited. Approval atomically marks a
 current version as superseded and inserts its verified successor. There is no
 automatic stale state based only on age.
+
+The Competition identity, alias, Edition, relationship, participation, and
+filter-group version tables use this same supersession and verified-history
+protection pattern.
 
 ## Verification
 
@@ -145,8 +254,11 @@ python3 supabase/scripts/generate_team_registry_seed.py \
   --output supabase/migrations/202608190004_complete_master_team_seed.sql
 ```
 
-The completed seed contains 5 sport identities, 125 league identities, and
-1,948 team identities. Of these, 124 leagues and 1,947 teams come from the
+The completed Team seed contains 5 sport identities, 125 league identities,
+and 1,948 team identities. The later Competition foundation adds Golf and
+Tennis, so a fully migrated catalog contains 7 Sport identities while the
+immutable Team seed's recorded counts remain unchanged. Of the Team seed's
+records, 124 leagues and 1,947 teams come from the
 completed workbook; the Celtics/NBA identity comes from the supplied read-model
 example to preserve the current app. It also contains 366 namespaced legacy
 frontend team IDs, the four existing color palettes, 130 deduplicated pending

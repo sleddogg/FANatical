@@ -860,7 +860,7 @@ Examples include:
 
 Existing League identities remain valid and map additively into the generalized Competition model.
 
-**team_primary_league** represents a Team's primary League context. It is not a complete list of every Competition in which that Team participates.
+**team_primary_league** represents a Team's primary app/team-context League. It is not a complete list of every Competition in which that Team participates. Competition Edition participation is the factual membership authority, and News or other Competition-aware features use participation when answering which Competitions a Team participates in.
 
 Classification must represent the factual scope of each News Item rather than infer every current Team Competition from a Team mention.
 
@@ -1114,6 +1114,13 @@ The following are intentionally deferred and are not blockers to the approved fo
 * detailed Poll creation, voting, and moderation rules
 * configured monitoring schedules, concurrency, response limits, timeouts, and retry values established from implementation and bootstrap evidence
 * final visual treatment for Add to Feed, profiles, and the EXAMPLE onboarding card
+* Competition proposal, evidence, verification-policy, decision, and audit workflows before any automated or agent promotion of Competition facts beyond `imported_unverified`
+* namespace-aware Competition identifier resolution review before provider-specific ingestion depends on external IDs
+* public-versus-private exposure policy for commercial or licensed provider identifiers during the first real provider-ingestion phase
+* a shared Competition-participation read model and provider-appropriate Edition resolver before News consumers need those queries
+* a real-source/provider mapping spike for incoming Competition, Edition, and participant metadata in the earliest real-content phase
+* filter-group row-versus-aggregated read-model selection when the first real frontend/API consumer is implemented
+* repository-quality follow-up for existing Profile/Cheer regression tests that are timing-sensitive under the default five-second timeout; the reliable full-suite invocation currently uses one worker and a longer timeout
 
 No deferred item silently restores publisher follows, automatic Team eligibility, classification-created eligibility, local third-party article bodies, fixed refresh intervals, or publisher-style view counts.
 
