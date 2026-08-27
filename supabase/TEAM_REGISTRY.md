@@ -12,8 +12,12 @@ repository adapter in focused passes.
   `hockey-000027` for the Edmonton Oilers.
 - Existing application slugs are namespaced rows in
   `catalog_team_identifiers`; they are not canonical identities.
-- `resolve_catalog_team_id(...)` accepts either a public ID or a compatibility
-  identifier.
+- `resolve_catalog_team(...)` accepts either a public ID or a compatibility
+  identifier and returns `resolved`, `none`, or every candidate for an
+  `ambiguous` result rather than guessing across namespaces.
+- `resolve_catalog_team_id(...)` is the strict convenience form. It preserves
+  normal UUID-returning behavior for unambiguous callers and raises when a bare
+  external identifier matches more than one Team.
 - `submit_team_registration_proposal(...)` reserves the next public ID for a
   sport and submits it to the normal verification workflow.
 
