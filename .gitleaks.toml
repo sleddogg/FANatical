@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Lowercase dotted or hyphenated identifiers used throughout FANatical - competition edition IDs, storage key names, slugs. Real credentials are mixed-case, hex, or JWTs and are not this shape."
+regexes = [
+  '''^[a-z0-9]+([.-][a-z0-9]+)+$''',
+]

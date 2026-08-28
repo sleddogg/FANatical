@@ -408,6 +408,24 @@ Enforcement: `storage.objects` policies compare `(storage.foldername(name))[1]` 
 Proof: Cursor's rolled-back foreign-folder upload probe was denied, but `profile_privacy.sql` does not permanently assert the upload/write boundary
 Status: enforced but unproven · `CV:owner-folder-uploads` · GAP-08
 
+**FAN-ACCT-07 — A claimed handle is a 3–30 character, case-insensitive identity made only from ASCII letters, numbers and underscores, with no leading or trailing underscore.**
+Numbers may lead and underscores may repeat. The entered casing is preserved for display, while ownership uses `lower(handle)`. The empty string is the unclaimed state. Reserved identities are case-insensitive and include the centrally maintained exact-name set and the entire `fanatical_` prefix. A presentation `@` is not stored as part of the handle.
+Enforcement: private reservation registry; authoritative profile-write validation trigger; partial unique index on `lower(handle)`; unclaimed signup behaviour; clear collision handling in `save_my_profile` — `202608270003`
+Proof: `profile_handle_integrity.sql` exercises every settled boundary, all required reservations, normalized collision rejection, multiple blank handles, casing preservation and owner changes through the authenticated RPC
+Status: enforced + tested locally; independent verification and hosted state remain pending · GAP-12
+
+**FAN-ACCT-10 — Operational agent/service identities are not fan identities and never claim public fan handles or appear in ordinary fan-only surfaces.**
+Their permanent Auth user and `catalog_actors` identity remain intact independently of any technical profile row, profile visibility or handle state so capabilities, audit history, verification decisions and provenance retain the same actor. Shared Auth bootstrap may create a technical profile row, but the canonical fan-profile population excludes every profile linked to an agent/service actor, active or inactive. Fan discovery, tagging autocomplete, leaderboards and equivalent fan-only surfaces must use that enforceable population rather than assuming that every profile or Auth user is a fan.
+Enforcement: `private.fan_profile_population`; operational check in `private.enforce_profile_handle_integrity()`; `private.can_view_profile()` fan-population join; migration preflight that refuses nonblank operational handles — `202608270004`
+Proof: `operational_identity_handles.sql` proves technical-row retention, agent/service exclusion across active states, fan-facing RPC exclusion, direct and authenticated-RPC handle rejection, and preservation of the actor/Auth linkage
+Status: enforced + tested locally; independent verification and hosted state remain pending
+
+**FAN-ACCT-11 — A fan can never claim a handle matching an active operational actor's canonical identifier.**
+Every agent/service `catalog_actors.actor_key` is automatically recorded case-insensitively in the central handle reservation registry without deriving a second operational name. The current reservation cannot be removed or reassigned while that actor is active. Manual reservations remain removable; an automatic reservation becomes removable after retirement or after the actor is renamed, while activation always recreates and validates the current reservation.
+Enforcement: catalog-actor reservation trigger; actor-linked reservation provenance and lifecycle trigger; shared handle-namespace transaction lock; existing-claim rejection — `202608270004`
+Proof: `operational_identity_handles.sql` proves agent and service reservation, punctuation-preserving actor keys, case-insensitive fan denial, active protection, rename/retirement release, reactivation, and collision-safe activation
+Status: enforced + tested locally; independent verification and hosted state remain pending
+
 ## Product integration and truthfulness
 
 **FAN-SYS-01 — Live Cheer readiness requires verified identity, verified primary league, verified primary venue relationship and a verified current venue map.**
@@ -580,6 +598,16 @@ Why: queue delivery is at-least-once, so any state in a payload will eventually 
 
 **FAN-ACCT-04 — Explicit account deletion retains only the minimum permissible historical award record necessary to preserve competition history.** Identifiability, anonymization and retention mechanics are explicitly deferred to the later privacy and retention policy and are not defined here. If a returning person can later be safely re-associated with historical awards through an approved identity process, those awards may be reattached. Both the retention policy and the identity process are material decisions under FAN-DEV-04.
 
+**FAN-ACCT-08 — The permanent fan identity is the stable internal account/user ID; it never changes, is never displayed, and is never derived from or replaced by a handle or display name.** Trophies, follows, comments, tags, history and every other fan-owned record belong to that permanent identity. Handle and display name are mutable facts attached to it: a handle is a case-insensitively unique public label while claimed, while a display name is non-unique and is never an identifier. Renaming a handle never changes ownership. If a released handle is later claimed by someone else, the new holder receives only the label and inherits none of the prior holder's mentions, trophies, follows or history. A handle use resolves to the identity holding it at the time of the action.
+Enforcement: none
+Proof: none
+Status: settled — unbuilt
+
+**FAN-ACCT-09 — Tags and mentions reference the permanent fan identity, never handle text.** A historical tag displays the tagged fan's current handle rather than the text originally typed, so a rename continues to identify the intended person and a later handle reassignment cannot rebind history. This is deliberately distinct from FAN-ATTR-01: a News byline preserves what a publisher published as a fact about the past, while a tag records which person the fan meant as an identity pointer that follows that person.
+Enforcement: none
+Proof: none
+Status: settled — unbuilt
+
 ## User context and accessibility
 
 **FAN-UX-01 — Core actions never depend on hover alone.** Hover may add labels or delight on desktop; essential meaning and actions remain available to touch, keyboard and screen-reader users. · `G:UX-02`
@@ -598,11 +626,13 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 **FAN-DEV-03 — One implementation owner per overlapping change set.** During audited work, one builder owns each overlapping area. Other agents may review, test, audit or work independently on unrelated areas, but do not simultaneously rewrite the same work under review. · `G:DEV-03`
 
 **FAN-DEV-04 — Never invent material numbers.** Material thresholds, percentages, cadences, retry intervals, scoring bands, qualification requirements and other operating constants are never silently invented where they affect product behaviour or architecture. If a required material value is genuinely undecided, implementation stops for an explicit decision. · `G:DEV-04`
-*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; mute duration if mute is added; deletion retention policy; the approved identity process for award re-association.*
+*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; mute duration if mute is added; deletion retention policy; the approved identity process for award re-association; handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles.*
 
 **FAN-DEV-05 — Approval and verification proportional to blast radius.** Consequential hosted-state changes require explicit approval and post-change verification appropriate to their risk. Small, routine, reversible changes do not require the ceremony owed to database migrations, permissions, infrastructure, security or financial systems. · `G:DEV-05`
 
 **FAN-DEV-06 — A named test proves nothing until it asserts something.** A file whose name implies verification, or a suite that runs as a superuser, does not establish the behaviour it appears to cover. Status in this register may only be raised on evidence that a test exercises the rule under the conditions the rule is about. · `GK:M5`
+
+**FAN-DEV-07 — Any automation that creates or processes a record for “every X” states exactly which population X includes, and that population is mechanically selectable or enforceable rather than assumed.** Shared storage or authentication machinery does not make operational actors, administrators, organizations or other technical principals members of a fan-only population. A change must name the canonical population boundary it uses before applying bulk/bootstrap, discovery, ranking, notification or equivalent behaviour.
 
 ---
 
@@ -626,8 +656,6 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 
 **GAP-11 — Nothing schedules agent recovery.** `run_agent_backend_recovery()` exists and is capability-gated, but no scheduler calls it. Stale leases will not recover themselves in production. · `GK:M9`
 
-**GAP-12 — `profiles.handle` has no uniqueness or format constraint**, and is derived from display name at signup, so two users with the same nickname collide. Handles are exposed through the public viewer RPC. · `GK:M2`
-
 **GAP-13 — Verification decisions are not append-only.** `catalog_verification_decisions` has insert-time snapshot triggers but no privileged `UPDATE`/`DELETE` protection. Cursor's rolled-back probe rewrote `policy_snapshot` and deleted the row. This remains a history-integrity gap in FAN-GOV-01/FAN-VER-06, not a browser-role write path.
 
 **GAP-14 — Recovery adapters expose an oversized `regproc` execution surface.** `admin_register_catalog_domain_adapter` accepts a raw function reference and `run_agent_backend_recovery()` executes it as a SECURITY DEFINER function. Staff gating reduces reach but is not the closed allowlist required by FAN-AGT-12. · `GK:M10`
@@ -639,6 +667,8 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 **GAP-06 — CLOSED LOCALLY: Team resolution used to guess and now refuses ambiguity.** The old `UNION ALL ... LIMIT 1` could silently pick one Team across namespaces. `202608270002` replaces it with a status-returning resolver and strict raising wrapper; `team_resolution.sql` proves both ambiguity paths and compatibility. This is now FAN-ID-16, not an open local gap.
 
 **GAP-10 — CLOSED LOCALLY: all profile-media metadata tables are owner-folder bound.** `202608270001` installs four `NOT VALID` owner-path CHECKs and a legacy diagnostic view; `profile_privacy.sql` asserts new library source/display writes and the old avatar rebind are rejected. The remaining legacy-row review is an explicit FAN-ACCT-02 caveat, not an unbound-table gap. · `GK:M3`
+
+**GAP-12 — CLOSED LOCALLY: claimed handles now have authoritative format, reservation and case-insensitive ownership enforcement.** `202608270003` preserves entered casing, permits multiple unclaimed profiles, stops deriving handles from display names, rejects unsafe existing rows instead of rewriting them, and makes the normalized unique index the final ownership boundary. `202608270004` adds serialized operational-identifier reservation and fan-population separation without rewriting profile data. `profile_handle_integrity.sql` and `operational_identity_handles.sql` prove the settled local contract. Hosted state remains unknown under FAN-RUN-04. · `GK:M2`
 
 ---
 
@@ -667,6 +697,7 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 5. Mute default duration and suspension semantics, if mute is added (FAN-NEWS-18).
 6. The privacy/retention policy defining "minimum award record" and "anonymized" (FAN-ACCT-04).
 7. The approved identity process for reclaiming historical awards (FAN-ACCT-04).
+8. Handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles (FAN-ACCT-08).
 
 ---
 
@@ -787,9 +818,15 @@ is the only safe way to translate a reference from either draft.
 | FAN-ACCT-04 | ACCT-04 | open K6 |
 | FAN-ACCT-05 | — | — |
 | FAN-ACCT-06 | — | — |
+| FAN-ACCT-07 | — | — |
+| FAN-ACCT-08 | — | — |
+| FAN-ACCT-09 | — | — |
+| FAN-ACCT-10 | — | — |
+| FAN-ACCT-11 | — | — |
 | FAN-UX-01 | — | UX-02 |
 | FAN-DEV-01…05 | — | DEV-01…05 |
 | FAN-DEV-06 | — | — |
+| FAN-DEV-07 | — | — |
 | PRIN-01 | — | RUN-04 |
 | PRIN-02 | — | UX-01 |
 
@@ -800,19 +837,19 @@ is the only safe way to translate a reference from either draft.
 | Bucket | Count |
 |---|---|
 | Guaranteed — enforced + tested | 28 |
-| Claimed — locally tested, independent verification pending | 1 |
+| Claimed — locally tested, independent verification pending | 4 |
 | Claimed — enforced but unproven or only partially proved | 17 |
 | Claimed — documented only or not universally enforced | 17 |
 | Claimed — unclear | 1 |
-| **Claimed total** | **36** |
-| Future — settled, unbuilt | 50 |
-| Process invariants | 6 |
-| **Total invariants** | **120** |
+| **Claimed total** | **39** |
+| Future — settled, unbuilt | 52 |
+| Process invariants | 7 |
+| **Total invariants** | **126** |
 | Current behavior / decision-needed items (not invariants) | 4 |
-| Open enforcement gaps | 13 |
-| Closed locally / hosted unknown gaps | 2 |
+| Open enforcement gaps | 12 |
+| Closed locally / hosted unknown gaps | 3 |
 | Architectural principles | 4 |
-| Deferred mechanics | 7 |
+| Deferred mechanics | 8 |
 
 Roughly a quarter of this draft is mechanically guaranteed by a direct local
 assertion today. The largest block remains settled-but-unbuilt News, Cheer and

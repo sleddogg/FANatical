@@ -160,7 +160,9 @@ Completeness: 10/10
 Components
 
 *  	✓ Profile 	purpose 	  
-* 	✓ Username 	/ display name 	  
+* 	✓ Permanent 	fan identity / account ID
+* 	✓ Handle
+* 	✓ Display 	name
 * 	✓ Header 	/ banner 	  
 * 	✓ Favorite 	teams / sports 	  
 * 	✓ Bio 	section 	  
@@ -2886,7 +2888,7 @@ The goal is to let users build a recognizable fan identity inside their communit
 Profile contains these main areas:
 
 **Profile Header**  
-Top profile area with display name, avatar, optional tagline, and settings/profile controls.
+Top profile area with display name, handle, avatar, optional tagline, and settings/profile controls.
 
 **Fan Photos**  
 Main visual profile area for Game Face, Fan Cave, and Memorabilia photos.
@@ -2927,6 +2929,7 @@ Top area:
 * avatar  
 * banner/header image  
 * display name  
+* handle
 * optional tagline  
 * settings button for owner  
 * public avatar/profile button for visitor
@@ -3098,14 +3101,27 @@ Fan Photos appear in FANbase by default unless privacy or visibility settings bl
 
 Public Profile should not expose private account settings.
 
+Permanent fan identity rule: The stable internal account/user ID is the fan's permanent identity. It is never derived from or replaced by a handle or display name, never changes, and is never displayed. Trophies, follows, comments, tags, history, and everything else a fan owns remain attached to that permanent identity.
+
+Handle rule: The handle is a mutable public label attached to the permanent fan identity. It is case-insensitively unique among currently claimed handles. `@` is presentation syntax and is not stored. A use of a handle resolves to the permanent fan identity that holds it at the time of the action.
+
+Display name rule: The display name is a separate mutable profile field. It is not unique and is never an identifier.
+
+Rename and reassignment rule: Renaming `@brad` to `@bradley` does not change the fan or any ownership. If a released handle is later claimed by someone else, the new holder receives only that public label and inherits no mentions, trophies, follows, comments, or history. Handle-release mechanics remain deferred.
+
+Operational identity rule: Auth users mapped by `catalog_actors` as agents or services are operational identities, not fans. Their permanent Auth/catalog identity remains intact for permissions, audit history, verification decisions, and provenance even if shared bootstrap requires a technical profile row. Such a row never owns a public fan handle and is excluded from fan-facing profile discovery, tagging autocomplete, leaderboards, and equivalent fan-only surfaces. Each canonical operational `actor_key` is automatically reserved in the fan handle namespace; no second operational naming field is derived for that purpose.
+
+Population rule: Any automation described as applying to “every fan,” “every profile,” or another population must state exactly which records that population includes and use a canonical enforceable query or constraint for it. The existence of an Auth user or technical profile row alone never implies membership in the fan population.
+
 ---
 
 ## **6\. Data / Labels / Filters**
 
 Core profile data:
 
-* user ID  
-* display name  
+* permanent internal account/user ID — never displayed
+* handle — mutable public label, case-insensitively unique while claimed, stored without `@`
+* display name — mutable and non-unique
 * avatar  
 * banner/header image  
 * optional tagline  
@@ -3309,6 +3325,7 @@ Profile images and fan photos need size limits, compression, and placeholders.
 * whether visitors can rate all Fan Photo categories  
 * upload limits and image requirements  
 * profile visibility options
+* username claim UI for claiming or changing the handle
 
 # Rewards/Ads/Revenue
 

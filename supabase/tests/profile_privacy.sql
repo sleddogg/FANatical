@@ -282,13 +282,13 @@ select pg_temp.assert_true((select count(*) = 1 from public.profiles where user_
 select pg_temp.assert_true((select count(*) = 1 from storage.objects where bucket_id = 'profile-media' and name like '%/avatar/private-source.jpg'), 'private owner must read own original');
 select pg_temp.assert_true((select count(*) = 1 from storage.objects where bucket_id = 'profile-media' and name like '%/avatar/private-display.webp'), 'private owner must read own display');
 select public.save_my_profile(
-  '{"display_name":"Private Owner","handle":"@privateowner","featured_fan_photo_category":"Fan Cave","visibility":"public"}'::jsonb,
+  '{"display_name":"Private Owner","handle":"PrivateOwner","featured_fan_photo_category":"Fan Cave","visibility":"public"}'::jsonb,
   '{}'::jsonb,
   '[]'::jsonb
 );
 select pg_temp.assert_true((select visibility = 'public' from public.profiles where user_id = '81000000-0000-0000-0000-000000000002'), 'Private to Public must persist');
 select public.save_my_profile(
-  '{"display_name":"Private Owner","handle":"@privateowner","featured_fan_photo_category":"Fan Cave","visibility":"private"}'::jsonb,
+  '{"display_name":"Private Owner","handle":"PrivateOwner","featured_fan_photo_category":"Fan Cave","visibility":"private"}'::jsonb,
   '{}'::jsonb,
   '[]'::jsonb
 );
