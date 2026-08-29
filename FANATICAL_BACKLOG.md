@@ -265,6 +265,22 @@ another writer.
 concurrency proof, similar in spirit to
 `supabase/tests/team_color_bootstrap_concurrency.sh`.
 
+### BL-025
+**What** — Centralize or otherwise mechanically govern the distinction between
+News identity intake actions and Resolution outcome actions. Replace the repeated
+action-name knowledge with one canonical, mechanically shared definition while
+preserving the existing intake-versus-outcome supersession behaviour.
+**Why deferred** — The current intake actions are consistent and correct, but the
+same literal list — `open_case`, `create_publisher_contributor_profile`,
+`record_candidate`, `record_evidence` — is repeated in several places in
+`202608290002_news_identity_intake_boundary.sql`, twice inside
+`normalize_news_identity_outcome_supersession` alone. Adding a future intake
+action and missing one list would silently classify it as a Resolution outcome and
+corrupt the outcome supersession chain.
+**Trigger** — Before adding any new News identity intake-class decision action.
+**Required at trigger** — REQUIRED
+**Origin** — News identity-intake completion independent audit.
+
 ---
 
 ## Done

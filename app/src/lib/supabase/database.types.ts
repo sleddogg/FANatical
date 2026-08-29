@@ -4647,6 +4647,7 @@ export type Database = {
           organizational_contributor_id: string | null
           person_id: string | null
           proposed_facts: Json
+          recorded_by_decision_id: string | null
           show_id: string | null
         }
         Insert: {
@@ -4661,6 +4662,7 @@ export type Database = {
           organizational_contributor_id?: string | null
           person_id?: string | null
           proposed_facts?: Json
+          recorded_by_decision_id?: string | null
           show_id?: string | null
         }
         Update: {
@@ -4675,6 +4677,7 @@ export type Database = {
           organizational_contributor_id?: string | null
           person_id?: string | null
           proposed_facts?: Json
+          recorded_by_decision_id?: string | null
           show_id?: string | null
         }
         Relationships: [
@@ -4683,6 +4686,13 @@ export type Database = {
             columns: ["organizational_contributor_id"]
             isOneToOne: false
             referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_candidate_recorded_by_decision_id_fkey"
+            columns: ["recorded_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_identity_resolution_decisions"
             referencedColumns: ["id"]
           },
           {
@@ -4732,6 +4742,7 @@ export type Database = {
           created_by_user_id: string | null
           id: string
           normalized_proposed_name: string | null
+          opened_by_decision_id: string | null
           profile_url: string | null
           proposed_identity_type: string | null
           proposed_name: string | null
@@ -4756,6 +4767,7 @@ export type Database = {
           created_by_user_id?: string | null
           id?: string
           normalized_proposed_name?: string | null
+          opened_by_decision_id?: string | null
           profile_url?: string | null
           proposed_identity_type?: string | null
           proposed_name?: string | null
@@ -4780,6 +4792,7 @@ export type Database = {
           created_by_user_id?: string | null
           id?: string
           normalized_proposed_name?: string | null
+          opened_by_decision_id?: string | null
           profile_url?: string | null
           proposed_identity_type?: string | null
           proposed_name?: string | null
@@ -4808,6 +4821,13 @@ export type Database = {
             columns: ["subject_organizational_contributor_id"]
             isOneToOne: false
             referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_opened_by_decision_id_fkey"
+            columns: ["opened_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_identity_resolution_decisions"
             referencedColumns: ["id"]
           },
           {
@@ -4868,6 +4888,7 @@ export type Database = {
           automatic_rule_key: string | null
           case_id: string
           decided_at: string
+          decided_by_actor_id: string | null
           decided_by_user_id: string | null
           decision_origin: string
           id: string
@@ -4888,6 +4909,7 @@ export type Database = {
           automatic_rule_key?: string | null
           case_id: string
           decided_at?: string
+          decided_by_actor_id?: string | null
           decided_by_user_id?: string | null
           decision_origin: string
           id?: string
@@ -4908,6 +4930,7 @@ export type Database = {
           automatic_rule_key?: string | null
           case_id?: string
           decided_at?: string
+          decided_by_actor_id?: string | null
           decided_by_user_id?: string | null
           decision_origin?: string
           id?: string
@@ -4959,6 +4982,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "news_identity_resolution_decisions_decided_by_actor_id_fkey"
+            columns: ["decided_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "news_identity_resolution_decisions_result_person_id_fkey"
             columns: ["result_person_id"]
             isOneToOne: false
@@ -5003,6 +5033,7 @@ export type Database = {
           observed_at: string | null
           observed_payload: Json
           publisher_source_id: string | null
+          recorded_by_decision_id: string | null
           recorded_by_user_id: string | null
           source_url_scope_version_id: string | null
           visibility: string
@@ -5021,6 +5052,7 @@ export type Database = {
           observed_at?: string | null
           observed_payload?: Json
           publisher_source_id?: string | null
+          recorded_by_decision_id?: string | null
           recorded_by_user_id?: string | null
           source_url_scope_version_id?: string | null
           visibility: string
@@ -5039,6 +5071,7 @@ export type Database = {
           observed_at?: string | null
           observed_payload?: Json
           publisher_source_id?: string | null
+          recorded_by_decision_id?: string | null
           recorded_by_user_id?: string | null
           source_url_scope_version_id?: string | null
           visibility?: string
@@ -5182,6 +5215,13 @@ export type Database = {
             columns: ["publisher_source_id"]
             isOneToOne: false
             referencedRelation: "trusted_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evidence_recorded_by_decision_id_fkey"
+            columns: ["recorded_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_identity_resolution_decisions"
             referencedColumns: ["id"]
           },
         ]
@@ -6554,22 +6594,32 @@ export type Database = {
         Row: {
           contributor_profile_id: string
           created_at: string
+          created_by_decision_id: string | null
           id: string
           publisher_source_id: string
         }
         Insert: {
           contributor_profile_id?: string
           created_at?: string
+          created_by_decision_id?: string | null
           id?: string
           publisher_source_id: string
         }
         Update: {
           contributor_profile_id?: string
           created_at?: string
+          created_by_decision_id?: string | null
           id?: string
           publisher_source_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "news_publisher_contributor_profiles_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_identity_resolution_decisions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "news_publisher_contributor_profiles_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
@@ -12159,6 +12209,10 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_news_publisher_contributor_profile: {
+        Args: { case_id_value: string; notes_value?: string }
+        Returns: string
+      }
       admin_create_verification_policy: {
         Args: {
           activate_value?: boolean
@@ -12233,6 +12287,24 @@ export type Database = {
         }
         Returns: string
       }
+      admin_open_news_identity_case: {
+        Args: {
+          case_kind_value: string
+          context_value?: Json
+          notes_value?: string
+          profile_url_value: string
+          proposed_identity_type_value: string
+          proposed_name_value: string
+          publisher_source_id_value: string
+          raw_byline_value: string
+          subject_contributor_profile_id_value: string
+          subject_organizational_contributor_id_value: string
+          subject_person_id_value: string
+          subject_show_id_value: string
+          unresolved_question_value: string
+        }
+        Returns: string
+      }
       admin_record_news_byline: {
         Args: {
           manifestation_id_value: string
@@ -12279,6 +12351,36 @@ export type Database = {
         }
         Returns: string
       }
+      admin_record_news_identity_candidate: {
+        Args: {
+          candidate_kind_value: string
+          case_id_value: string
+          display_name_value: string
+          identity_type_value: string
+          notes_value?: string
+          proposed_facts_value?: Json
+          target_identity_id_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_identity_evidence: {
+        Args: {
+          bridge_from_publisher_source_id_value: string
+          bridge_to_publisher_source_id_value: string
+          candidate_id_value: string
+          case_id_value: string
+          evidence_kind_value: string
+          evidence_summary_value: string
+          evidence_url_value: string
+          is_conflicting_value: boolean
+          notes_value?: string
+          observed_at_value?: string
+          observed_payload_value?: Json
+          publisher_source_id_value: string
+          visibility_value: string
+        }
+        Returns: string
+      }
       admin_record_news_item_version: {
         Args: {
           headline_value: string
@@ -12301,6 +12403,30 @@ export type Database = {
           primary_evidence_id_value: string
           publisher_policy_state_value: string
           remote_url_value: string
+        }
+        Returns: string
+      }
+      admin_record_podcast_show_contributor: {
+        Args: {
+          case_id_value: string
+          contributor_role_value: string
+          effective_from_value: string
+          effective_to_value: string
+          notes_value?: string
+          person_id_value: string
+          relationship_id_value?: string
+        }
+        Returns: string
+      }
+      admin_record_podcast_show_publisher: {
+        Args: {
+          case_id_value: string
+          effective_from_value: string
+          effective_to_value: string
+          notes_value?: string
+          publisher_source_id_value: string
+          relationship_id_value?: string
+          relationship_type_value: string
         }
         Returns: string
       }
