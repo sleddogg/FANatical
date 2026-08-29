@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AuthProvider, useAuth } from "../features/account/AuthContext";
 import { supabase } from "../lib/supabase/client";
 import { formatStaffRole, parseStaffAccess, type StaffAccess } from "./adminAccess";
+import { NewsIdentityReviewPanel } from "./NewsIdentityReviewPanel";
 
 type AccessState =
   | Readonly<{ status: "loading" }>
@@ -136,10 +137,11 @@ function AdminGate() {
       </header>
       <main className="admin-main" id="main-content">
         <section className="admin-intro">
-          <p className="admin-kicker">Foundation active</p>
+          <p className="admin-kicker">Operations workspace</p>
           <h2>Authorized operations workspace</h2>
-          <p>Admin capabilities will be added here behind database-enforced role and permission checks.</p>
+          <p>Review tools remain behind database-enforced staff role and permission checks.</p>
         </section>
+        <NewsIdentityReviewPanel />
         <section className="admin-grid" aria-label="Planned admin areas">
           {adminAreas.map(([title, description]) => (
             <article className="admin-card" key={title}>

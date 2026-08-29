@@ -831,7 +831,7 @@ Historical attribution remains attached to the correct item even after later ide
 
 Ambiguous identity resolution must be reviewable rather than guessed. Merge and split decisions must preserve history and be reversible.
 
-The policy for hidden-only metadata versus visible publisher attribution must be approved before the Byline Resolution implementation phase.
+Visible public attribution outranks contradictory hidden metadata. Hidden metadata remains supporting evidence and cannot override what the publisher visibly attributes or independently authorize a destructive identity merge.
 
 ## **12. Competition and Classification Model**
 
@@ -1109,7 +1109,6 @@ Include deliberately difficult cases such as cross-competition writers, independ
 The following are intentionally deferred and are not blockers to the approved foundation phases:
 
 * signed-out News behavior
-* hidden-only metadata versus visible publisher attribution
 * exact article rating scale
 * rating revision and withdrawal behavior
 * exact News reaction set

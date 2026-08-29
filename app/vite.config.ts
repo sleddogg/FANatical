@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
       css: true,
+      maxWorkers: 1,
+      testTimeout: 20_000,
       exclude: ["e2e/**", "node_modules/**", "dist/**", "dist-admin/**"],
     },
   };

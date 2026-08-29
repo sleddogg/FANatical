@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { Database, Json } from "../../lib/supabase/database.types";
 import { requireSupabase } from "../../lib/supabase/client";
 import { createUuid } from "../../lib/uuid";
 import type { OfficialTeamId } from "../../data/officialSportsDatabase";
@@ -219,7 +220,7 @@ export async function loadAccountSettings(userId: string): Promise<AccountSettin
 
 export async function saveAccountSettings(userId: string, values: Partial<{ navigationSide: NavigationSide; profileImageShape: ProfileImageShape; homeCustomization: HomeCustomization; themePreference: ThemePreference; selectedTeamId: OfficialTeamId | null; prototypeMigrationVersion: number }>) {
   const client = requireSupabase();
-  const row: Record<string, unknown> = { user_id: userId };
+  const row: Database["public"]["Tables"]["user_settings"]["Insert"] = { user_id: userId };
   if (values.navigationSide !== undefined) row.navigation_side = values.navigationSide;
   if (values.selectedTeamId !== undefined) row.selected_team_id = values.selectedTeamId;
   if (values.prototypeMigrationVersion !== undefined) row.prototype_migration_version = values.prototypeMigrationVersion;
@@ -235,7 +236,7 @@ export async function saveAccountSettings(userId: string, values: Partial<{ navi
       ...(values.profileImageShape !== undefined ? { profileImageShape: values.profileImageShape } : {}),
       ...(values.homeCustomization !== undefined ? { homeCustomization: normalizeHomeCustomization(values.homeCustomization) } : {}),
       ...(values.themePreference !== undefined ? { themePreference: normalizeThemePreference(values.themePreference) } : {}),
-    };
+    } as Json;
   }
   const result = await client.from("user_settings").upsert(row, { onConflict: "user_id" });
   requireNoError(result.error, "Personal settings could not be saved.");

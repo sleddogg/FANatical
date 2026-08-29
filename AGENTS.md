@@ -46,10 +46,39 @@ Do not assume the user is a programmer. Explain approvals or decisions in plain 
 
 ### Backend / Migration Completion
 
+- Before any hosted migration apply, the first step is a read-only linked migration-ledger comparison. Confirm exactly what hosted has applied and what local files are pending. If the ledgers differ in any way other than hosted being simply behind local, stop before applying anything and report the discrepancy.
 - If a feature creates or depends on a Supabase migration, compare local migrations with the linked hosted project before reporting completion.
 - If the required migration is pending remotely, stop and request approval to apply it through the normal Supabase migration workflow.
 - After applying it, verify the hosted schema and all relevant RLS policies, functions, constraints, and other introduced backend dependencies.
 - A local migration file alone does not make a feature complete. Verify new dependencies are active in the environment where the feature is tested.
+
+## Review Scope and Deferral
+
+Expand the current task only for a concrete failure, a settled-invariant
+violation, an unsafe or live-data risk, a material architecture problem, an
+implementation that cannot satisfy the approved request, or an unapproved
+material product decision. For a claimed risk, be able to say what breaks, for
+whom, and under what condition.
+
+If a concern does not meet that bar, defer it rather than interrupting the task:
+
+- invariant or enforcement concerns go to `FANATICAL_INVARIANTS.md`;
+- concrete future work goes to `FANATICAL_BACKLOG.md`.
+
+Never leave deferred work only in conversation.
+
+Brad decides product behaviour. Builders and reviewers decide implementation
+techniques that preserve the same approved behaviour.
+
+`FAN-DEV-08` in `FANATICAL_INVARIANTS.md` is the canonical wording, including how
+reviewer disagreements are handled.
+
+## Deferred Work
+
+Before starting a new feature area, implementation phase or product surface, read
+`FANATICAL_BACKLOG.md` for entries whose Trigger condition now applies. Pull only
+matching entries into the current work; unrelated entries do not block progress.
+That file states its own entry, closing and cross-reference rules.
 
 ## Engineering Foundations
 

@@ -52,6 +52,21 @@ Do not modify or replace `auth.fanaticalpeople.com`, Microsoft 365/Exchange MX r
 
 ## Supabase production configuration
 
+### Required first step before any hosted migration apply
+
+Before `supabase db push` or any other hosted migration apply, run the linked
+migration ledger comparison as a read-only preflight:
+
+```bash
+npx supabase migration list --linked
+```
+
+Read the ledger output itself and confirm exactly which versions are applied on
+hosted and which local migration files remain pending. Continue only when local
+and hosted agree and hosted is simply behind local. If hosted contains a version
+with no matching local file, local history omits an applied version, or any other
+divergence exists, stop without applying and resolve/report the discrepancy.
+
 The linked project must contain both migrations:
 
 ```text

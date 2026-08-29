@@ -1,5 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveSupabaseBackendEnvironment } from "./backendEnvironment";
+import type { Database } from "./database.types";
+
+export type FanaticalSupabaseClient = SupabaseClient<Database>;
 
 export const supabaseBackendEnvironment = resolveSupabaseBackendEnvironment({
   configuredUrl: import.meta.env.VITE_SUPABASE_URL,
@@ -16,8 +19,8 @@ if (supabaseBackendEnvironment.warning) console.error(supabaseBackendEnvironment
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublicKey);
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabasePublicKey!, {
+export const supabase: FanaticalSupabaseClient | null = isSupabaseConfigured
+  ? createClient<Database>(supabaseUrl!, supabasePublicKey!, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -26,7 +29,7 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
     })
   : null;
 
-export function requireSupabase(): SupabaseClient {
+export function requireSupabase(): FanaticalSupabaseClient {
   if (!supabase) throw new Error("FANatical's account service is not configured.");
   return supabase;
 }

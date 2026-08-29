@@ -161,10 +161,195 @@ body {
   font-weight: 800;
 }
 
+.admin-review {
+  margin-top: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-review__heading,
+.admin-review-case__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-review__heading h2,
+.admin-review-case h3,
+.admin-review-case h4 {
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.admin-review__heading p:not(.admin-kicker),
+.admin-review-question,
+.admin-review-empty {
+  color: var(--color-text-muted);
+}
+
+.admin-review-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-review-case {
+  border: 1px solid rgba(17, 17, 17, 0.18);
+  border-radius: var(--radius-md);
+  padding: clamp(1rem, 2.5vw, 1.4rem);
+  background: #fafaf8;
+}
+
+.admin-review-question {
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+.admin-review-status {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+  min-width: min(100%, 13rem);
+  text-align: right;
+}
+
+.admin-review-status span {
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.65rem;
+  background: #e6efe5;
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  text-transform: capitalize;
+}
+
+.admin-review-status small,
+.admin-review-facts dd,
+.admin-review-records span {
+  overflow-wrap: anywhere;
+}
+
+.admin-review-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.admin-review-facts div {
+  border-left: 3px solid rgba(17, 17, 17, 0.18);
+  padding-left: 0.65rem;
+}
+
+.admin-review-facts dt {
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-review-facts dd {
+  margin: 0.2rem 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.admin-review-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-review-columns > section {
+  min-width: 0;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  background: #fff;
+}
+
+.admin-review-records {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-review-records li {
+  display: grid;
+  gap: 0.18rem;
+  border-top: 1px solid rgba(17, 17, 17, 0.1);
+  padding-top: 0.55rem;
+  font-size: var(--font-size-xs);
+}
+
+.admin-review-records li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.admin-review-answer {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  border-top: 2px solid rgba(17, 17, 17, 0.14);
+  padding-top: 1rem;
+}
+
+.admin-review-answer__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.7rem;
+}
+
+.admin-review-answer label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+.admin-review-answer input,
+.admin-review-answer select,
+.admin-review-answer textarea {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid rgba(17, 17, 17, 0.24);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-review-answer textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.admin-review-answer .admin-button {
+  justify-self: start;
+}
+
 @media (max-width: 42rem) {
   .admin-header,
-  .admin-header__account {
+  .admin-header__account,
+  .admin-review__heading,
+  .admin-review-case__header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-review-status {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .admin-review-columns {
+    grid-template-columns: 1fr;
   }
 }

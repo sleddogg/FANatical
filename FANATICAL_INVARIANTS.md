@@ -1,10 +1,11 @@
 # FANatical Invariants Register
 
-> **STATUS: DRAFT / UNVERIFIED.**
-> Enforcement and proof locations below are Claude's assessment from a read-only
-> repository pass. They have **not** been independently verified. Do not cite this
-> document to justify a change until the verification pass is complete and this
-> banner is removed.
+> **STATUS: INDEPENDENTLY VERIFIED — LOCAL ENFORCEMENT SCOPE.**
+> Enforcement and proof statuses were independently verified against the repository
+> and local proof suites by Cursor on 2026-08-27. Hosted Supabase is separately
+> verified current through `202608270004`; future hosted changes remain subject to
+> FAN-RUN-04. A `Guaranteed` status describes the proved system rule, not a
+> permanent assertion that every future hosted deployment remains in sync.
 
 Rules that must not silently become false. Each entry states the rule in plain
 English, where it is enforced, what proves it, and how much of that is actually
@@ -14,9 +15,14 @@ true today.
 
 - Claude drafted and reconciles this register.
 - ChatGPT contributed the architecture/product half and ratifies product decisions.
-- **Cursor verifies enforcement and proof statuses.** It is the only agent that
-  may change a status from Claimed to Guaranteed.
-- Codex builds, and per FAN-DEV-01 does not certify its own work.
+- **A status may be promoted from Claimed to Guaranteed only by an independent
+  verifier that did not build the underlying work.** The builder may supply
+  evidence and tests but may not certify its own foundational work, per
+  FAN-DEV-01.
+- Cursor is the current independent verifier. That role is not permanently
+  assigned; another independent verifier may fill it without any change to this
+  register's structure.
+- Codex currently builds.
 
 **Status values**
 
@@ -42,8 +48,10 @@ written as two entries rather than one optimistic one.
 Recorded 2026-08-27 from the independent blind audit and Cursor verification
 report (`audit/grok-blind-audit-2026-08-27.md` and
 `audit/grok-register-verification-2026-08-27.md`). The reports remain historical
-evidence; this register incorporates their corrections but remains DRAFT /
-UNVERIFIED pending another independent pass and any required hosted checks.
+evidence; this register incorporates their corrections. Local verification is
+complete, and hosted Supabase is current through `202608270004`. Individual entry
+status lines below may still carry the older "hosted state pending" wording and
+are corrected only by an independent verifier, never in place.
 
 **The B1 and B2 fixes are locally proved.** `202608270001` plus
 `profile_privacy.sql` bind profile-media metadata to the true owner's folder and
@@ -67,7 +75,7 @@ permanent FAN-* promises.
 **Known coverage bias remains.** The original register was derived largely from
 catalog and governance documentation. This revision adds the material account,
 storage, session, product-honesty and privileged-execution omissions found by
-the audits, while retaining the DRAFT banner and explicit proof gaps.
+the audits, while retaining every explicit proof gap.
 
 ---
 
@@ -261,6 +269,43 @@ Status: documented only; stated identically in the build spec and `TEAM_REGISTRY
 Enforcement: partial — FAN-ID-04/05 make League expansion self-completing. Nothing generalises it.
 Status: documented only · `G:ID-12`
 
+## News identity and attribution
+
+**FAN-NEWS-01 — A human Author is a persistent person identity that survives publisher changes.** Publisher-specific contributor profiles and bylines are linked evidence, not replacement people. · `C:NEWS-01` `G:NEWS-01`
+Enforcement: `catalog_people`, publisher-specific contributor profiles, and time-bounded person/publisher relationship versions — `202608280001`
+Proof: `news_identity_foundation.sql` proves same-name people remain distinct and one person's historical affiliation survives a publisher move
+Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-NEWS-02 — A stable public professional identity, including a pen name, is a valid Author identity.** A private or legal identity is not required to attribute journalism correctly. · `G:NEWS-02`
+Enforcement: professional and pen-name kinds on versioned public person identities — `202608280001`
+Proof: `news_identity_foundation.sql` creates and resolves a synthetic pen-name identity without legal/private identity data
+Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-NEWS-03 — A podcast Show is a persistent identity that survives host and network changes.** Host, contributor and network relationships are time-bounded records attached to the Show. · `C:NEWS-13` `G:NEWS-03`
+Enforcement: stable `podcast_shows` identities plus versioned Show names, contributors and publisher/network relationships — `202608280001`
+Proof: `news_identity_foundation.sql` retains one Show identity across synthetic host and network changes
+Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-NEWS-14 — News availability and monitoring policy is independent of factual verification trust.** News approval never grants verification authority; a factual trust tier never by itself determines News follow or feed eligibility. · `C:NEWS-14` `G:GOV-01`
+Enforcement: News policy is versioned separately in `news_publisher_policy_versions`; no factual-governance field backfills or derives it — `202608280001`
+Proof: `news_identity_foundation.sql` proves approved/Tier-1 factual governance leaves News status unreviewed and that an explicit News status remains independently recorded
+Status: enforced + tested locally for the Phase 2 publisher-policy boundary; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-ATTR-02 — Merge and split decisions on ambiguous identities preserve history and are reversible; ambiguity is reviewed, never guessed.** · `C:ATTR-02` `G:NEWS-16`
+Enforcement: immutable Resolution decisions/evidence and time-bounded `news_person_pair_state_periods` retain distinct, ambiguous and canonical-merge periods — `202608280001`
+Proof: `news_identity_foundation.sql` proves ambiguity, explicit-bridge merge, manual reversal, and direct point-in-time state/canonical answers
+Status: enforced + tested locally for Phase 2 person Resolution; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-ATTR-03 — A publisher/contributor relationship never implies employment.** Employee, freelance, contract, guest, columnist, contributor and unknown are distinct and recorded as what they are. · `C:ATTR-03` `G:ATTR-02`
+Enforcement: governed relationship types and explicit time-bounded relationship versions — `202608280001`
+Proof: `news_identity_foundation.sql` proves an unknown relationship and historical publisher move without inferring employment
+Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
+**FAN-ATTR-04 — Visible publisher attribution controls the public byline.** Hidden machine metadata alone — JSON-LD, meta tags, embedded fields — never overrides visible organizational attribution. Where the publisher itself publicly identifies the human Author elsewhere through a genuine public author, profile or byline identity, that public evidence may establish the human attribution. Hidden metadata remains usable as an internal resolution signal. · `C:ATTR-04` `G:ATTR-01`
+Enforcement: governed explicit/supporting evidence classes and automatic Resolution rules reject hidden evidence as explicit and ignore hidden contradiction when non-conflicting visible public evidence establishes the identity — `202608280001`
+Proof: `news_identity_foundation.sql` proves visible public evidence resolves despite contradictory hidden supporting metadata, while visible conflict routes to review
+Status: enforced + tested locally for Phase 2 identity Resolution; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+
 ## Versioning and history
 
 **FAN-VER-03 — Information-lineage and agent-policy version content is immutable and its history is never deleted.**
@@ -360,8 +405,8 @@ Status: enforced by architecture, unprovable in SQL · `C:AGT-10` `G:GOV-06`
 
 **FAN-AGT-11 — Every SECURITY DEFINER function uses a safe explicit `search_path`, and no SECURITY DEFINER function retains EXECUTE for PostgreSQL `PUBLIC`.**
 Enforcement: current function definitions use `set search_path = ''`; grants are explicitly revoked from `PUBLIC`
-Proof: Cursor's live local catalog count found 164/164 safe paths and zero PUBLIC-executable definers, but no repository SQL suite asserts the catalog condition
-Status: enforced but unproven · `CV:SECURITY-DEFINER-hygiene`
+Proof: `security_definer_hygiene.sql` scans every application SECURITY DEFINER in `public` and `private` and fails on either an unsafe path or PostgreSQL `PUBLIC` execution
+Status: enforced + tested locally; independent verification and future hosted state remain subject to FAN-DEV-01 and FAN-RUN-04 · `CV:SECURITY-DEFINER-hygiene`
 
 **FAN-AGT-12 — Privileged recovery executes only an explicitly approved, closed set of domain adapters; adapter registration must not become arbitrary function-execution authority.**
 Enforcement: staff access protects registration, but `admin_register_catalog_domain_adapter` currently accepts a raw `regproc` that `run_agent_backend_recovery()` executes without a closed allowlist
@@ -482,12 +527,6 @@ revocation. · `GK:M14`
 
 ## News identity and following
 
-**FAN-NEWS-01 — A human Author is a persistent person identity that survives publisher changes.** Publisher-specific contributor profiles and bylines are linked evidence, not replacement people. · `C:NEWS-01` `G:NEWS-01`
-
-**FAN-NEWS-02 — A stable public professional identity, including a pen name, is a valid Author identity.** A private or legal identity is not required to attribute journalism correctly. · `G:NEWS-02`
-
-**FAN-NEWS-03 — A podcast Show is a persistent identity that survives host and network changes.** Host, contributor and network relationships are time-bounded records attached to the Show. · `C:NEWS-13` `G:NEWS-03`
-
 **FAN-NEWS-04 — Following an organizational contributor qualifies only work actually attributed to that identity.** Following TSN Staff never means everything TSN publishes. · `C:NEWS-02` `G:NEWS-04`
 
 **FAN-NEWS-05 — Written-news publishers are not broad follow targets.**
@@ -510,9 +549,6 @@ Why: this is the product's central promise. Any ranking layer converts FANatical
 
 **FAN-NEWS-13 — The zero-follow EXAMPLE card creates no follow and no eligibility**, appears only when the fan has zero actual News follows, and is not used merely because a chosen filter returned nothing. · `C:NEWS-08` `G:NEWS-14`
 
-**FAN-NEWS-14 — News availability and monitoring policy is independent of factual verification trust.** News approval never grants verification authority; a factual trust tier never by itself determines News follow or feed eligibility.
-Why: two governance systems that both rank publishers will get conflated. Check this first when News schema is designed, because reusing `trusted_sources` for News eligibility will be the obvious shortcut. · `C:NEWS-14` `G:GOV-01`
-
 **FAN-NEWS-15 — Multiple qualifying follows never duplicate a News Item.** One canonical News Item produces one card — whether the fan follows several coauthors, or follows both an organizational contributor and a named human Author credited on the same item. · `C:NEWS-15` `G:NEWS-15`
 
 **FAN-NEWS-16 — Selecting members of a filter group retains the real Competitions as the factual selection.** · `C:NEWS-11` `G:ID-09`
@@ -526,12 +562,6 @@ Why: two governance systems that both rank publishers will get conflated. Check 
 ## Attribution
 
 **FAN-ATTR-01 — Historical attribution stays attached to the item as published.** Later publisher moves, identity merges, host changes or relationship corrections never rewrite who the item was publicly attributed to at publication time. · `C:ATTR-01` `G:ATTR-03`
-
-**FAN-ATTR-02 — Merge and split decisions on ambiguous identities preserve history and are reversible; ambiguity is reviewed, never guessed.** · `C:ATTR-02` `G:NEWS-16`
-
-**FAN-ATTR-03 — A publisher/contributor relationship never implies employment.** Employee, freelance, contract, guest, columnist, contributor and unknown are distinct and recorded as what they are. · `C:ATTR-03` `G:ATTR-02`
-
-**FAN-ATTR-04 — Visible publisher attribution controls the public byline.** Hidden machine metadata alone — JSON-LD, meta tags, embedded fields — never overrides visible organizational attribution. Where the publisher itself publicly identifies the human Author elsewhere through a genuine public author, profile or byline identity, that public evidence may establish the human attribution. Hidden metadata remains usable as an internal resolution signal. · `C:ATTR-04` `G:ATTR-01`
 
 **FAN-ATTR-05 — Follows survive person merges and splits without silent reassignment.** On merge, follows redirect to the canonical identity. On a later split, follows that were unambiguous when created are restored from provenance; fans who followed during the ambiguous merged period are prompted to choose, never silently assigned. Enough durable provenance must be retained to reconstruct fan intent; no specific storage mechanism is mandated. · `C:ATTR-05` `G:NEWS-16`
 
@@ -634,6 +664,41 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 
 **FAN-DEV-07 — Any automation that creates or processes a record for “every X” states exactly which population X includes, and that population is mechanically selectable or enforceable rather than assumed.** Shared storage or authentication machinery does not make operational actors, administrators, organizations or other technical principals members of a fan-only population. A change must name the canonical population boundary it uses before applying bulk/bootstrap, discovery, ranking, notification or equivalent behaviour.
 
+**FAN-DEV-08 — Review scope, escalation and deferral discipline.**
+
+A reviewer may expand the current task only when the added work is necessary to:
+prevent a concrete defect; prevent violation of a settled invariant; prevent an
+unsafe, irreversible, security-sensitive, identity, permission, financial or
+data-integrity failure; resolve a material architectural contradiction; prevent
+an implementation that cannot actually satisfy the approved request; or surface a
+material product decision, threshold, rule or behaviour that has not been
+approved and that no agent may decide on Brad's behalf.
+
+For a claimed concrete risk the reviewer must be able to state plainly what
+breaks, for whom, and under what condition. If that cannot be stated, the concern
+normally does not expand the current task.
+
+Anything deferred is written somewhere durable: invariant or enforcement concerns
+to this register; concrete future work to `FANATICAL_BACKLOG.md`; deferred
+product context may also be referenced from the applicable section of
+`Fanatical build page.md`. Deferred work is never left only in conversation.
+
+Brad is the product authority. Technical implementation choices are resolved by
+builders and reviewers unless they materially change product behaviour, user
+trust, live data, security, cost, durable architecture or an approved invariant.
+
+Where reviewers disagree: technical disagreements that preserve the same approved
+behaviour are resolved through evidence without escalating; disagreement
+involving product behaviour, material risk, architecture or an unresolved
+decision is presented to Brad clearly; whichever reviewer spoke last does not
+automatically win. Where reviewers disagree only on severity, record both views
+and use the more cautious classification for live data, identity, security or
+permissions until evidence resolves it, otherwise continue the current work
+unless the disagreement independently meets the task-expansion bar.
+
+A reviewer is rewarded for preventing meaningful failures, not for maximising the
+number of additional tasks.
+
 ---
 
 # PART V — OPEN ENFORCEMENT GAPS
@@ -642,15 +707,13 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 
 **GAP-02 — A verified row can be written with no decision behind it.** Schema accepts `record_status='verified'` with a null `verification_decision_id`. Documented as forbidden, unenforced in SQL.
 
-**GAP-03 — The Supabase frontend client is untyped.** No `Database` generic, no generated types file, no `gen types` script. `client.from(...).select("*")` returns `any`, so `typecheck` cannot catch a renamed or dropped column. Should land before News consumes canonical tables.
-
 **GAP-04 — FAN-RUN-03 has no mechanical guard.** One mistaken `VITE_` prefix embeds a privileged secret in the browser bundle. Highest consequence in the register, protected by prose alone.
 
 **GAP-05 — FAN-AGT-08 is prose only** — and News ingestion is where it gets tested for real.
 
 **GAP-07 — FAN-SYS-02 is unverified**, and `user_followed_teams.team_id` is unconstrained text with no catalog foreign key, so a fan can persist a team the catalog does not know. · `GK:M7`
 
-**GAP-08 — Only one SQL suite tests RLS under a real role.** `profile_privacy.sql` uses `SET LOCAL ROLE`. Every other suite sets a JWT claim and calls SECURITY DEFINER RPCs while connected as `postgres`, which bypasses RLS. Those suites prove capability checks, not table-level access control. Affects the proof basis of FAN-AGT-01. · `GK:M5`
+**GAP-08 — Most SQL suites still do not test RLS under a real role.** `profile_privacy.sql` and `news_identity_foundation.sql` now use `SET LOCAL ROLE`; most other suites still set a JWT claim and call SECURITY DEFINER RPCs while connected as `postgres`, which bypasses RLS. Those suites prove capability checks, not table-level access control. Affects the remaining proof basis of FAN-AGT-01. · `GK:M5`
 
 **GAP-09 — The wildcard `*` catalog capability defeats FAN-AGT-02 and nothing prevents granting it.** `has_catalog_capability` matches the required capability or `'*'`, and `admin_grant_catalog_capability` validates the capability string against no allowlist. · `GK:M11`
 
@@ -660,9 +723,11 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 
 **GAP-14 — Recovery adapters expose an oversized `regproc` execution surface.** `admin_register_catalog_domain_adapter` accepts a raw function reference and `run_agent_backend_recovery()` executes it as a SECURITY DEFINER function. Staff gating reduces reach but is not the closed allowlist required by FAN-AGT-12. · `GK:M10`
 
-**GAP-15 — SECURITY DEFINER hygiene has no permanent regression assertion.** Cursor's local catalog query found every current definer using an empty `search_path` and none executable by PostgreSQL `PUBLIC`, but no repository SQL suite fails a migration that violates FAN-AGT-11.
-
 ## Closed locally; hosted state still follows FAN-RUN-04
+
+**GAP-03 — CLOSED LOCALLY: the Supabase frontend client is generated-schema typed.** `backend:types` generates `database.types.ts` from the disposable local schema, the shared client carries the `Database` generic, and the Phase 2 Admin repository consumes the generated view/RPC types. Future hosted state remains governed by FAN-RUN-04.
+
+**GAP-15 — CLOSED LOCALLY: SECURITY DEFINER hygiene now has a permanent catalog assertion.** `security_definer_hygiene.sql` fails when any application SECURITY DEFINER in `public` or `private` lacks the approved empty `search_path` or remains executable by PostgreSQL `PUBLIC`. Future hosted state remains governed by FAN-RUN-04.
 
 **GAP-06 — CLOSED LOCALLY: Team resolution used to guess and now refuses ambiguity.** The old `UNION ALL ... LIMIT 1` could silently pick one Team across namespaces. `202608270002` replaces it with a status-returning resolver and strict raising wrapper; `team_resolution.sql` proves both ambiguity paths and compatibility. This is now FAN-ID-16, not an open local gap.
 
@@ -827,6 +892,7 @@ is the only safe way to translate a reference from either draft.
 | FAN-DEV-01…05 | — | DEV-01…05 |
 | FAN-DEV-06 | — | — |
 | FAN-DEV-07 | — | — |
+| FAN-DEV-08 | — | — |
 | PRIN-01 | — | RUN-04 |
 | PRIN-02 | — | UX-01 |
 
@@ -837,21 +903,21 @@ is the only safe way to translate a reference from either draft.
 | Bucket | Count |
 |---|---|
 | Guaranteed — enforced + tested | 28 |
-| Claimed — locally tested, independent verification pending | 4 |
-| Claimed — enforced but unproven or only partially proved | 17 |
+| Claimed — locally tested, independent verification pending | 12 |
+| Claimed — enforced but unproven or only partially proved | 16 |
 | Claimed — documented only or not universally enforced | 17 |
 | Claimed — unclear | 1 |
-| **Claimed total** | **39** |
-| Future — settled, unbuilt | 52 |
+| **Claimed total** | **46** |
+| Future — settled, unbuilt | 45 |
 | Process invariants | 7 |
 | **Total invariants** | **126** |
 | Current behavior / decision-needed items (not invariants) | 4 |
-| Open enforcement gaps | 12 |
-| Closed locally / hosted unknown gaps | 3 |
+| Open enforcement gaps | 10 |
+| Closed locally / hosted unknown gaps | 5 |
 | Architectural principles | 4 |
 | Deferred mechanics | 8 |
 
-Roughly a quarter of this draft is mechanically guaranteed by a direct local
+Roughly a quarter of this register is mechanically guaranteed by a direct local
 assertion today. The largest block remains settled-but-unbuilt News, Cheer and
 scoring, while the larger Claimed bucket now reflects Cursor's proof-quality
 corrections instead of optimistic test-name or exception-string citations.
