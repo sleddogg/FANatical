@@ -442,7 +442,28 @@ export type Database = {
             foreignKeyName: "catalog_adjudication_source_contributions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_adjudication_source_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_adjudication_source_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_adjudication_source_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -1466,7 +1487,28 @@ export type Database = {
             foreignKeyName: "catalog_proposal_evidence_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_proposal_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_proposal_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_proposal_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -2279,7 +2321,28 @@ export type Database = {
             foreignKeyName: "catalog_verifier_evidence_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_verifier_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_verifier_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "catalog_verifier_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -3693,6 +3756,818 @@ export type Database = {
           },
         ]
       }
+      news_byline_mentions: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          id: string
+          manifestation_id: string
+          ordinal: number
+          primary_evidence_id: string
+          raw_attribution: string
+          visible_profile_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          id?: string
+          manifestation_id: string
+          ordinal: number
+          primary_evidence_id: string
+          raw_attribution: string
+          visible_profile_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          id?: string
+          manifestation_id?: string
+          ordinal?: number
+          primary_evidence_id?: string
+          raw_attribution?: string
+          visible_profile_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_byline_mentions_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_mentions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_byline_mentions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_mentions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_byline_mentions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_byline_mentions_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_byline_resolution_versions: {
+        Row: {
+          byline_mention_id: string
+          closed_by_decision_id: string | null
+          contributor_profile_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          identity_resolution_decision_id: string | null
+          is_current: boolean
+          organizational_contributor_id: string | null
+          person_id: string | null
+          recorded_from: string
+          recorded_to: string | null
+          resolution_basis: string
+          show_id: string | null
+          superseded_at: string | null
+          supersedes_resolution_id: string | null
+          target_identity_type: string
+        }
+        Insert: {
+          byline_mention_id: string
+          closed_by_decision_id?: string | null
+          contributor_profile_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          identity_resolution_decision_id?: string | null
+          is_current?: boolean
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          recorded_from: string
+          recorded_to?: string | null
+          resolution_basis: string
+          show_id?: string | null
+          superseded_at?: string | null
+          supersedes_resolution_id?: string | null
+          target_identity_type: string
+        }
+        Update: {
+          byline_mention_id?: string
+          closed_by_decision_id?: string | null
+          contributor_profile_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          identity_resolution_decision_id?: string | null
+          is_current?: boolean
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          recorded_from?: string
+          recorded_to?: string | null
+          resolution_basis?: string
+          show_id?: string | null
+          superseded_at?: string | null
+          supersedes_resolution_id?: string | null
+          target_identity_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_byline_resolution_versio_identity_resolution_decision_fkey"
+            columns: ["identity_resolution_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_identity_resolution_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versio_organizational_contributor_i_fkey"
+            columns: ["organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_byline_mention_id_fkey"
+            columns: ["byline_mention_id"]
+            isOneToOne: false
+            referencedRelation: "news_byline_mentions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_contributor_profile_id_fkey"
+            columns: ["contributor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "news_publisher_contributor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_byline_resolution_versions_supersedes_resolution_id_fkey"
+            columns: ["supersedes_resolution_id"]
+            isOneToOne: false
+            referencedRelation: "news_byline_resolution_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_decision_evidence: {
+        Row: {
+          created_at: string
+          decision_id: string
+          evidence_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision_id: string
+          evidence_id: string
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string
+          evidence_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_decision_evidence_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_decision_evidence_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_decisions: {
+        Row: {
+          action: string
+          decided_at: string
+          decided_by_actor_id: string | null
+          decided_by_user_id: string | null
+          decision_id: string
+          decision_origin: string
+          id: string
+          notes: string | null
+          source_publisher_id: string | null
+        }
+        Insert: {
+          action: string
+          decided_at?: string
+          decided_by_actor_id?: string | null
+          decided_by_user_id?: string | null
+          decision_id?: string
+          decision_origin: string
+          id?: string
+          notes?: string | null
+          source_publisher_id?: string | null
+        }
+        Update: {
+          action?: string
+          decided_at?: string
+          decided_by_actor_id?: string | null
+          decided_by_user_id?: string | null
+          decision_id?: string
+          decision_origin?: string
+          id?: string
+          notes?: string | null
+          source_publisher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_decisions_decided_by_actor_id_fkey"
+            columns: ["decided_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_decisions_source_publisher_id_fkey"
+            columns: ["source_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_decisions_source_publisher_id_fkey"
+            columns: ["source_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_decisions_source_publisher_id_fkey"
+            columns: ["source_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_decisions_source_publisher_id_fkey"
+            columns: ["source_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_decisions_source_publisher_id_fkey"
+            columns: ["source_publisher_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_evidence: {
+        Row: {
+          created_at: string
+          evidence_id: string
+          evidence_kind: string
+          evidence_summary: string
+          evidence_url: string
+          id: string
+          observed_at: string
+          publisher_source_id: string
+          recorded_by_decision_id: string
+          source_url_scope_version_id: string
+        }
+        Insert: {
+          created_at?: string
+          evidence_id?: string
+          evidence_kind: string
+          evidence_summary: string
+          evidence_url: string
+          id?: string
+          observed_at: string
+          publisher_source_id: string
+          recorded_by_decision_id: string
+          source_url_scope_version_id: string
+        }
+        Update: {
+          created_at?: string
+          evidence_id?: string
+          evidence_kind?: string
+          evidence_summary?: string
+          evidence_url?: string
+          id?: string
+          observed_at?: string
+          publisher_source_id?: string
+          recorded_by_decision_id?: string
+          source_url_scope_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_evidence_evidence_kind_fkey"
+            columns: ["evidence_kind"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence_kinds"
+            referencedColumns: ["evidence_kind"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_recorded_by_decision_id_fkey"
+            columns: ["recorded_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_evidence_source_url_scope_version_id_fkey"
+            columns: ["source_url_scope_version_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_source_url_scope_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_evidence_kinds: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          display_name: string
+          evidence_kind: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description: string
+          display_name: string
+          evidence_kind: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          display_name?: string
+          evidence_kind?: string
+        }
+        Relationships: []
+      }
+      news_content_review_case_types: {
+        Row: {
+          active: boolean
+          case_type: string
+          description: string
+          display_name: string
+        }
+        Insert: {
+          active?: boolean
+          case_type: string
+          description: string
+          display_name: string
+        }
+        Update: {
+          active?: boolean
+          case_type?: string
+          description?: string
+          display_name?: string
+        }
+        Relationships: []
+      }
+      news_content_review_cases: {
+        Row: {
+          case_type: string
+          context: Json
+          created_at: string
+          id: string
+          manifestation_id: string | null
+          news_item_id: string | null
+          opened_by_decision_id: string
+          resolved_at: string | null
+          review_case_id: string
+          status: string
+          unresolved_question: string
+          updated_at: string
+        }
+        Insert: {
+          case_type: string
+          context?: Json
+          created_at?: string
+          id?: string
+          manifestation_id?: string | null
+          news_item_id?: string | null
+          opened_by_decision_id: string
+          resolved_at?: string | null
+          review_case_id?: string
+          status?: string
+          unresolved_question: string
+          updated_at?: string
+        }
+        Update: {
+          case_type?: string
+          context?: Json
+          created_at?: string
+          id?: string
+          manifestation_id?: string | null
+          news_item_id?: string | null
+          opened_by_decision_id?: string
+          resolved_at?: string | null
+          review_case_id?: string
+          status?: string
+          unresolved_question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_review_cases_case_type_fkey"
+            columns: ["case_type"]
+            isOneToOne: false
+            referencedRelation: "news_content_review_case_types"
+            referencedColumns: ["case_type"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_opened_by_decision_id_fkey"
+            columns: ["opened_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_review_decisions: {
+        Row: {
+          action: string
+          action_payload_snapshot: Json
+          content_decision_id: string
+          decided_at: string
+          decided_by_user_id: string
+          id: string
+          notes: string | null
+          question_snapshot: string
+          review_case_id: string
+          supersedes_review_decision_id: string | null
+        }
+        Insert: {
+          action: string
+          action_payload_snapshot?: Json
+          content_decision_id: string
+          decided_at?: string
+          decided_by_user_id: string
+          id?: string
+          notes?: string | null
+          question_snapshot: string
+          review_case_id: string
+          supersedes_review_decision_id?: string | null
+        }
+        Update: {
+          action?: string
+          action_payload_snapshot?: Json
+          content_decision_id?: string
+          decided_at?: string
+          decided_by_user_id?: string
+          id?: string
+          notes?: string | null
+          question_snapshot?: string
+          review_case_id?: string
+          supersedes_review_decision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_review_decisions_content_decision_id_fkey"
+            columns: ["content_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_decisions_review_case_id_fkey"
+            columns: ["review_case_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_review_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_decisions_review_case_id_fkey"
+            columns: ["review_case_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_review_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_decisions_supersedes_review_decision_i_fkey"
+            columns: ["supersedes_review_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_review_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_deduplication_cases: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          deduplication_case_id: string
+          id: string
+          manifestation_a_id: string
+          manifestation_b_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          deduplication_case_id?: string
+          id?: string
+          manifestation_a_id: string
+          manifestation_b_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          deduplication_case_id?: string
+          id?: string
+          manifestation_a_id?: string
+          manifestation_b_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_deduplication_cases_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_a_id_fkey"
+            columns: ["manifestation_a_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_a_id_fkey"
+            columns: ["manifestation_a_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_a_id_fkey"
+            columns: ["manifestation_a_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_a_id_fkey"
+            columns: ["manifestation_a_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_b_id_fkey"
+            columns: ["manifestation_b_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_b_id_fkey"
+            columns: ["manifestation_b_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_b_id_fkey"
+            columns: ["manifestation_b_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_cases_manifestation_b_id_fkey"
+            columns: ["manifestation_b_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+        ]
+      }
+      news_deduplication_decision_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          deduplication_case_id: string
+          id: string
+          is_current: boolean
+          outcome: string
+          primary_evidence_id: string
+          rationale: string
+          recorded_from: string
+          recorded_to: string | null
+          superseded_at: string | null
+          supersedes_deduplication_version_id: string | null
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          deduplication_case_id: string
+          id?: string
+          is_current?: boolean
+          outcome: string
+          primary_evidence_id: string
+          rationale: string
+          recorded_from: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_deduplication_version_id?: string | null
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          deduplication_case_id?: string
+          id?: string
+          is_current?: boolean
+          outcome?: string
+          primary_evidence_id?: string
+          rationale?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_deduplication_version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_deduplication_decision_v_supersedes_deduplication_ver_fkey"
+            columns: ["supersedes_deduplication_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_deduplication_decision_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_decision_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_decision_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_decision_versions_deduplication_case_id_fkey"
+            columns: ["deduplication_case_id"]
+            isOneToOne: false
+            referencedRelation: "news_deduplication_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_deduplication_decision_versions_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_identity_decision_evidence: {
         Row: {
           decision_id: string
@@ -3939,7 +4814,28 @@ export type Database = {
             foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4152,7 +5048,28 @@ export type Database = {
             foreignKeyName: "news_identity_resolution_evid_bridge_from_publisher_source_fkey"
             columns: ["bridge_from_publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_from_publisher_source_fkey"
+            columns: ["bridge_from_publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_from_publisher_source_fkey"
+            columns: ["bridge_from_publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_from_publisher_source_fkey"
+            columns: ["bridge_from_publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4166,7 +5083,28 @@ export type Database = {
             foreignKeyName: "news_identity_resolution_evid_bridge_to_publisher_source_i_fkey"
             columns: ["bridge_to_publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_to_publisher_source_i_fkey"
+            columns: ["bridge_to_publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_to_publisher_source_i_fkey"
+            columns: ["bridge_to_publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evid_bridge_to_publisher_source_i_fkey"
+            columns: ["bridge_to_publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4215,7 +5153,28 @@ export type Database = {
             foreignKeyName: "news_identity_resolution_evidence_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_evidence_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4250,6 +5209,680 @@ export type Database = {
           rule_key?: string
         }
         Relationships: []
+      }
+      news_item_classification_versions: {
+        Row: {
+          classification_id: string
+          closed_by_decision_id: string | null
+          competition_edition_id: string | null
+          competition_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          is_current: boolean
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to: string | null
+          sport_id: string | null
+          superseded_at: string | null
+          supersedes_classification_version_id: string | null
+          target_type: string
+          team_id: string | null
+        }
+        Insert: {
+          classification_id: string
+          closed_by_decision_id?: string | null
+          competition_edition_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          is_current?: boolean
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to?: string | null
+          sport_id?: string | null
+          superseded_at?: string | null
+          supersedes_classification_version_id?: string | null
+          target_type: string
+          team_id?: string | null
+        }
+        Update: {
+          classification_id?: string
+          closed_by_decision_id?: string | null
+          competition_edition_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          is_current?: boolean
+          primary_evidence_id?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          sport_id?: string | null
+          superseded_at?: string | null
+          supersedes_classification_version_id?: string | null
+          target_type?: string
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_item_classification_vers_supersedes_classification_ve_fkey"
+            columns: ["supersedes_classification_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_item_classification_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "news_item_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_competition_edition_id_fkey"
+            columns: ["competition_edition_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_competition_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_competition_edition_id_fkey"
+            columns: ["competition_edition_id"]
+            isOneToOne: false
+            referencedRelation: "competition_edition_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competition_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "news_item_classification_versions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_readiness"
+            referencedColumns: ["internal_id"]
+          },
+        ]
+      }
+      news_item_classifications: {
+        Row: {
+          classification_id: string
+          created_at: string
+          created_by_decision_id: string
+          id: string
+          news_item_id: string
+        }
+        Insert: {
+          classification_id?: string
+          created_at?: string
+          created_by_decision_id: string
+          id?: string
+          news_item_id: string
+        }
+        Update: {
+          classification_id?: string
+          created_at?: string
+          created_by_decision_id?: string
+          id?: string
+          news_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_item_classifications_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classifications_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classifications_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classifications_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_classifications_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_item_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          headline: string
+          id: string
+          is_current: boolean
+          news_item_id: string
+          publication_state: string
+          publication_time: string | null
+          publication_time_evidence_id: string | null
+          recorded_from: string
+          recorded_to: string | null
+          summary: string | null
+          superseded_at: string | null
+          supersedes_version_id: string | null
+          version_number: number
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          headline: string
+          id?: string
+          is_current?: boolean
+          news_item_id: string
+          publication_state: string
+          publication_time?: string | null
+          publication_time_evidence_id?: string | null
+          recorded_from: string
+          recorded_to?: string | null
+          summary?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          version_number: number
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          headline?: string
+          id?: string
+          is_current?: boolean
+          news_item_id?: string
+          publication_state?: string
+          publication_time?: string | null
+          publication_time_evidence_id?: string | null
+          recorded_from?: string
+          recorded_to?: string | null
+          summary?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_item_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_publication_time_evidence_id_fkey"
+            columns: ["publication_time_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["item_version_id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_item_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["item_version_id"]
+          },
+          {
+            foreignKeyName: "news_item_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["item_version_id"]
+          },
+        ]
+      }
+      news_items: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          id: string
+          item_kind: string
+          news_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          id?: string
+          item_kind: string
+          news_item_id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          id?: string
+          item_kind?: string
+          news_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_items_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_manifestation_assignment_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          is_current: boolean
+          manifestation_id: string
+          news_item_id: string
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to: string | null
+          superseded_at: string | null
+          supersedes_assignment_id: string | null
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          is_current?: boolean
+          manifestation_id: string
+          news_item_id: string
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_assignment_id?: string | null
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          is_current?: boolean
+          manifestation_id?: string
+          news_item_id?: string
+          primary_evidence_id?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_assignment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_manifestation_assignment_ver_supersedes_assignment_id_fkey"
+            columns: ["supersedes_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestation_assignment_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versio_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_assignment_versions_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_manifestation_urls: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          id: string
+          is_public_destination: boolean
+          manifestation_id: string
+          manifestation_url_id: string
+          normalized_url: string
+          primary_evidence_id: string
+          url: string
+          url_kind: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          id?: string
+          is_public_destination?: boolean
+          manifestation_id: string
+          manifestation_url_id?: string
+          normalized_url: string
+          primary_evidence_id: string
+          url: string
+          url_kind: string
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          id?: string
+          is_public_destination?: boolean
+          manifestation_id?: string
+          manifestation_url_id?: string
+          normalized_url?: string
+          primary_evidence_id?: string
+          url?: string
+          url_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_manifestation_urls_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_urls_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_urls_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_urls_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_urls_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_manifestation_urls_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_manifestations: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          first_observed_at: string
+          id: string
+          manifestation_id: string
+          manifestation_kind: string
+          primary_evidence_id: string
+          publisher_source_id: string
+          source_reference: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          first_observed_at: string
+          id?: string
+          manifestation_id?: string
+          manifestation_kind: string
+          primary_evidence_id: string
+          publisher_source_id: string
+          source_reference?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          first_observed_at?: string
+          id?: string
+          manifestation_id?: string
+          manifestation_kind?: string
+          primary_evidence_id?: string
+          publisher_source_id?: string
+          source_reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_manifestations_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_manifestations_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "trusted_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       news_official_team_publication_versions: {
         Row: {
@@ -4316,7 +5949,28 @@ export type Database = {
             foreignKeyName: "news_official_team_publication_version_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_official_team_publication_version_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_official_team_publication_version_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_official_team_publication_version_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4691,7 +6345,28 @@ export type Database = {
             foreignKeyName: "news_person_publisher_relationship_ver_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_person_publisher_relationship_ver_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_person_publisher_relationship_ver_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_person_publisher_relationship_ver_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4720,6 +6395,73 @@ export type Database = {
             columns: ["resolution_decision_id"]
             isOneToOne: false
             referencedRelation: "news_identity_resolution_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_podcast_episodes: {
+        Row: {
+          created_at: string
+          created_by_decision_id: string
+          episode_identifier: string | null
+          news_item_id: string
+          show_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_decision_id: string
+          episode_identifier?: string | null
+          news_item_id: string
+          show_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_decision_id?: string
+          episode_identifier?: string | null
+          news_item_id?: string
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_podcast_episodes_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: true
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: true
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: true
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: true
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
             referencedColumns: ["id"]
           },
         ]
@@ -4832,7 +6574,28 @@ export type Database = {
             foreignKeyName: "news_publisher_contributor_profiles_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_contributor_profiles_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_contributor_profiles_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_contributor_profiles_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -4903,6 +6666,20 @@ export type Database = {
             foreignKeyName: "news_publisher_policy_versions_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_policy_versions_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_policy_versions_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
             referencedColumns: ["publisher_source_id"]
           },
@@ -4910,7 +6687,346 @@ export type Database = {
             foreignKeyName: "news_publisher_policy_versions_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_publisher_policy_versions_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "trusted_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_remote_preview_policy_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          is_current: boolean
+          preview_reference_id: string
+          primary_evidence_id: string
+          publisher_policy_state: string
+          recorded_from: string
+          recorded_to: string | null
+          superseded_at: string | null
+          supersedes_policy_version_id: string | null
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          is_current?: boolean
+          preview_reference_id: string
+          primary_evidence_id: string
+          publisher_policy_state: string
+          recorded_from: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_policy_version_id?: string | null
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          is_current?: boolean
+          preview_reference_id?: string
+          primary_evidence_id?: string
+          publisher_policy_state?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_policy_version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_remote_preview_policy_ve_supersedes_policy_version_id_fkey"
+            columns: ["supersedes_policy_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_remote_preview_policy_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_policy_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_policy_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_policy_versions_preview_reference_id_fkey"
+            columns: ["preview_reference_id"]
+            isOneToOne: false
+            referencedRelation: "news_remote_preview_references"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_policy_versions_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_remote_preview_references: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          created_by_decision_id: string
+          id: string
+          manifestation_id: string
+          preview_kind: string
+          preview_reference_id: string
+          remote_url: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          created_by_decision_id: string
+          id?: string
+          manifestation_id: string
+          preview_kind: string
+          preview_reference_id?: string
+          remote_url: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          created_by_decision_id?: string
+          id?: string
+          manifestation_id?: string
+          preview_kind?: string
+          preview_reference_id?: string
+          remote_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_remote_preview_references_created_by_decision_id_fkey"
+            columns: ["created_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_references_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_references_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_references_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_remote_preview_references_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+        ]
+      }
+      news_representative_destination_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          is_current: boolean
+          manifestation_id: string
+          manifestation_url_id: string
+          news_item_id: string
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to: string | null
+          superseded_at: string | null
+          supersedes_destination_id: string | null
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          is_current?: boolean
+          manifestation_id: string
+          manifestation_url_id: string
+          news_item_id: string
+          primary_evidence_id: string
+          recorded_from: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_destination_id?: string | null
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          is_current?: boolean
+          manifestation_id?: string
+          manifestation_url_id?: string
+          news_item_id?: string
+          primary_evidence_id?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_destination_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_representative_destination__supersedes_destination_id_fkey"
+            columns: ["supersedes_destination_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination__supersedes_destination_id_fkey"
+            columns: ["supersedes_destination_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination__supersedes_destination_id_fkey"
+            columns: ["supersedes_destination_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination__supersedes_destination_id_fkey"
+            columns: ["supersedes_destination_id"]
+            isOneToOne: false
+            referencedRelation: "news_representative_destination_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_vers_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versi_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versi_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestation_urls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versi_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versi_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versio_primary_evidence_id_fkey"
+            columns: ["primary_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_representative_destination_versions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["id"]
           },
         ]
@@ -5419,7 +7535,28 @@ export type Database = {
             foreignKeyName: "podcast_show_publisher_relationship_ve_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "podcast_show_publisher_relationship_ve_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "podcast_show_publisher_relationship_ve_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "podcast_show_publisher_relationship_ve_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -5792,7 +7929,28 @@ export type Database = {
             foreignKeyName: "source_applicability_versions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_applicability_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_applicability_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_applicability_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -5888,7 +8046,28 @@ export type Database = {
             foreignKeyName: "source_independence_group_assignment_versions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_independence_group_assignment_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_independence_group_assignment_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_independence_group_assignment_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6042,7 +8221,28 @@ export type Database = {
             foreignKeyName: "source_qualification_enrollments_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_enrollments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_enrollments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_enrollments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6226,7 +8426,28 @@ export type Database = {
             foreignKeyName: "source_qualification_observations_tested_source_id_fkey"
             columns: ["tested_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_observations_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_observations_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_observations_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6356,7 +8577,28 @@ export type Database = {
             foreignKeyName: "source_qualification_reference_contributions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_reference_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_reference_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_reference_contributions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6457,7 +8699,28 @@ export type Database = {
             foreignKeyName: "source_qualification_references_tested_source_id_fkey"
             columns: ["tested_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_references_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_references_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_references_tested_source_id_fkey"
+            columns: ["tested_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6544,7 +8807,28 @@ export type Database = {
             foreignKeyName: "source_qualification_results_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_results_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_results_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_qualification_results_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -6778,7 +9062,28 @@ export type Database = {
             foreignKeyName: "source_trust_assignments_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_trust_assignments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_trust_assignments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "source_trust_assignments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -7172,7 +9477,28 @@ export type Database = {
             foreignKeyName: "team_color_source_candidates_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_candidates_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_candidates_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_candidates_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -7300,7 +9626,28 @@ export type Database = {
             foreignKeyName: "team_color_source_reliability_observations_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_reliability_observations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_reliability_observations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "team_color_source_reliability_observations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -8284,7 +10631,28 @@ export type Database = {
             foreignKeyName: "trusted_source_alias_versions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_alias_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_alias_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_alias_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -8326,7 +10694,28 @@ export type Database = {
             foreignKeyName: "trusted_source_redirects_canonical_source_id_fkey"
             columns: ["canonical_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_canonical_source_id_fkey"
+            columns: ["canonical_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -8347,7 +10736,28 @@ export type Database = {
             foreignKeyName: "trusted_source_redirects_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: true
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_redirects_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: true
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -8420,7 +10830,28 @@ export type Database = {
             foreignKeyName: "trusted_source_url_scope_versions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_url_scope_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_url_scope_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_source_url_scope_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -8500,7 +10931,28 @@ export type Database = {
             foreignKeyName: "trusted_sources_superseded_by_source_id_fkey"
             columns: ["superseded_by_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_sources_superseded_by_source_id_fkey"
+            columns: ["superseded_by_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_sources_superseded_by_source_id_fkey"
+            columns: ["superseded_by_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "trusted_sources_superseded_by_source_id_fkey"
+            columns: ["superseded_by_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -9088,6 +11540,137 @@ export type Database = {
         }
         Relationships: []
       }
+      news_awaiting_publication_read_model: {
+        Row: {
+          bylines: Json | null
+          classifications: Json | null
+          created_by_actor_id: string | null
+          created_by_user_id: string | null
+          creation_origin: string | null
+          destination_url: string | null
+          destination_url_kind: string | null
+          headline: string | null
+          id: string | null
+          item_kind: string | null
+          item_version_id: string | null
+          manifestation_id: string | null
+          manifestation_kind: string | null
+          manifestation_public_id: string | null
+          manifestation_url_id: string | null
+          news_item_id: string | null
+          preview_kind: string | null
+          preview_url: string | null
+          publication_state: string | null
+          publication_time: string | null
+          publisher_id: string | null
+          publisher_name: string | null
+          publisher_source_id: string | null
+          representative_destination_version_id: string | null
+          show_id: string | null
+          show_name: string | null
+          summary: string | null
+          version_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_decisions_decided_by_actor_id_fkey"
+            columns: ["created_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_content_review_read_model: {
+        Row: {
+          case_type: string | null
+          context: Json | null
+          created_at: string | null
+          decision_history: Json | null
+          id: string | null
+          manifestation_id: string | null
+          manifestation_public_id: string | null
+          news_item_id: string | null
+          news_item_public_id: string | null
+          resolved_at: string | null
+          review_case_id: string | null
+          status: string | null
+          unresolved_question: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_review_cases_case_type_fkey"
+            columns: ["case_type"]
+            isOneToOne: false
+            referencedRelation: "news_content_review_case_types"
+            referencedColumns: ["case_type"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_manifestation_id_fkey"
+            columns: ["manifestation_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_identity_review_read_model: {
         Row: {
           affiliations: Json | null
@@ -9136,7 +11719,28 @@ export type Database = {
             foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
             columns: ["publisher_source_id"]
             isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
             referencedRelation: "news_publisher_policy_read_model"
+            referencedColumns: ["publisher_source_id"]
+          },
+          {
+            foreignKeyName: "news_identity_resolution_cases_publisher_source_id_fkey"
+            columns: ["publisher_source_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
             referencedColumns: ["publisher_source_id"]
           },
           {
@@ -9162,6 +11766,54 @@ export type Database = {
           },
         ]
       }
+      news_published_item_read_model: {
+        Row: {
+          bylines: Json | null
+          classifications: Json | null
+          created_by_actor_id: string | null
+          created_by_user_id: string | null
+          creation_origin: string | null
+          destination_url: string | null
+          destination_url_kind: string | null
+          headline: string | null
+          id: string | null
+          item_kind: string | null
+          item_version_id: string | null
+          manifestation_id: string | null
+          manifestation_kind: string | null
+          manifestation_public_id: string | null
+          manifestation_url_id: string | null
+          news_item_id: string | null
+          preview_kind: string | null
+          preview_url: string | null
+          publication_state: string | null
+          publication_time: string | null
+          publisher_id: string | null
+          publisher_name: string | null
+          publisher_source_id: string | null
+          representative_destination_version_id: string | null
+          show_id: string | null
+          show_name: string | null
+          summary: string | null
+          version_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_decisions_decided_by_actor_id_fkey"
+            columns: ["created_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_publisher_policy_read_model: {
         Row: {
           display_name: string | null
@@ -9173,6 +11825,54 @@ export type Database = {
           publisher_source_id: string | null
         }
         Relationships: []
+      }
+      news_ready_item_read_model: {
+        Row: {
+          bylines: Json | null
+          classifications: Json | null
+          created_by_actor_id: string | null
+          created_by_user_id: string | null
+          creation_origin: string | null
+          destination_url: string | null
+          destination_url_kind: string | null
+          headline: string | null
+          id: string | null
+          item_kind: string | null
+          item_version_id: string | null
+          manifestation_id: string | null
+          manifestation_kind: string | null
+          manifestation_public_id: string | null
+          manifestation_url_id: string | null
+          news_item_id: string | null
+          preview_kind: string | null
+          preview_url: string | null
+          publication_state: string | null
+          publication_time: string | null
+          publisher_id: string | null
+          publisher_name: string | null
+          publisher_source_id: string | null
+          representative_destination_version_id: string | null
+          show_id: string | null
+          show_name: string | null
+          summary: string | null
+          version_number: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_content_decisions_decided_by_actor_id_fkey"
+            columns: ["created_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_podcast_episodes_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_catalog_read_model: {
         Row: {
@@ -9361,6 +12061,26 @@ export type Database = {
         }
         Returns: number
       }
+      admin_add_news_manifestation_url: {
+        Args: {
+          is_public_destination_value: boolean
+          manifestation_id_value: string
+          notes_value?: string
+          primary_evidence_id_value: string
+          url_kind_value: string
+          url_value: string
+        }
+        Returns: string
+      }
+      admin_assign_news_manifestation: {
+        Args: {
+          manifestation_id_value: string
+          news_item_id_value: string
+          notes_value?: string
+          primary_evidence_id_value: string
+        }
+        Returns: string
+      }
       admin_create_agent_job_runtime_policy: {
         Args: {
           activate_value?: boolean
@@ -9413,6 +12133,32 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_news_item: {
+        Args: {
+          episode_identifier_value: string
+          headline_value: string
+          item_kind_value: string
+          notes_value?: string
+          publication_state_value: string
+          publication_time_evidence_id_value: string
+          publication_time_value: string
+          show_id_value: string
+          source_publisher_id_value: string
+          summary_value: string
+        }
+        Returns: string
+      }
+      admin_create_news_manifestation: {
+        Args: {
+          first_observed_at_value: string
+          manifestation_kind_value: string
+          notes_value?: string
+          primary_evidence_id_value: string
+          publisher_source_id_value: string
+          source_reference_value: string
+        }
+        Returns: string
+      }
       admin_create_verification_policy: {
         Args: {
           activate_value?: boolean
@@ -9426,6 +12172,45 @@ export type Database = {
         }
         Returns: string
       }
+      admin_get_news_published_items_at: {
+        Args: { at_time_value: string }
+        Returns: {
+          bylines: Json | null
+          classifications: Json | null
+          created_by_actor_id: string | null
+          created_by_user_id: string | null
+          creation_origin: string | null
+          destination_url: string | null
+          destination_url_kind: string | null
+          headline: string | null
+          id: string | null
+          item_kind: string | null
+          item_version_id: string | null
+          manifestation_id: string | null
+          manifestation_kind: string | null
+          manifestation_public_id: string | null
+          manifestation_url_id: string | null
+          news_item_id: string | null
+          preview_kind: string | null
+          preview_url: string | null
+          publication_state: string | null
+          publication_time: string | null
+          publisher_id: string | null
+          publisher_name: string | null
+          publisher_source_id: string | null
+          representative_destination_version_id: string | null
+          show_id: string | null
+          show_name: string | null
+          summary: string | null
+          version_number: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "news_ready_item_read_model"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_grant_catalog_capability: {
         Args: {
           actor_key_value: string
@@ -9434,6 +12219,88 @@ export type Database = {
           sport_public_id?: string
           team_public_id?: string
           venue_public_id?: string
+        }
+        Returns: string
+      }
+      admin_open_news_content_review_case: {
+        Args: {
+          case_type_value: string
+          context_value?: Json
+          manifestation_id_value: string
+          news_item_id_value: string
+          notes_value?: string
+          unresolved_question_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_byline: {
+        Args: {
+          manifestation_id_value: string
+          notes_value?: string
+          ordinal_value: number
+          primary_evidence_id_value: string
+          raw_attribution_value: string
+          visible_profile_url_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_classification: {
+        Args: {
+          classification_id_value: string
+          news_item_id_value: string
+          notes_value?: string
+          primary_evidence_id_value: string
+          target_id_value: string
+          target_type_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_content_evidence: {
+        Args: {
+          evidence_kind_value: string
+          evidence_summary_value: string
+          evidence_url_value: string
+          notes_value?: string
+          observed_at_value: string
+          publisher_source_id_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_deduplication: {
+        Args: {
+          manifestation_one_id_value: string
+          manifestation_two_id_value: string
+          notes_value?: string
+          outcome_value: string
+          primary_evidence_id_value: string
+          rationale_value: string
+          reconcile_manifestation_id_value?: string
+          reconcile_news_item_id_value?: string
+        }
+        Returns: string
+      }
+      admin_record_news_item_version: {
+        Args: {
+          headline_value: string
+          news_item_id_value: string
+          notes_value?: string
+          publication_state_value: string
+          publication_time_evidence_id_value: string
+          publication_time_value: string
+          source_publisher_id_value: string
+          summary_value: string
+        }
+        Returns: string
+      }
+      admin_record_news_remote_preview: {
+        Args: {
+          alt_text_value: string
+          manifestation_id_value: string
+          notes_value?: string
+          preview_kind_value: string
+          primary_evidence_id_value: string
+          publisher_policy_state_value: string
+          remote_url_value: string
         }
         Returns: string
       }
@@ -9466,6 +12333,17 @@ export type Database = {
         }
         Returns: string
       }
+      admin_resolve_news_byline: {
+        Args: {
+          byline_mention_id_value: string
+          identity_resolution_decision_id_value: string
+          notes_value?: string
+          resolution_basis_value: string
+          target_identity_id_value: string
+          target_identity_type_value: string
+        }
+        Returns: string
+      }
       admin_review_information_lineage: {
         Args: {
           canonical_lineage_key_value?: string
@@ -9479,6 +12357,15 @@ export type Database = {
         }
         Returns: string
       }
+      admin_review_news_content_case: {
+        Args: {
+          action_payload_value?: Json
+          action_value: string
+          notes_value?: string
+          review_case_id_value: string
+        }
+        Returns: string
+      }
       admin_review_news_identity_case: {
         Args: {
           action_payload_value?: Json
@@ -9486,6 +12373,24 @@ export type Database = {
           case_id_value: string
           notes_value?: string
           target_identity_id_value?: string
+        }
+        Returns: string
+      }
+      admin_set_news_remote_preview_policy: {
+        Args: {
+          notes_value?: string
+          preview_reference_id_value: string
+          primary_evidence_id_value: string
+          publisher_policy_state_value: string
+        }
+        Returns: string
+      }
+      admin_set_news_representative_destination: {
+        Args: {
+          manifestation_url_id_value: string
+          news_item_id_value: string
+          notes_value?: string
+          primary_evidence_id_value: string
         }
         Returns: string
       }
@@ -9891,6 +12796,10 @@ export type Database = {
       get_my_team_color_work_pre_publisher_governance: {
         Args: { lease_token_value: string; work_item_id_value: string }
         Returns: Json
+      }
+      get_news_manifestation_item_at: {
+        Args: { at_time_value: string; manifestation_id_value: string }
+        Returns: string
       }
       get_news_person_pair_state_at: {
         Args: { at_time: string; person_one_id: string; person_two_id: string }

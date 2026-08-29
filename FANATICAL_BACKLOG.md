@@ -232,6 +232,39 @@ slows News UI work.
 **Origin** — First ESLint run, 28 Aug; `react-hooks/set-state-in-effect` and
 `react-refresh/only-export-components`.
 
+### BL-023
+**What** — Explicitly prove that a historical published byline remains attached
+to the intended stable person identity across a later governed person merge,
+including the resulting fan-facing byline and Author display.
+**Why deferred** — Phase 3 preserves the published byline text and points its
+Resolution history at stable identity records, but no fan-facing byline or
+Author display exists yet on which to prove merge rendering behavior.
+**Trigger** — Before Phase 4 exposes any fan-facing byline or Author display.
+**Required at trigger** — REQUIRED
+**Origin** — Phase 3 correction review; attribution proof required before the
+first fan-facing News read.
+
+### BL-024
+**What** — Behaviourally prove the Phase 3 dedupe/assignment concurrency
+protection using multiple database sessions. The proof must establish that
+concurrent assignment and dedupe operations cannot commit contradictory canonical
+state, that the locking order prevents avoidable deadlock, and that the deferred
+consistency constraints actually fire under the relevant interleavings.
+**Why deferred** — Phase 3 has a single governed writer path, and the immediate
+contradiction checks are behaviourally proven across four scenarios. Codex also
+added deferred constraint triggers and ordered locking as defence in depth, but
+their actual multi-session concurrency behaviour is not yet proven — the current
+assertion confirms the triggers are declared deferrable and that the lock helper
+names appear in the function bodies, which is structural rather than behavioural.
+A single-session transactional SQL suite cannot prove race or deadlock behaviour.
+**Trigger** — Before a second concurrent writer can reach these paths —
+specifically before Phase 6 automated ingestion runs concurrently with staff or
+another writer.
+**Required at trigger** — REQUIRED
+**Origin** — Phase 3 independent closure audit. Use a real multi-session
+concurrency proof, similar in spirit to
+`supabase/tests/team_color_bootstrap_concurrency.sh`.
+
 ---
 
 ## Done
