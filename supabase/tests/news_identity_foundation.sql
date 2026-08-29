@@ -1479,32 +1479,263 @@ select pg_temp.assert_true(
   'News policy must remain pending despite approved factual governance and Tier 1'
 );
 
--- Official publication facts use the canonical Team FK.
-insert into public.news_official_team_publication_versions(
-  publisher_source_id, team_id, organizational_contributor_id,
-  relationship_type
-)
-select
-  '86100000-0000-0000-0000-000000000001',
-  team.id,
-  '86300000-0000-0000-0000-000000000001',
-  'official_newsroom'
-from public.catalog_teams team
-order by team.team_id
-limit 1;
+-- The real Edmonton Oilers publisher/Team pair that exposed the missing
+-- mutation boundary can now be established through the governed staff path.
+-- All relationship dates below are synthetic proof values and roll back.
+select pg_temp.remember(
+  'oilers_official_publisher',
+  (
+    select source.id
+    from public.trusted_sources source
+    where source.source_id = 'edmonton-oilers-hockey-club'
+  )
+);
+select pg_temp.remember(
+  'oilers_team',
+  (
+    select team.id
+    from public.catalog_teams team
+    where team.team_id = 'hockey-000027'
+  )
+);
 
+select set_config('request.jwt.claim.sub', '86000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+select pg_temp.remember('case_oilers_official_publication',
+  public.admin_open_news_identity_case(
+    'official_team_publication', 'organization',
+    'Edmonton Oilers Hockey Club', pg_temp.id('oilers_official_publisher'),
+    null, null, null, null, null, 'https://www.nhl.com/oilers',
+    'Is this publisher an official publication for the canonical Edmonton Oilers Team?',
+    jsonb_build_object(
+      'team_id', pg_temp.id('oilers_team'),
+      'team_public_id', 'hockey-000027',
+      'proof_scope', 'synthetic_transactional'
+    ),
+    'Synthetic governed Oilers official-publication intake.'
+  )
+);
 select pg_temp.assert_statement_rejected(
   $statement$
-    insert into public.news_official_team_publication_versions(
-      publisher_source_id, team_id, relationship_type
-    ) values (
-      '86100000-0000-0000-0000-000000000001',
-      'ffffffff-ffff-ffff-ffff-ffffffffffff',
-      'official_publication'
+    select public.admin_record_news_identity_candidate(
+      pg_temp.id('case_oilers_official_publication'),
+      'existing_identity', 'organization',
+      '86300000-0000-0000-0000-000000000001', 'Phase 2 Staff',
+      '{}'::jsonb, 'Relationship cases do not resolve identity candidates.'
     )
   $statement$,
-  'foreign key constraint',
-  'official Team/publication relationship must reject a noncanonical Team ID'
+  'do not accept identity candidates',
+  'an official Team/publication case must not be misrouted through automatic identity linking'
+);
+reset role;
+
+select set_config('request.jwt.claim.sub', '', true);
+set local role anon;
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select public.admin_record_news_official_team_publication(
+      pg_temp.id('case_oilers_official_publication'),
+      pg_temp.id('oilers_team'), 'official_publication',
+      '2020-01-01T00:00:00Z', null, null,
+      'Anonymous official-publication attempt.'
+    )
+  $statement$,
+  'permission denied',
+  'anonymous users must not execute the official Team/publication RPC'
+);
+reset role;
+
+select set_config('request.jwt.claim.sub', '86000000-0000-0000-0000-000000000002', true);
+set local role authenticated;
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select public.admin_record_news_official_team_publication(
+      pg_temp.id('case_oilers_official_publication'),
+      pg_temp.id('oilers_team'), 'official_publication',
+      '2020-01-01T00:00:00Z', null, null,
+      'Unauthorized official-publication attempt.'
+    )
+  $statement$,
+  'intake access is required',
+  'ordinary authenticated fans must not establish official Team/publication relationships'
+);
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select private.record_news_official_team_publication_canonical(
+      pg_temp.id('case_oilers_official_publication'), null,
+      pg_temp.id('oilers_team'), 'official_publication',
+      '2020-01-01T00:00:00Z', null, 'automation', null,
+      '86010000-0000-0000-0000-000000000002',
+      'Private browser bypass attempt.'
+    )
+  $statement$,
+  'permission denied',
+  'browser roles must not call the private official Team/publication mutation'
+);
+reset role;
+
+select set_config('request.jwt.claim.sub', '86000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select public.admin_record_news_official_team_publication(
+      pg_temp.id('case_oilers_official_publication'),
+      'ffffffff-ffff-ffff-ffff-ffffffffffff', 'official_publication',
+      '2020-01-01T00:00:00Z', null, null,
+      'Synthetic noncanonical Team attempt.'
+    )
+  $statement$,
+  'Team identity does not exist',
+  'the governed path must reject a noncanonical Team ID'
+);
+select pg_temp.remember(
+  'oilers_official_initial',
+  public.admin_record_news_official_team_publication(
+    pg_temp.id('case_oilers_official_publication'),
+    pg_temp.id('oilers_team'), 'official_publication',
+    '2020-01-01T00:00:00Z', null, null,
+    'Establish the factual official-publication relationship.'
+  )
+);
+select pg_temp.remember(
+  'oilers_official_corrected',
+  public.admin_record_news_official_team_publication(
+    pg_temp.id('case_oilers_official_publication'),
+    pg_temp.id('oilers_team'), 'official_publication',
+    '2020-01-01T00:00:00Z', '2024-06-30T00:00:00Z',
+    pg_temp.id('oilers_official_initial'),
+    'Correct only the synthetic factual end date.'
+  )
+);
+reset role;
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 2
+      and count(*) filter (where relationship.is_current) = 1
+      and bool_or(
+        relationship.id = pg_temp.id('oilers_official_initial')
+        and not relationship.is_current
+        and relationship.effective_from = '2020-01-01T00:00:00Z'::timestamptz
+        and relationship.effective_to is null
+        and relationship.superseded_at = closing_decision.decided_at
+        and relationship.closed_by_decision_id = closing_decision.id
+      )
+      and bool_or(
+        relationship.id = pg_temp.id('oilers_official_corrected')
+        and relationship.is_current
+        and relationship.effective_from = '2020-01-01T00:00:00Z'::timestamptz
+        and relationship.effective_to = '2024-06-30T00:00:00Z'::timestamptz
+        and relationship.superseded_at is null
+        and relationship.closed_by_decision_id is null
+      )
+    from public.news_official_team_publication_versions relationship
+    left join public.news_identity_resolution_decisions closing_decision
+      on closing_decision.id = relationship.closed_by_decision_id
+    where relationship.id in (
+      pg_temp.id('oilers_official_initial'),
+      pg_temp.id('oilers_official_corrected')
+    )
+  ),
+  'official Team/publication correction must retain both versions and keep factual dates separate from record supersession time'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.news_official_team_publication_versions relationship
+    join public.news_identity_resolution_decisions decision
+      on decision.id = relationship.resolution_decision_id
+    where relationship.id = pg_temp.id('oilers_official_initial')
+      and relationship.publisher_source_id = pg_temp.id('oilers_official_publisher')
+      and relationship.team_id = pg_temp.id('oilers_team')
+      and relationship.relationship_type = 'official_publication'
+      and decision.action = 'establish_official_team_publication'
+      and decision.decision_origin = 'staff'
+      and decision.decided_by_user_id = '86000000-0000-0000-0000-000000000001'
+      and decision.decided_by_actor_id = '86010000-0000-0000-0000-000000000001'
+  ) and exists (
+    select 1
+    from public.news_official_team_publication_versions current_relationship
+    join public.news_identity_resolution_decisions correction_decision
+      on correction_decision.id = current_relationship.resolution_decision_id
+    join public.news_official_team_publication_versions prior_relationship
+      on prior_relationship.id = pg_temp.id('oilers_official_initial')
+    where current_relationship.id = pg_temp.id('oilers_official_corrected')
+      and correction_decision.action = 'correct_official_team_publication'
+      and correction_decision.decision_origin = 'staff'
+      and correction_decision.supersedes_decision_id =
+        prior_relationship.resolution_decision_id
+      and correction_decision.action_payload_snapshot ->> 'relationship_id' =
+        current_relationship.id::text
+      and correction_decision.action_payload_snapshot ->> 'supersedes_relationship_id' =
+        prior_relationship.id::text
+      and correction_decision.action_payload_snapshot ->> 'team_id' =
+        pg_temp.id('oilers_team')::text
+  ) and (
+    select identity_case.status = 'resolved_manual'
+      and identity_case.automatic_resolution_result =
+        'correct_official_team_publication'
+    from public.news_identity_resolution_cases identity_case
+    where identity_case.id = pg_temp.id('case_oilers_official_publication')
+  ),
+  'official Team/publication decisions must retain staff provenance, canonical Team identity, and correction linkage'
+);
+
+-- The shared operation also accepts governed automation provenance for a
+-- future private wrapper, without creating any public automation runtime.
+select pg_temp.remember(
+  'case_oilers_official_automation',
+  private.open_news_identity_case_canonical(
+    'official_team_publication', 'organization',
+    'Edmonton Oilers Hockey Club', pg_temp.id('oilers_official_publisher'),
+    null, null, null, null, null, 'https://www.nhl.com/oilers',
+    'Can a future authorized automation record this factual relationship?',
+    jsonb_build_object('team_id', pg_temp.id('oilers_team')),
+    'automation', null, '86010000-0000-0000-0000-000000000002',
+    'Synthetic private automation-provenance proof.'
+  )
+);
+select pg_temp.remember(
+  'oilers_official_automation',
+  private.record_news_official_team_publication_canonical(
+    pg_temp.id('case_oilers_official_automation'), null,
+    pg_temp.id('oilers_team'), 'official_team_site',
+    '2020-01-01T00:00:00Z', null, 'automation', null,
+    '86010000-0000-0000-0000-000000000002',
+    'Synthetic future automation mutation through the shared operation.'
+  )
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.news_official_team_publication_versions relationship
+    join public.news_identity_resolution_decisions decision
+      on decision.id = relationship.resolution_decision_id
+    where relationship.id = pg_temp.id('oilers_official_automation')
+      and decision.action = 'establish_official_team_publication'
+      and decision.decision_origin = 'automation'
+      and decision.decided_by_user_id is null
+      and decision.decided_by_actor_id = '86010000-0000-0000-0000-000000000002'
+  )
+  and position(
+    'private.record_news_official_team_publication_canonical'
+    in pg_get_functiondef(
+      'public.admin_record_news_official_team_publication(uuid,uuid,text,timestamptz,timestamptz,uuid,text)'::regprocedure
+    )
+  ) > 0
+  and not has_function_privilege(
+    'anon',
+    'public.admin_record_news_official_team_publication(uuid,uuid,text,timestamptz,timestamptz,uuid,text)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'private.record_news_official_team_publication_canonical(uuid,uuid,uuid,text,timestamptz,timestamptz,text,uuid,uuid,text)',
+    'EXECUTE'
+  ),
+  'the staff wrapper must stay thin while the shared canonical operation retains private automation provenance'
 );
 
 -- Evidence and decision history cannot be edited after the fact.
@@ -2157,6 +2388,12 @@ select pg_temp.assert_true(
     'private.record_podcast_show_publisher_canonical'
     in pg_get_functiondef(
       'public.admin_record_podcast_show_publisher(uuid,uuid,text,timestamptz,timestamptz,uuid,text)'::regprocedure
+    )
+  ) > 0
+  and position(
+    'private.record_news_official_team_publication_canonical'
+    in pg_get_functiondef(
+      'public.admin_record_news_official_team_publication(uuid,uuid,text,timestamptz,timestamptz,uuid,text)'::regprocedure
     )
   ) > 0,
   'all staff intake wrappers must remain thin callers of the shared private canonical operations'

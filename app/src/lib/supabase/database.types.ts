@@ -12394,6 +12394,18 @@ export type Database = {
         }
         Returns: string
       }
+      admin_record_news_official_team_publication: {
+        Args: {
+          case_id_value: string
+          effective_from_value: string
+          effective_to_value: string
+          notes_value?: string
+          relationship_id_value?: string
+          relationship_type_value: string
+          team_id_value: string
+        }
+        Returns: string
+      }
       admin_record_news_remote_preview: {
         Args: {
           alt_text_value: string

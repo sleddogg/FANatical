@@ -277,9 +277,47 @@ same literal list — `open_case`, `create_publisher_contributor_profile`,
 `normalize_news_identity_outcome_supersession` alone. Adding a future intake
 action and missing one list would silently classify it as a Resolution outcome and
 corrupt the outcome supersession chain.
-**Trigger** — Before adding any new News identity intake-class decision action.
+**Trigger** — Before adding any new News identity decision action of any class.
 **Required at trigger** — REQUIRED
 **Origin** — News identity-intake completion independent audit.
+**Widened, 29 Aug** — The trigger originally read "any new intake-class decision
+action". `202608290003` then added `establish_official_team_publication` and
+`correct_official_team_publication` without touching
+`normalize_news_identity_outcome_supersession`. That was correct — the classifier
+treats anything outside the intake list as an outcome, and both actions are
+outcome-shaped for this case kind, so the supersession chain came out right — but
+the trigger as written did not fire, and nothing recorded the reasoning. There
+are now three conceptual categories of decision action (intake, Resolution
+outcome, and factual relationship mutation on a non-identity case kind) being
+sorted by one binary classifier. The trigger is widened so that adding any action
+requires a conscious, recorded decision about which side it falls on.
+
+### BL-026
+**What** — Add governed canonical mutation paths and appropriately authorized
+wrappers for the remaining News identity alias, external-identifier and publisher-
+policy tables: `person_alias_versions`, `person_identifiers`,
+`news_organizational_contributor_alias_versions`,
+`news_organizational_contributor_identifiers`, `podcast_show_alias_versions`,
+`podcast_show_identifiers` and `news_publisher_policy_versions`.
+**Why deferred** — The tables preserve the approved Phase 2 data shape, but no
+current product or canary needs to write these capabilities. Expanding the
+official Team/publication correction into seven unrelated write paths would
+broaden a verified narrow fix without evidence for each future workflow.
+**Trigger** — Before the corresponding person/organization/Show alias capability,
+external-identifier capability or News publisher-policy capability is required.
+**Required at trigger** — REQUIRED
+**Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
+
+### BL-027
+**What** — Add a mechanical schema proof that every News-domain table either has
+at least one governed canonical mutation path or is explicitly registered as
+read-only-by-design.
+**Why deferred** — The canary audit identified and recorded the current missing
+paths explicitly, but a durable table-to-mutation registry and its verification
+belong in a focused guard rather than this one-path correction.
+**Trigger** — Before the next News-domain migration adds any table.
+**Required at trigger** — REQUIRED
+**Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
 
 ---
 
