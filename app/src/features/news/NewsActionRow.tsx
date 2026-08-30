@@ -1,47 +1,41 @@
 import { AppIcon } from "../../components/AppIcon";
-import { formatCount } from "./newsFiltering";
-import type { NewsItem } from "./types";
+import type { FanSafeNewsItem } from "./types";
 
 type NewsActionRowProps = {
-  readonly item: NewsItem;
-  readonly discussionCount: number;
-  readonly reacted: boolean;
-  readonly variant: "card" | "detail";
-  readonly onReaction: () => void;
-  readonly onDiscussion: () => void;
+  readonly item: FanSafeNewsItem;
+  readonly onOutboundOpen: () => void;
   readonly onShare: () => void;
+  readonly onDismiss?: () => void;
 };
 
 export function NewsActionRow({
   item,
-  discussionCount,
-  reacted,
-  variant,
-  onReaction,
-  onDiscussion,
+  onOutboundOpen,
   onShare,
+  onDismiss,
 }: NewsActionRowProps) {
-  const reactionCount = item.reactionCount + (reacted ? 1 : 0);
-
   return (
-    <div className={`news-actions news-actions--${variant}`} role="group" aria-label={`Actions for ${item.headline}`}>
-      <button type="button" aria-label={reacted ? "Remove reaction" : "React"} aria-pressed={reacted} onClick={onReaction}>
-        <AppIcon name={reacted ? "heart-solid" : "heart"} />
-        <small>{formatCount(reactionCount)}</small>
-      </button>
-      <button type="button" aria-label="Open FANbase Article Discussion" onClick={onDiscussion}>
-        <AppIcon name="chat-bubble-left-right" />
-        <small>{formatCount(discussionCount)}</small>
-      </button>
-      <button type="button" aria-label="Share News item" onClick={onShare}>
+    <div className="news-actions news-actions--card" role="group" aria-label={`Actions for ${item.headline}`}>
+      <a
+        href={item.destinationUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open ${item.headline} at ${item.publisher.name}`}
+        onClick={onOutboundOpen}
+      >
+        <AppIcon name="arrow-top-right-on-square" />
+        <small>Open</small>
+      </a>
+      <button type="button" aria-label={`Share ${item.headline}`} onClick={onShare}>
         <AppIcon name="share" />
         <small>Share</small>
       </button>
-      <span className="news-actions__views">
-        <AppIcon name="eye" />
-        <small aria-hidden="true">{formatCount(item.viewCount)}</small>
-        <span className="visually-hidden">{item.viewCount} views</span>
-      </span>
+      {onDismiss ? (
+        <button type="button" aria-label={`Dismiss ${item.headline}`} onClick={onDismiss}>
+          <AppIcon name="x-mark" />
+          <small>Dismiss</small>
+        </button>
+      ) : null}
     </div>
   );
 }

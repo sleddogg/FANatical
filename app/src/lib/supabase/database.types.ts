@@ -4221,6 +4221,11 @@ export type Database = {
           resolved_at: string | null
           review_case_id: string
           status: string
+          subject_byline_mention_id: string | null
+          subject_identity_type: string | null
+          subject_organizational_contributor_id: string | null
+          subject_person_id: string | null
+          subject_show_id: string | null
           unresolved_question: string
           updated_at: string
         }
@@ -4235,6 +4240,11 @@ export type Database = {
           resolved_at?: string | null
           review_case_id?: string
           status?: string
+          subject_byline_mention_id?: string | null
+          subject_identity_type?: string | null
+          subject_organizational_contributor_id?: string | null
+          subject_person_id?: string | null
+          subject_show_id?: string | null
           unresolved_question: string
           updated_at?: string
         }
@@ -4249,6 +4259,11 @@ export type Database = {
           resolved_at?: string | null
           review_case_id?: string
           status?: string
+          subject_byline_mention_id?: string | null
+          subject_identity_type?: string | null
+          subject_organizational_contributor_id?: string | null
+          subject_person_id?: string | null
+          subject_show_id?: string | null
           unresolved_question?: string
           updated_at?: string
         }
@@ -4321,6 +4336,34 @@ export type Database = {
             columns: ["opened_by_decision_id"]
             isOneToOne: false
             referencedRelation: "news_content_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_subject_byline_mention_id_fkey"
+            columns: ["subject_byline_mention_id"]
+            isOneToOne: false
+            referencedRelation: "news_byline_mentions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_subject_organizational_contribut_fkey"
+            columns: ["subject_organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_subject_person_id_fkey"
+            columns: ["subject_person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_content_review_cases_subject_show_id_fkey"
+            columns: ["subject_show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
             referencedColumns: ["id"]
           },
         ]
@@ -4564,6 +4607,226 @@ export type Database = {
             columns: ["primary_evidence_id"]
             isOneToOne: false
             referencedRelation: "news_content_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_demo_configuration_identities: {
+        Row: {
+          configuration_version_id: string
+          created_at: string
+          ordinal: number
+          organizational_contributor_id: string | null
+          person_id: string | null
+          show_id: string | null
+          target_type: string
+        }
+        Insert: {
+          configuration_version_id: string
+          created_at?: string
+          ordinal: number
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          show_id?: string | null
+          target_type: string
+        }
+        Update: {
+          configuration_version_id?: string
+          created_at?: string
+          ordinal?: number
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          show_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_demo_configuration_ident_organizational_contributor_i_fkey"
+            columns: ["organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_demo_configuration_identitie_configuration_version_id_fkey"
+            columns: ["configuration_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_demo_configuration_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_demo_configuration_identities_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_demo_configuration_identities_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_demo_configuration_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          configuration_key: string
+          created_at: string
+          decision_id: string
+          id: string
+          is_current: boolean
+          recorded_from: string
+          recorded_to: string | null
+          superseded_at: string | null
+          supersedes_version_id: string | null
+          version_number: number
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          configuration_key?: string
+          created_at?: string
+          decision_id: string
+          id?: string
+          is_current?: boolean
+          recorded_from: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          version_number: number
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          configuration_key?: string
+          created_at?: string
+          decision_id?: string
+          id?: string
+          is_current?: boolean
+          recorded_from?: string
+          recorded_to?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_demo_configuration_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_phase4_configuration_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_demo_configuration_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_phase4_configuration_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_demo_configuration_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_demo_configuration_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_followable_identity_versions: {
+        Row: {
+          closed_by_decision_id: string | null
+          created_at: string
+          decision_id: string
+          followable: boolean
+          id: string
+          is_current: boolean
+          organizational_contributor_id: string | null
+          person_id: string | null
+          rationale: string
+          recorded_from: string
+          recorded_to: string | null
+          show_id: string | null
+          superseded_at: string | null
+          supersedes_version_id: string | null
+          target_type: string
+        }
+        Insert: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id: string
+          followable: boolean
+          id?: string
+          is_current?: boolean
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          rationale: string
+          recorded_from: string
+          recorded_to?: string | null
+          show_id?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          target_type: string
+        }
+        Update: {
+          closed_by_decision_id?: string | null
+          created_at?: string
+          decision_id?: string
+          followable?: boolean
+          id?: string
+          is_current?: boolean
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          rationale?: string
+          recorded_from?: string
+          recorded_to?: string | null
+          show_id?: string | null
+          superseded_at?: string | null
+          supersedes_version_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_followable_identity_vers_organizational_contributor_i_fkey"
+            columns: ["organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_followable_identity_versions_closed_by_decision_id_fkey"
+            columns: ["closed_by_decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_phase4_configuration_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_followable_identity_versions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "news_phase4_configuration_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_followable_identity_versions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_followable_identity_versions_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_followable_identity_versions_supersedes_version_id_fkey"
+            columns: ["supersedes_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_followable_identity_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -6231,6 +6494,128 @@ export type Database = {
         }
         Relationships: []
       }
+      news_outbound_open_events: {
+        Row: {
+          id: string
+          manifestation_url_id: string
+          news_item_id: string
+          opened_at: string
+          outbound_open_id: string
+          representative_destination_version_id: string
+          viewer_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          manifestation_url_id: string
+          news_item_id: string
+          opened_at?: string
+          outbound_open_id?: string
+          representative_destination_version_id: string
+          viewer_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          manifestation_url_id?: string
+          news_item_id?: string
+          opened_at?: string
+          outbound_open_id?: string
+          representative_destination_version_id?: string
+          viewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_outbound_open_events_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_manifestation_urls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_manifestation_url_id_fkey"
+            columns: ["manifestation_url_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["manifestation_url_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_representative_destination_versi_fkey"
+            columns: ["representative_destination_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_representative_destination_versi_fkey"
+            columns: ["representative_destination_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_representative_destination_versi_fkey"
+            columns: ["representative_destination_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["representative_destination_version_id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_representative_destination_versi_fkey"
+            columns: ["representative_destination_version_id"]
+            isOneToOne: false
+            referencedRelation: "news_representative_destination_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_outbound_open_events_viewer_user_id_fkey"
+            columns: ["viewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       news_person_pair_state_periods: {
         Row: {
           canonical_person_id: string | null
@@ -6435,6 +6820,41 @@ export type Database = {
             columns: ["resolution_decision_id"]
             isOneToOne: false
             referencedRelation: "news_identity_resolution_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_phase4_configuration_decisions: {
+        Row: {
+          action: string
+          decided_at: string
+          decided_by_actor_id: string | null
+          decided_by_user_id: string
+          id: string
+          notes: string
+        }
+        Insert: {
+          action: string
+          decided_at?: string
+          decided_by_actor_id?: string | null
+          decided_by_user_id: string
+          id?: string
+          notes: string
+        }
+        Update: {
+          action?: string
+          decided_at?: string
+          decided_by_actor_id?: string | null
+          decided_by_user_id?: string
+          id?: string
+          notes?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_phase4_configuration_decisions_decided_by_actor_id_fkey"
+            columns: ["decided_by_actor_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_actors"
             referencedColumns: ["id"]
           },
         ]
@@ -11043,6 +11463,204 @@ export type Database = {
           },
         ]
       }
+      user_news_follow_scopes: {
+        Row: {
+          created_at: string
+          follow_id: string
+          scope_type: string
+          sport_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          follow_id: string
+          scope_type: string
+          sport_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          follow_id?: string
+          scope_type?: string
+          sport_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_news_follow_scopes_follow_id_fkey"
+            columns: ["follow_id"]
+            isOneToOne: false
+            referencedRelation: "user_news_identity_follows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_follow_scopes_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_follow_scopes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_follow_scopes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "user_news_follow_scopes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_readiness"
+            referencedColumns: ["internal_id"]
+          },
+        ]
+      }
+      user_news_identity_follows: {
+        Row: {
+          canonical_person_id_at_follow: string | null
+          created_at: string
+          followed_at: string
+          id: string
+          is_current: boolean
+          muted_until: string | null
+          organizational_contributor_id: string | null
+          person_id: string | null
+          person_merge_decision_ids_at_follow: string[]
+          show_id: string | null
+          target_type: string
+          unfollowed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canonical_person_id_at_follow?: string | null
+          created_at?: string
+          followed_at?: string
+          id?: string
+          is_current?: boolean
+          muted_until?: string | null
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          person_merge_decision_ids_at_follow?: string[]
+          show_id?: string | null
+          target_type: string
+          unfollowed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canonical_person_id_at_follow?: string | null
+          created_at?: string
+          followed_at?: string
+          id?: string
+          is_current?: boolean
+          muted_until?: string | null
+          organizational_contributor_id?: string | null
+          person_id?: string | null
+          person_merge_decision_ids_at_follow?: string[]
+          show_id?: string | null
+          target_type?: string
+          unfollowed_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_news_identity_follows_canonical_person_id_at_follow_fkey"
+            columns: ["canonical_person_id_at_follow"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_identity_follows_organizational_contributor_id_fkey"
+            columns: ["organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_identity_follows_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_identity_follows_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_identity_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_news_item_dismissals: {
+        Row: {
+          dismissed_at: string
+          news_item_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          news_item_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          news_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_news_item_dismissals_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_item_dismissals_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_item_dismissals_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_item_dismissals_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_item_dismissals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           navigation_side: string
@@ -12276,6 +12894,19 @@ export type Database = {
         }
         Returns: string
       }
+      admin_open_news_attribution_review_case: {
+        Args: {
+          byline_mention_id_value: string
+          context_value?: Json
+          manifestation_id_value: string
+          news_item_id_value: string
+          notes_value?: string
+          subject_identity_id_value: string
+          subject_identity_type_value: string
+          unresolved_question_value: string
+        }
+        Returns: string
+      }
       admin_open_news_content_review_case: {
         Args: {
           case_type_value: string
@@ -12511,6 +13142,19 @@ export type Database = {
           case_id_value: string
           notes_value?: string
           target_identity_id_value?: string
+        }
+        Returns: string
+      }
+      admin_set_news_demo_universe: {
+        Args: { notes_value: string; targets_value: Json }
+        Returns: string
+      }
+      admin_set_news_identity_followability: {
+        Args: {
+          followable_value: boolean
+          rationale_value: string
+          target_public_id_value: string
+          target_type_value: string
         }
         Returns: string
       }
@@ -12751,6 +13395,10 @@ export type Database = {
         Args: { data_type_value: string; source_uuid: string }
         Returns: string
       }
+      dismiss_news_item: {
+        Args: { news_item_public_id_value: string }
+        Returns: undefined
+      }
       dispatch_pending_team_color_bootstrap_revalidations: {
         Args: never
         Returns: number
@@ -12900,6 +13548,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      follow_news_identity: {
+        Args: {
+          sport_scope_ids_value?: string[]
+          target_public_id_value: string
+          target_type_value: string
+          team_scope_ids_value?: string[]
+        }
+        Returns: string
+      }
       get_agent_work_wakes: {
         Args: { limit_value: number; queue_name_value?: string }
         Returns: {
@@ -12923,6 +13580,67 @@ export type Database = {
         Args: { lease_token_value: string; work_item_uuid: string }
         Returns: Json
       }
+      get_my_news_feed: {
+        Args: {
+          cursor_news_item_id_value?: string
+          cursor_publication_time_value?: string
+          filter_kind_value?: string
+          filter_target_public_id_value?: string
+          page_size_value?: number
+        }
+        Returns: {
+          bylines: Json
+          classifications: Json
+          destination_url: string
+          headline: string
+          item_kind: string
+          news_item_id: string
+          preview_alt_text: string
+          preview_kind: string
+          preview_url: string
+          publication_time: string
+          publisher_id: string
+          publisher_name: string
+          server_time: string
+          show_id: string
+          show_name: string
+          summary: string
+        }[]
+      }
+      get_my_news_following: {
+        Args: never
+        Returns: {
+          display_name: string
+          follow_ids: string[]
+          muted_until: string
+          needs_reselection: boolean
+          sport_scope_ids: string[]
+          target_id: string
+          target_type: string
+          team_scope_ids: string[]
+        }[]
+      }
+      get_my_news_zero_follow_example: {
+        Args: { team_public_id_value: string }
+        Returns: {
+          bylines: Json
+          classifications: Json
+          destination_url: string
+          headline: string
+          item_kind: string
+          news_item_id: string
+          preview_alt_text: string
+          preview_kind: string
+          preview_url: string
+          publication_time: string
+          publisher_id: string
+          publisher_name: string
+          server_time: string
+          show_id: string
+          show_name: string
+          summary: string
+        }[]
+      }
       get_my_source_qualification_work: {
         Args: { lease_token_value: string; work_item_uuid: string }
         Returns: Json
@@ -12935,9 +13653,90 @@ export type Database = {
         Args: { lease_token_value: string; work_item_id_value: string }
         Returns: Json
       }
+      get_news_demo_feed: {
+        Args: {
+          cursor_news_item_id_value?: string
+          cursor_publication_time_value?: string
+          filter_kind_value?: string
+          filter_target_public_id_value?: string
+          page_size_value?: number
+          selected_targets_value: Json
+        }
+        Returns: {
+          bylines: Json
+          classifications: Json
+          destination_url: string
+          headline: string
+          item_kind: string
+          news_item_id: string
+          preview_alt_text: string
+          preview_kind: string
+          preview_url: string
+          publication_time: string
+          publisher_id: string
+          publisher_name: string
+          server_time: string
+          show_id: string
+          show_name: string
+          summary: string
+        }[]
+      }
+      get_news_demo_universe: {
+        Args: never
+        Returns: {
+          display_name: string
+          ordinal: number
+          target_id: string
+          target_type: string
+        }[]
+      }
+      get_news_identity_items: {
+        Args: {
+          cursor_news_item_id_value?: string
+          cursor_publication_time_value?: string
+          page_size_value?: number
+          target_public_id_value: string
+          target_type_value: string
+        }
+        Returns: {
+          bylines: Json
+          classifications: Json
+          destination_url: string
+          headline: string
+          item_kind: string
+          news_item_id: string
+          preview_alt_text: string
+          preview_kind: string
+          preview_url: string
+          publication_time: string
+          publisher_id: string
+          publisher_name: string
+          server_time: string
+          show_id: string
+          show_name: string
+          summary: string
+        }[]
+      }
+      get_news_identity_profile: {
+        Args: { target_public_id_value: string; target_type_value: string }
+        Returns: {
+          display_name: string
+          target_id: string
+          target_type: string
+        }[]
+      }
       get_news_manifestation_item_at: {
         Args: { at_time_value: string; manifestation_id_value: string }
         Returns: string
+      }
+      get_news_navigation: {
+        Args: never
+        Returns: {
+          display_name: string
+          filter_type: string
+          sport_id: string
+          target_id: string
+        }[]
       }
       get_news_person_pair_state_at: {
         Args: { at_time: string; person_one_id: string; person_two_id: string }
@@ -12995,6 +13794,10 @@ export type Database = {
         Args: { requested_team_id: string; required_capability: string }
         Returns: boolean
       }
+      mute_my_news_follow: {
+        Args: { duration_value: string; follow_id_value: string }
+        Returns: string
+      }
       normalize_source_path: { Args: { path_value: string }; Returns: string }
       normalize_source_url: { Args: { url_value: string }; Returns: string }
       normalize_team_color_source_qualification_result: {
@@ -13042,6 +13845,13 @@ export type Database = {
         Returns: number
       }
       reconcile_team_color_wakes: { Args: never; Returns: number }
+      record_news_outbound_open: {
+        Args: {
+          destination_url_value: string
+          news_item_public_id_value: string
+        }
+        Returns: string
+      }
       record_team_color_adjudication_source_contributions: {
         Args: { adjudication_uuid: string }
         Returns: number
@@ -13205,6 +14015,10 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_news_canonical_person: {
+        Args: { person_id_value: string }
+        Returns: string
+      }
       resolve_team_color_source: {
         Args: {
           evidence_url_value: string
@@ -13285,6 +14099,22 @@ export type Database = {
       schedule_additional_catalog_verification_round: {
         Args: { completed_verification_work_item_uuid: string }
         Returns: string
+      }
+      search_news_follow_targets: {
+        Args: { query_value?: string; team_public_id_value?: string }
+        Returns: {
+          display_name: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      set_my_news_follow_scopes: {
+        Args: {
+          follow_id_value: string
+          sport_scope_ids_value?: string[]
+          team_scope_ids_value?: string[]
+        }
+        Returns: undefined
       }
       source_qualification_lineage_is_ready: {
         Args: { work_item_uuid: string }
@@ -13460,6 +14290,18 @@ export type Database = {
           specificity: number
           url_scope_version_id: string
         }[]
+      }
+      undo_news_item_dismissal: {
+        Args: { news_item_public_id_value: string }
+        Returns: undefined
+      }
+      unfollow_news_identity: {
+        Args: { follow_id_value: string }
+        Returns: undefined
+      }
+      unmute_my_news_follow: {
+        Args: { follow_id_value: string }
+        Returns: undefined
       }
       validate_team_color_claim: {
         Args: { claim_value: Json }

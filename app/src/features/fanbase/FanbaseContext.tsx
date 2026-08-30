@@ -36,7 +36,7 @@ import type {
   ReactionSummary,
   ReactionType,
 } from "./types";
-import type { NewsDiscussionScope } from "../news/types";
+import type { ArticleDiscussionScope } from "./articleDiscussionTypes";
 
 type FanbaseContextValue = Readonly<{
   threads: readonly DiscussionThread[];
@@ -47,7 +47,7 @@ type FanbaseContextValue = Readonly<{
   polls: readonly FanPoll[];
   getArticleThread: (newsItemId: string) => DiscussionThread | undefined;
   getArticleCommentCount: (newsItemId: string) => number;
-  addArticleComment: (newsItemId: string, scope: NewsDiscussionScope, body: string, parentId?: string | null) => string;
+  addArticleComment: (newsItemId: string, scope: ArticleDiscussionScope, body: string, parentId?: string | null) => string;
   addComment: (threadId: string, body: string, parentId?: string | null) => void;
   reactToThread: (threadId: string, reaction: ReactionType) => void;
   reactToComment: (threadId: string, commentId: string, reaction: ReactionType) => void;
@@ -152,7 +152,7 @@ export function FanbaseProvider({ children }: PropsWithChildren) {
 
   const addArticleComment = useCallback((
     newsItemId: string,
-    scope: NewsDiscussionScope,
+    scope: ArticleDiscussionScope,
     body: string,
     parentId: string | null = null,
   ) => {

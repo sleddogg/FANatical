@@ -1,6 +1,8 @@
-The News system is ready to move into implementation planning, with a few explicit approvals required before particular slices are coded or activated. The recommended route is an additive Supabase domain, a separate Cloudflare News Worker, and incremental conversion of the existing React prototype.
-
-No files were changed. `production-foundation` remains clean and synchronized with `origin/production-foundation`.
+The News system is in implementation. Phases 1–3 established the Competition,
+identity, and canonical content foundations. Phase 4 begins with authority and
+backend entry hardening before any fan-facing feed UI. The route remains an
+additive Supabase domain, a separate later Cloudflare News Worker, and incremental
+conversion of the existing React prototype.
 
 ## Pre-implementation review
 
@@ -8,13 +10,8 @@ No files were changed. `production-foundation` remains clean and synchronized wi
 
 There is no unresolvable contradiction inside the newest settled architecture. Cloudflare can remain disposable execution infrastructure while Supabase remains authoritative, and the generalized Competition model can coexist with `team_primary_league`.
 
-The checked-in product authority is now stale in several places:
-
-- [Fanatical build page.md (line 568)]\(/home/sleddogg/Desktop/FANatical code/Fanatical build page.md:568) still allows source/publisher follows, videos/social content, local third-party article bodies, article view counts, and Local/External views.
-- It calls notifications future work and contains an older approximate standard-source refresh target.
-- The final brief instead locks Author/Show follows, written journalism plus podcasts, direct publisher destinations, no publisher-style view counts, and request-resolution notifications.
-
-The first implementation task should update that News section so two contradictory product authorities do not remain in the repository.
+`Fanatical build page.md` is the reconciled product authority. Where older prose
+in this implementation plan differs, the build page and invariant register win.
 
 The older lazy-discussion rule can coexist with “one canonical discussion per News Item”: materialize the row atomically on the first comment or poll, with a database uniqueness constraint guaranteeing one logical discussion.
 
@@ -22,15 +19,20 @@ The older lazy-discussion rule can coexist with “one canonical discussion per 
 
 These do not block Competition, identity, content, or parser foundations, but they block the named feature:
 
-1. **Wire/organizational-only feed eligibility.** A Canadian Press/AP/Reuters item may have no human Author, Show, or official-team origin. The brief requires fan-facing wire deduplication but supplies no rule that makes such an item eligible for a normal feed. Recommended v1 rule: retain and deduplicate it internally, but do not place it in a normal feed unless a separate approved eligibility path also qualifies it.
-2. **Rating behavior.** Approve the rating scale, whether a fan may revise or withdraw a rating, and what aggregate—if any—is shown. The storage can remain immutable by recording each revision as a new event.
-3. **News reactions.** Approve the reaction set and whether each fan selects one reaction or several. The existing single heart and FANbase’s four-reaction prototype are not the same product rule.
-4. **Poll governance.** Approve who may create News-discussion polls, lifecycle/moderation rules, voting behavior, and option limits. Multiple polls per discussion is settled; those operating rules are not.
-5. **Signed-out and no-follow behavior.** Decide whether signed-out visitors get a public discovery experience, official-team content from local context, or a sign-in gate. Recommendations must stay outside the normal feed unless they independently qualify.
-6. **Notification surface.** Recommended v1: an in-app notification record plus resolved-request status in Add to Feed. Email, push, and browser notifications should remain out of scope unless explicitly approved.
-7. **Official-team preference granularity.** The brief reads like one global `include_official_team_content` switch. Confirm that, or request per-team controls.
+1. **Rating behavior.** Rating revision, withdrawal, and aggregate presentation
+   remain later work; Phase 4 does not implement ratings.
+2. **News reactions.** The reaction set remains later work; the prototype heart
+   is removed rather than promoted into product authority.
+3. **Poll governance.** Creation, lifecycle, moderation, voting, and option
+   limits remain later work.
+4. **Notification surface.** Missing-identity requests, fulfilment, and
+   notifications remain Phase 5 or later.
 
-Existing source-level week/month mute controls should be removed with publisher follows. Author/Show muting can be added later if explicitly wanted.
+Wire services, official Team newsrooms, and other genuine organizational
+contributors follow the same explicit individual-follow rule as every other
+identity. There is no separate wire exclusion and no official-Team preference.
+Mute is approved only on an existing followed human Author, organizational
+contributor, or Show for 7 or 30 days from database `statement_timestamp()`.
 
 ### Technical decisions to approve
 
@@ -86,21 +88,20 @@ Boundaries:
 - **Admin** handles genuinely ambiguous Resolution, byline, classification, deduplication, monitoring, and gap cases using audited RPCs.
 - **Ordinary TypeScript modules** contain parsing, normalization, byline, classification, and deduplication logic so it is not coupled to Cloudflare.
 
-## Current repository assessment
+## Pre-Phase 4 repository assessment (historical input)
 
 ### Frontend
 
-- [NewsPage.tsx (line 44)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsPage.tsx:44) is entirely mock-backed. Follows, reactions, requests, filters, and notices are local state.
-- Its [filter application (line 102)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsPage.tsx:102) calls global `selectTeam()`, directly contradicting temporary News-only navigation.
-- [types.ts (line 3)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/types.ts:3) hard-codes three sports, seven leagues, publisher-style sources, local bodies, singular league classification, and fake view counts.
-- [NewsCard.tsx (line 31)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsCard.tsx:31) has a useful responsive card structure, but identifies the publisher as the followed source and lacks a general Sport fallback.
-- [NewsActionRow\.tsx (line 24)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsActionRow\.tsx:24) has useful action styling but displays fake publisher-style views.
-- [NewsItemOverlay.tsx (line 78)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsItemOverlay.tsx:78) renders mock full article bodies and placeholder destinations. It is obsolete for normal written journalism.
-- [NewsFilterMenu.tsx (line 69)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsFilterMenu.tsx:69) is accessible and reusable in shape, but hard-coded around Team/League/Sport.
-- [SourceManagerDialog.tsx (line 83)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/SourceManagerDialog.tsx:83) provides useful tabs, search, focus containment, and responsive layout, but follows generic publishers/sources and keeps requests only in memory.
-- [mockNewsData.ts (line 27)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/mockNewsData.ts:27) contains fake publishers, full bodies, videos, placeholder destinations, and fake counts.
-- [news.css (line 1008)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/news.css:1008) already has wide, mobile, narrow-phone, and reduced-motion behavior worth preserving.
-- Existing News tests in [NewsPage.test.tsx (line 18)]\(/home/sleddogg/Desktop/FANatical code/app/src/features/news/NewsPage.test.tsx:18) cover chronology, theme behavior, dialogs, source management, overlays, actions, and discussion routing. Several assertions now describe obsolete behavior.
+This assessment described the prototype at Phase 4 entry. The local Phase 4
+conversion now replaces those conditions: `NewsPage.tsx` reads through
+`newsRepository.ts`; temporary filters do not call global Team mutation;
+`types.ts` contains only fan-safe production News contracts; cards open the
+representative publisher destination without copied bodies or fake counts;
+`NewsItemOverlay.tsx`, `newsFiltering.ts`, and `mockNewsData.ts` are removed;
+filters use canonical Sport/Competition/Team navigation; and Add to Feed manages
+individual Authors, organizational contributors, and Shows. The deferred
+FANbase Article Discussion fixture remains explicitly local to `features/fanbase`
+rather than importing a production News mock contract.
 
 ### Global identity and Community
 
@@ -234,28 +235,40 @@ Add:
 
 A manifestation can exist while unresolved. Publication requires a current item assignment, representative manifestation, acceptable policy decision, and any required byline/classification decisions.
 
-## Migration 6 — Follows, feed, requests, opens, and notifications
+## Migration 6 — Phase 4 follows, feed, display suppression, and opens
 
 Add:
 
-- `user_followed_authors`.
-- `user_followed_podcast_shows`.
-- `user_news_preferences`, with the approved default for official-team content.
-- `news_catalog_requests`, retaining fan, requested kind, submitted query/clues, status, Resolution case, and resolved Author/Show.
-- `user_notifications`: durable in-app notifications.
-- `notification_outbox`: exact-once notification creation/delivery intent.
+- individual follows for human Authors, organizational contributors, and Shows,
+  retaining person-merge provenance;
+- All/Sport/Team follow scopes, with no scope row meaning All coverage;
+- followed-identity mute state using the approved 7-day and 30-day durations;
+- per-fan, per-Item Dismiss state with Undo;
+- governed followability and signed-out Demo configuration;
 - `news_outbound_open_events`: immutable events for opens FANatical actually initiated.
 
 Add RPC/read models:
 
-- `get_my_news_feed(filter, cursor, approved_limit)`.
+- `get_my_news_feed(filter, cursor, optional_page_size)`; the Phase 4 frontend
+  imposes no invented page limit.
 - `search_news_follow_targets`.
 - `get_news_navigation`.
-- `follow/unfollow_author`, `follow/unfollow_show`.
-- `submit_news_catalog_request`.
-- author and Show profile reads.
+- governed follow, unfollow, scope, mute, unmute, Dismiss, and Undo operations;
+- Author, organizational-contributor, and Show profile reads;
+- a zero-follow EXAMPLE reader limited to a current followable official-Team
+  newsroom identity, with the controlled static example as fallback;
+- an anonymous Demo read constrained to the governed configured universe.
 
-The feed RPC first calculates eligible items from Author follows, Show follows, and enabled official-team content. It then intersects that set with the temporary canonical filters. It sorts by `published_at DESC` with a stable ID tie-breaker. Do not materialize one feed row per user.
+The feed RPC first calculates eligible items from explicit individual follows,
+active mute state, subject-specific attribution-review state, and optional
+All/Sport/Team follow scopes. It then intersects that set with temporary
+All/Sport/Competition/Team filters and removes that fan's dismissed Items. It
+sorts by original publication time with a stable ID tie-breaker. Publisher News
+policy and wire status are not eligibility. Do not materialize one feed row per
+user.
+
+Missing-identity requests, fulfilment, and notifications remain Migration 7 /
+Phase 5 work. They do not appear as placeholder Phase 4 controls.
 
 Legacy account Team IDs should be resolved through `catalog_team_identifiers` inside the feed boundary. A destructive account migration is unnecessary for the first News slice.
 
@@ -396,12 +409,16 @@ Every fetch, Resolution, byline, classification, dedupe, policy, publication, no
 2. Replace hard-coded Sport/League unions with canonical IDs and Competition-aware filter selections.
 3. Initialize temporary News state from the global selected Team’s canonical mapping. Remove every `selectTeam()` call from News.
 4. Keep filters in component/URL state only. Filtering another Team or Competition must not alter `TeamContext`.
-5. Rebuild `NewsFilterMenu` around Sport → filter groups/Competitions → Teams/Editions, allowing actual Competition-ID selections.
-6. Convert Source Manager to **Add to Feed**:
+5. Rebuild `NewsFilterMenu` from the row-based navigation RPC around the
+   approved temporary All/Sport/Competition/Team selections, using canonical
+   Competition IDs.
+6. Replace the prototype source-management surface with **Add to Feed**:
    - Add: shared navigation plus direct Author/Show search.
-   - Following: Authors and Shows only.
-   - Requests: durable request status and resolved target.
-   - How It Works: explain author-first eligibility and official-team content.
+   - Following: human Authors, organizational contributors, and Shows only.
+   - How It Works: explain explicit individual eligibility.
+   - Search uses relevance with alphabetical ties; unsearched browsing is alphabetical.
+   - Preserve future selectable Highest Rated and Most Followed sorts without
+     computing ratings or cross-fan follower totals in Phase 4.
 7. Convert cards:
    - Publisher identity for attribution.
    - Clickable FANatical Author/Show profile.
@@ -411,13 +428,18 @@ Every fetch, Resolution, byline, classification, dedupe, policy, publication, no
    - Direct public representative URL for headline/image/read action.
    - No local article body and no fake view count.
 8. Remove `NewsItemOverlay` from normal written/podcast opening. Delete its obsolete styles once no route depends on it.
-9. Replace Article Discussion’s mock News import with a News discussion-context repository. Link back to the publisher destination, not `?item=...`.
-10. Add `/news/authors/:id` and `/news/shows/:id` routes.
-11. Add official-team-content control to Following/News settings.
-12. Add real Web Share/clipboard behavior.
-13. Record outbound opens best-effort without delaying or blocking direct publisher navigation.
+9. Remove Article Discussion's production import of the News mock catalog and
+   remove its obsolete `?item=...` overlay link. A canonical News
+   discussion-context repository remains Phase 5 work.
+10. Add `/news/authors/:id`, `/news/organizations/:id`, and `/news/shows/:id`
+    routes.
+11. Add real Web Share/clipboard behavior.
+12. Record outbound opens best-effort without delaying or blocking direct publisher navigation.
+13. Add signed-out Demo Mode and keep its state isolated from account bootstrap.
 14. Add ratings/reactions/poll controls only after their product decisions.
-15. Remove production imports of `mockNewsData`; keep narrowly scoped fixtures under test-only files.
+15. Remove `mockNewsData` and every production News prototype contract. Keep the
+    explicitly deferred Article Discussion fixture and its types local to
+    FANbase; test-only News fixtures stay inside their tests.
 16. Preserve the current card layout, focus traps, app theme, reduced motion, and existing mobile breakpoints. When Current Team theme is active, the global selected Team should remain the app theme even while News temporarily filters elsewhere.
 17. Add Golf and Tennis visual fallbacks through the existing `AppIcon` system without touching the intentionally untracked image files.
 
@@ -481,7 +503,7 @@ Test:
 - Multi-Team and multi-Competition classifications with corrections.
 - Author/Show eligibility followed by filter intersection.
 - Publisher identity never becoming a normal follow target.
-- Official-team content default and disabled preference.
+- Explicit organizational-contributor eligibility with no official-Team preference.
 - Strict chronological order.
 - Request notification idempotency.
 - Discussion uniqueness under concurrency and multiple polls.
@@ -527,8 +549,7 @@ Rewrite current News tests to assert:
 - Initial global Team context without global mutation.
 - Canonical multi-Competition filters constrain eligible content only.
 - Author and Show search/follow/unfollow.
-- Durable request workflow.
-- Official-team control.
+- Individual organizational-contributor following with no Follow All control.
 - Direct publisher opening and outbound-open recording.
 - Author/Show profile routes.
 - Written and podcast card variants.
@@ -549,7 +570,7 @@ Every phase should run local database reset/tests, backend verification, targete
 | 1                                        | Competition schema, League mapping, Golf/Tennis, aliases, Editions, participation, filter navigation RPC              | Hockey/Soccer/Golf/Tennis fixtures prove the model                             |
 | 2                                        | Publisher reuse, people, Authors, organizations, Shows, affiliations, Admin review skeleton                           | Same-name, historical affiliation, and organization cases pass                 |
 | 3                                        | Core News Items/manifestations/classification/dedupe plus manually inserted controlled records                        | A real-shaped chronological feed works without monitoring                      |
-| 4                                        | Production News repository and UI conversion: feed, filters, Add to Feed, profiles, direct opens, official content    | Responsive/accessibility review and no global Team mutation                    |
+| 4                                        | Production News repository and UI conversion: feed, filters, Add to Feed, profiles, direct opens, Demo Mode           | Responsive/accessibility review and no global Team mutation                    |
 | 5                                        | Requests, in-app fulfillment records, canonical News discussion, and News polls/ratings only where rules are approved | Request and Community uniqueness tests pass                                    |
 | 6                                        | Work ledger integration and dedicated Worker shell; Feed adapter supports written RSS/Atom and podcast RSS            | Duplicate/recovery/security tests and local end-to-end path pass               |
 | 7                                        | Resolution, byline, classification, dedupe, publication, and reviewer workflows over real canary content              | Ambiguous cases stop safely; no full bodies are retained                       |

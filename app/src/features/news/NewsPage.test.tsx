@@ -1,261 +1,407 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
-import { appRoutes } from "../../app/routes";
-import { followedTeamsStorageKey } from "../../data/followedTeams";
-import { themePreferenceStorageKey } from "../../data/themePreferenceStorage";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { User } from "@supabase/supabase-js";
+import type {
+  FanSafeNewsItem,
+  NewsFollowingEntry,
+  NewsFollowTarget,
+  NewsNavigationEntry,
+} from "./types";
 
-function renderNews(initialEntries: string[] = ["/news"]) {
-  const router = createMemoryRouter(appRoutes, { initialEntries });
-  return {
-    router,
-    ...render(<RouterProvider router={router} />),
-  };
+const mocks = vi.hoisted(() => ({
+  auth: {
+    configured: true,
+    loading: false,
+    user: { id: "fan-1" } as User | null,
+  },
+  selectTeam: vi.fn(),
+  dismissNewsItem: vi.fn(),
+  followNewsTarget: vi.fn(),
+  loadMyNewsFollowing: vi.fn(),
+  loadMyNewsZeroFollowExample: vi.fn(),
+  loadNewsDemoFeed: vi.fn(),
+  loadNewsDemoUniverse: vi.fn(),
+  loadNewsIdentityItems: vi.fn(),
+  loadNewsIdentityProfile: vi.fn(),
+  loadNewsNavigation: vi.fn(),
+  loadPersonalNewsFeed: vi.fn(),
+  muteNewsFollow: vi.fn(),
+  recordNewsOutboundOpen: vi.fn(),
+  searchNewsFollowTargets: vi.fn(),
+  setNewsFollowScopes: vi.fn(),
+  undoNewsItemDismissal: vi.fn(),
+  unfollowNewsTarget: vi.fn(),
+  unmuteNewsFollow: vi.fn(),
+}));
+
+vi.mock("../account/AuthContext", () => ({
+  useAuth: () => mocks.auth,
+}));
+
+vi.mock("../../state/TeamContext", () => ({
+  useTeamContext: () => ({
+    selectedTeam: {
+      id: "edmonton-oilers",
+      officialTeamId: "hockey-nhl-edmonton-oilers",
+      name: "Edmonton Oilers",
+      shortName: "Oilers",
+      sport: "Hockey",
+      league: "NHL",
+      colors: { primary: "#00205B", secondary: "#D14520", tertiary: null, quaternary: null, quinary: null },
+    },
+    selectedTeamId: "edmonton-oilers",
+    followedTeams: [],
+    selectTeam: mocks.selectTeam,
+  }),
+}));
+
+vi.mock("../../state/ThemeContext", () => ({
+  useAppTheme: () => ({ active: true, source: "current-team" }),
+}));
+
+vi.mock("./newsRepository", () => ({
+  dismissNewsItem: mocks.dismissNewsItem,
+  followNewsTarget: mocks.followNewsTarget,
+  loadMyNewsFollowing: mocks.loadMyNewsFollowing,
+  loadMyNewsZeroFollowExample: mocks.loadMyNewsZeroFollowExample,
+  loadNewsDemoFeed: mocks.loadNewsDemoFeed,
+  loadNewsDemoUniverse: mocks.loadNewsDemoUniverse,
+  loadNewsIdentityItems: mocks.loadNewsIdentityItems,
+  loadNewsIdentityProfile: mocks.loadNewsIdentityProfile,
+  loadNewsNavigation: mocks.loadNewsNavigation,
+  loadPersonalNewsFeed: mocks.loadPersonalNewsFeed,
+  muteNewsFollow: mocks.muteNewsFollow,
+  recordNewsOutboundOpen: mocks.recordNewsOutboundOpen,
+  searchNewsFollowTargets: mocks.searchNewsFollowTargets,
+  setNewsFollowScopes: mocks.setNewsFollowScopes,
+  undoNewsItemDismissal: mocks.undoNewsItemDismissal,
+  unfollowNewsTarget: mocks.unfollowNewsTarget,
+  unmuteNewsFollow: mocks.unmuteNewsFollow,
+}));
+
+import { NewsIdentityProfilePage } from "./NewsIdentityProfilePage";
+import { NewsPage } from "./NewsPage";
+
+const navigation: readonly NewsNavigationEntry[] = [
+  { filterType: "sport", targetId: "hockey", displayName: "Hockey", sportId: "hockey" },
+  { filterType: "competition", targetId: "hockey-nhl", displayName: "NHL", sportId: "hockey" },
+  { filterType: "team", targetId: "hockey-000027", displayName: "Edmonton Oilers", sportId: "hockey" },
+  { filterType: "team", targetId: "hockey-000028", displayName: "Calgary Flames", sportId: "hockey" },
+];
+
+const authorTarget: NewsFollowTarget = {
+  targetType: "author",
+  targetId: "author-alex",
+  displayName: "Alex Reporter",
+};
+
+const following: readonly NewsFollowingEntry[] = [{
+  ...authorTarget,
+  followIds: ["follow-alex"],
+  mutedUntil: null,
+  needsReselection: false,
+  sportScopeIds: [],
+  teamScopeIds: [],
+}];
+
+const writtenItem: FanSafeNewsItem = {
+  id: "news-written",
+  itemKind: "written",
+  headline: "Oilers prepare for a faster transition game",
+  summary: "A governed summary of the published report.",
+  publishedAt: "2026-08-29T16:00:00.000Z",
+  serverTime: "2026-08-29T17:00:00.000Z",
+  destinationUrl: "https://publisher.example/oilers-transition",
+  publisher: { id: "publisher-one", name: "Prairie Sports" },
+  show: null,
+  preview: { url: "https://publisher.example/preview.jpg", kind: "image", alt: "Oilers skating at practice." },
+  bylines: [{ rawAttribution: "Alex Original", targetType: "author", targetId: "author-alex" }],
+  classifications: [
+    { targetType: "sport", targetId: "hockey", displayName: "Hockey" },
+    { targetType: "team", targetId: "hockey-000027", displayName: "Edmonton Oilers" },
+  ],
+};
+
+const podcastItem: FanSafeNewsItem = {
+  id: "news-podcast",
+  itemKind: "podcast_episode",
+  headline: "Podcast: Reading Edmonton's new forecheck",
+  summary: "A real podcast episode summary.",
+  publishedAt: "2026-08-29T15:00:00.000Z",
+  serverTime: "2026-08-29T17:00:00.000Z",
+  destinationUrl: "https://publisher.example/podcast/forecheck",
+  publisher: { id: "publisher-two", name: "Northern Audio" },
+  show: { id: "show-northern", name: "Northern Hockey Hour" },
+  preview: null,
+  bylines: [{ rawAttribution: "Host Name", targetType: null, targetId: null }],
+  classifications: [{ targetType: "sport", targetId: "hockey", displayName: "Hockey" }],
+};
+
+function renderNews() {
+  return render(<MemoryRouter initialEntries={["/news"]}><Routes><Route path="/news" element={<NewsPage />} /><Route path="/profile" element={<h1>Account</h1>} /></Routes></MemoryRouter>);
 }
 
-describe("News frontend", () => {
-  it("defaults to the app-wide selected team and renders its chronological feed", () => {
-    renderNews();
-
-    expect(screen.getByRole("heading", { level: 1, name: "News" })).toBeInTheDocument();
-    expect(screen.getByText("Latest from New England Patriots")).toBeInTheDocument();
-    expect(screen.queryByText(/FANatical feed/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Latest" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/always in chronological order/i)).not.toBeInTheDocument();
-    expect(document.querySelector(".news-feed-heading")).not.toBeInTheDocument();
-    const filter = screen.getByRole("button", { name: "Filter News. Current context: New England Patriots" });
-    expect(filter.querySelector(".team-badge")).toBeInTheDocument();
-    expect(within(filter).queryByText(/Patriots/i)).not.toBeInTheDocument();
-    const headlines = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
-    expect(headlines).toContain("Patriots turn up the tempo as the offense enters its final camp phase");
-    expect(headlines).toContain("Audio notebook: Reading the Patriots defense before the snap");
-    expect(headlines).not.toContain("Celtics test two rotation ideas designed for smaller, faster lineups");
+describe("Phase 4 News frontend", () => {
+  beforeEach(() => {
+    mocks.auth.configured = true;
+    mocks.auth.loading = false;
+    mocks.auth.user = { id: "fan-1" } as User;
+    mocks.selectTeam.mockReset();
+    for (const mock of [
+      mocks.dismissNewsItem,
+      mocks.followNewsTarget,
+      mocks.loadMyNewsFollowing,
+      mocks.loadMyNewsZeroFollowExample,
+      mocks.loadNewsDemoFeed,
+      mocks.loadNewsDemoUniverse,
+      mocks.loadNewsIdentityItems,
+      mocks.loadNewsIdentityProfile,
+      mocks.loadNewsNavigation,
+      mocks.loadPersonalNewsFeed,
+      mocks.muteNewsFollow,
+      mocks.recordNewsOutboundOpen,
+      mocks.searchNewsFollowTargets,
+      mocks.setNewsFollowScopes,
+      mocks.undoNewsItemDismissal,
+      mocks.unfollowNewsTarget,
+      mocks.unmuteNewsFollow,
+    ]) mock.mockReset();
+    mocks.loadNewsNavigation.mockResolvedValue(navigation);
+    mocks.loadMyNewsFollowing.mockResolvedValue(following);
+    mocks.loadMyNewsZeroFollowExample.mockResolvedValue(null);
+    mocks.loadPersonalNewsFeed.mockResolvedValue([writtenItem, podcastItem]);
+    mocks.loadNewsDemoUniverse.mockResolvedValue([]);
+    mocks.loadNewsDemoFeed.mockResolvedValue([]);
+    mocks.searchNewsFollowTargets.mockResolvedValue([authorTarget]);
+    mocks.dismissNewsItem.mockResolvedValue(undefined);
+    mocks.undoNewsItemDismissal.mockResolvedValue(undefined);
+    mocks.followNewsTarget.mockResolvedValue(undefined);
+    mocks.setNewsFollowScopes.mockResolvedValue(undefined);
+    mocks.muteNewsFollow.mockResolvedValue(undefined);
+    mocks.unmuteNewsFollow.mockResolvedValue(undefined);
+    mocks.unfollowNewsTarget.mockResolvedValue(undefined);
+    mocks.recordNewsOutboundOpen.mockResolvedValue(undefined);
   });
 
-  it("updates the shared selected team from the News filter", async () => {
+  it("renders real written and podcast cards with governed previews, fallback, bylines, and no prototype engagement", async () => {
+    renderNews();
+
+    expect(await screen.findByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: podcastItem.headline })).toBeInTheDocument();
+    const preview = screen.getByRole("img", { name: "Oilers skating at practice." });
+    expect(preview).toHaveAttribute("src", writtenItem.preview?.url);
+    expect(preview).toHaveAttribute("referrerpolicy", "no-referrer");
+    expect(screen.getByRole("link", { name: /Open Hockey News: Podcast: Reading Edmonton's new forecheck/i })).toBeInTheDocument();
+    fireEvent.error(preview);
+    expect(screen.getByRole("link", { name: /Open Hockey News: Oilers prepare for a faster transition game/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Alex Original" })).toHaveAttribute("href", "/news/authors/author-alex");
+    expect(screen.getByRole("link", { name: "Northern Hockey Hour" })).toHaveAttribute("href", "/news/shows/show-northern");
+    expect(screen.getAllByText("Written")).toHaveLength(1);
+    expect(screen.getAllByText("Podcast")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /React/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/views/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Discussion/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/New England moved through/i)).not.toBeInTheDocument();
+  });
+
+  it("opens the representative publisher destination directly and starts outbound recording without awaiting it", async () => {
+    mocks.recordNewsOutboundOpen.mockReturnValue(new Promise(() => undefined));
+    renderNews();
+    const link = await screen.findByRole("link", { name: `Open ${writtenItem.headline} at ${writtenItem.publisher.name}` });
+    expect(link).toHaveAttribute("href", writtenItem.destinationUrl);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    link.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(link);
+    expect(mocks.recordNewsOutboundOpen).toHaveBeenCalledWith(writtenItem.id, writtenItem.destinationUrl);
+  });
+
+  it("shares the representative publisher destination through the clipboard fallback", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    renderNews();
+    await screen.findByRole("heading", { name: writtenItem.headline });
+    await user.click(screen.getByRole("button", { name: `Share ${writtenItem.headline}` }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(writtenItem.destinationUrl));
+    expect(await screen.findByText("Publisher link copied.")).toBeInTheDocument();
+  });
+
+  it("applies a real temporary Competition filter without mutating global Team state", async () => {
     const user = userEvent.setup();
     renderNews();
+    const trigger = await screen.findByRole("button", { name: /Filter News/ });
+    await waitFor(() => expect(trigger).toBeEnabled());
+    await user.click(trigger);
+    await user.click(screen.getByRole("button", { name: /^Competition/ }));
+    await user.click(screen.getByRole("button", { name: "NHL" }));
 
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /Selected Team/i }));
-    await user.click(screen.getByRole("button", { name: /Boston Celtics/i }));
-
-    expect(screen.getByText("Latest from Boston Celtics")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Filter News. Current context: Boston Celtics" }).querySelector(".team-badge")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Celtics test two rotation ideas designed for smaller, faster lineups" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("link", { name: "FANatical home" }));
-    expect(screen.getByRole("button", { name: "Select Boston Celtics" })).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("shows the active league code in the filter control", async () => {
-    const user = userEvent.setup();
-    renderNews();
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /^League/i }));
-    await user.click(screen.getByRole("button", { name: "NFL" }));
-
-    expect(screen.getByText("Latest from the NFL")).toBeInTheDocument();
-    const filter = screen.getByRole("button", { name: "Filter News. Current context: NFL" });
-    expect(within(filter).getByText("NFL")).toBeInTheDocument();
-  });
-
-  it("applies sport and all contexts through the nested menu", async () => {
-    const user = userEvent.setup();
-    renderNews();
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /Sport/i }));
-    await user.click(screen.getByRole("button", { name: /Football/i }));
-    expect(screen.getByText("Latest from Football")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Filter News. Current context: Football" }).querySelector("#mdi-football")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Three adjustments reshaping the CFL playoff race" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Podcast: What the new UFL schedule could mean for spring football" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /All Followed News/i }));
-    expect(screen.getByText("Latest from All Followed Sources")).toBeInTheDocument();
-    expect(within(screen.getByRole("button", { name: "Filter News. Current context: All" })).getByText("All")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Red Sox map out a flexible bullpen plan for the coming series" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Celtics test two rotation ideas designed for smaller, faster lineups" })).toBeInTheDocument();
-  });
-
-  it("uses shared theme variables and keeps a relevant current-team context for broad filters", async () => {
-    window.localStorage.setItem(themePreferenceStorageKey, JSON.stringify({
-      source: "current-team",
-      order: "normal",
-      customColor1: "#00205B",
-      customColor2: "#D14520",
+    await waitFor(() => expect(mocks.loadPersonalNewsFeed).toHaveBeenLastCalledWith({
+      kind: "competition",
+      targetId: "hockey-nhl",
+      displayName: "NHL",
     }));
-    const user = userEvent.setup();
-    renderNews();
-
-    const page = document.querySelector(".news-page");
-    expect(page).toHaveAttribute("data-news-theme-active", "true");
-    expect(page?.querySelector(".news-feed-field")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /Sport/i }));
-    await user.click(screen.getByRole("button", { name: /Baseball/i }));
-
-    expect(screen.getByText("Latest from Baseball")).toBeInTheDocument();
-    await waitFor(() => expect(document.querySelector(".application-shell")).toHaveStyle({ "--theme-color-1-100": "#BD3039" }));
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /All Followed News/i }));
-    expect(screen.getByText("Latest from All Followed Sources")).toBeInTheDocument();
-    expect(document.querySelector(".application-shell")).toHaveStyle({ "--theme-color-1-100": "#BD3039" });
+    expect(screen.getByText("NHL", { selector: ".news-header__title p" })).toBeInTheDocument();
+    expect(mocks.selectTeam).not.toHaveBeenCalled();
   });
 
-  it("keeps broader News neutral when Current Team has no relevant followed team", async () => {
-    window.localStorage.setItem(followedTeamsStorageKey, JSON.stringify(["football-nfl-new-england-patriots"]));
-    window.localStorage.setItem(themePreferenceStorageKey, JSON.stringify({
-      source: "current-team",
-      order: "normal",
-      customColor1: "#00205B",
-      customColor2: "#D14520",
-    }));
+  it("contains filter keyboard focus and restores the trigger on Escape", async () => {
     const user = userEvent.setup();
     renderNews();
-
-    await user.click(screen.getByRole("button", { name: /Filter News/ }));
-    await user.click(screen.getByRole("button", { name: /Sport/i }));
-    await user.click(screen.getByRole("button", { name: /Baseball/i }));
-
-    expect(screen.getByText("Latest from Baseball")).toBeInTheDocument();
-    expect(document.querySelector(".application-shell")).toHaveAttribute("data-theme-active", "true");
-    expect(document.querySelector(".news-page")).toHaveAttribute("data-news-theme-active", "false");
-  });
-
-  it("preserves shared Favorite Team, Custom, Swapped, and None theme modes", () => {
-    window.localStorage.setItem(themePreferenceStorageKey, JSON.stringify({
-      source: "custom",
-      order: "swapped",
-      customColor1: "#00205B",
-      customColor2: "#D14520",
-    }));
-    const { unmount } = renderNews();
-
-    expect(document.querySelector(".application-shell")).toHaveAttribute("data-theme-order", "swapped");
-    expect(document.querySelector(".news-page")).toHaveAttribute("data-news-theme-active", "true");
-    expect(document.querySelector(".application-shell")).toHaveStyle({
-      "--theme-color-1-100": "#D14520",
-      "--theme-color-2-100": "#00205B",
-    });
-
-    unmount();
-    window.localStorage.setItem(themePreferenceStorageKey, JSON.stringify({
-      source: "favorite-team",
-      order: "normal",
-      customColor1: "#00205B",
-      customColor2: "#D14520",
-    }));
-    const favoriteRender = renderNews();
-    expect(document.querySelector(".news-page")).toHaveAttribute("data-news-theme-active", "true");
-    expect(document.querySelector(".application-shell")).toHaveStyle({ "--theme-color-1-100": "#002244" });
-
-    favoriteRender.unmount();
-    window.localStorage.removeItem(themePreferenceStorageKey);
-    renderNews();
-    expect(document.querySelector(".news-page")).toHaveAttribute("data-news-theme-active", "false");
-  });
-
-  it("contains filter keyboard focus and restores it when the dialog closes", async () => {
-    const user = userEvent.setup();
-    renderNews();
-
-    const trigger = screen.getByRole("button", { name: /Filter News/ });
+    const trigger = await screen.findByRole("button", { name: /Filter News/ });
+    await waitFor(() => expect(trigger).toBeEnabled());
     await user.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "Choose News context" });
     expect(dialog).toHaveFocus();
-
-    await user.keyboard("{Shift>}{Tab}{/Shift}");
-    expect(within(dialog).getByRole("button", { name: /All Followed News/i })).toHaveFocus();
-    await user.tab();
-    expect(within(dialog).getByRole("button", { name: "Close filters" })).toHaveFocus();
-
     await user.keyboard("{Escape}");
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
-  it("exposes card actions and view counts with usable accessible names", () => {
-    renderNews();
-    const card = screen.getByRole("heading", { name: "Patriots turn up the tempo as the offense enters its final camp phase" }).closest("article");
-    expect(card).not.toBeNull();
-    const actions = within(card!).getByRole("group", { name: /Actions for Patriots turn up the tempo/i });
-    expect(within(actions).getByRole("button", { name: "React" })).toHaveAttribute("aria-pressed", "false");
-    expect(within(actions).getByRole("button", { name: "Open FANbase Article Discussion" })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: "Share News item" })).toBeInTheDocument();
-    expect(within(actions).getByText("3240 views")).toHaveClass("visually-hidden");
-  });
-
-  it("follows and manages mock sources in the Source Manager", async () => {
+  it("Dismisses one Item and Undo restores it at its original chronological position", async () => {
     const user = userEvent.setup();
     renderNews();
+    await screen.findByRole("heading", { name: writtenItem.headline });
+    await user.click(screen.getByRole("button", { name: `Dismiss ${writtenItem.headline}` }));
+    expect(screen.queryByRole("heading", { name: writtenItem.headline })).not.toBeInTheDocument();
+    expect(mocks.dismissNewsItem).toHaveBeenCalledWith(writtenItem.id);
 
-    await user.click(screen.getByRole("button", { name: /Add Feed/i }));
-    const manager = screen.getByRole("dialog", { name: "Source Manager" });
-    const search = within(manager).getByRole("searchbox", { name: /Search the FANatical Source Catalog/i });
-    await user.type(search, "Film Room Lab");
-    await user.click(within(manager).getByRole("button", { name: "Follow" }));
-    expect(within(manager).getByRole("button", { name: "Following" })).toBeDisabled();
-
-    await user.click(within(manager).getByRole("tab", { name: "Manage Sources" }));
-    expect(within(manager).getByRole("heading", { name: "Film Room Lab" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(mocks.undoNewsItemDismissal).toHaveBeenCalledWith(writtenItem.id);
+    const headlines = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    expect(headlines.slice(0, 2)).toEqual([writtenItem.headline, podcastItem.headline]);
   });
 
-  it("represents source requests when the mock catalog has no match", async () => {
+  it("sequences immediate Undo after an in-flight Dismiss so the durable delete wins", async () => {
+    let finishDismiss!: () => void;
+    const pendingDismiss = new Promise<void>((resolve) => { finishDismiss = resolve; });
+    mocks.dismissNewsItem.mockReturnValue(pendingDismiss);
     const user = userEvent.setup();
     renderNews();
+    await screen.findByRole("heading", { name: writtenItem.headline });
 
-    await user.click(screen.getByRole("button", { name: /Add Feed/i }));
-    const manager = screen.getByRole("dialog", { name: "Source Manager" });
-    await user.type(within(manager).getByRole("searchbox"), "Sunday Moon Sports");
-    await user.click(within(manager).getByRole("button", { name: "Request Source" }));
+    await user.click(screen.getByRole("button", { name: `Dismiss ${writtenItem.headline}` }));
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
+    expect(mocks.undoNewsItemDismissal).not.toHaveBeenCalled();
 
-    expect(within(manager).getByRole("button", { name: "Requested" })).toBeDisabled();
+    await act(async () => {
+      finishDismiss();
+      await pendingDismiss;
+    });
+    await waitFor(() => expect(mocks.undoNewsItemDismissal).toHaveBeenCalledWith(writtenItem.id));
+    expect(screen.getByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
   });
 
-  it("opens local items over the app and closes them with browser Back", async () => {
-    const user = userEvent.setup();
-    const { router } = renderNews();
+  it("keeps zero-follow EXAMPLE and filter-zero as distinct signed-in states", async () => {
+    mocks.loadMyNewsFollowing.mockResolvedValue([]);
+    const first = renderNews();
+    expect(await screen.findByText("EXAMPLE")).toBeInTheDocument();
+    expect(screen.getByText(/creates no follow or eligibility/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Dismiss/i })).not.toBeInTheDocument();
+    first.unmount();
 
-    await user.click(screen.getByRole("button", { name: "Open Patriots turn up the tempo as the offense enters its final camp phase" }));
-    expect(screen.getByRole("dialog", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Discussion" })).toBeInTheDocument();
-    expect(router.state.location.search).toBe("?item=patriots-camp-tempo");
-    expect(screen.getByText(/New England moved through its sharpest practice/i)).toBeInTheDocument();
-
-    const opener = screen.getByRole("button", { name: "Open Patriots turn up the tempo as the offense enters its final camp phase" });
-    await user.click(screen.getByRole("button", { name: "Close News item" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Patriots turn up the tempo/i })).not.toBeInTheDocument());
-    await waitFor(() => expect(opener).toHaveFocus());
-    expect(screen.getByText("Latest from New England Patriots")).toBeInTheDocument();
+    mocks.loadMyNewsFollowing.mockResolvedValue(following);
+    mocks.loadPersonalNewsFeed.mockResolvedValue([]);
+    renderNews();
+    expect(await screen.findByRole("heading", { name: "No News matches this filter" })).toBeInTheDocument();
+    expect(screen.queryByText("EXAMPLE")).not.toBeInTheDocument();
   });
 
-  it("opens the connected Article Discussion from the News Item top bar", async () => {
-    const user = userEvent.setup();
-    const { router } = renderNews();
-
-    await user.click(screen.getByRole("button", { name: "Open Patriots turn up the tempo as the offense enters its final camp phase" }));
-    await user.click(screen.getByRole("button", { name: "Discussion" }));
-    expect(screen.getByRole("heading", { name: "Article Discussions" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
-
-    await router.navigate(-1);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Discussion" })).toBeInTheDocument());
-    expect(screen.getByRole("dialog", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
-  });
-
-  it("represents external source-controlled items without leaving the app", async () => {
+  it("uses only the configured Demo universe in memory and exposes no durable account actions", async () => {
+    mocks.auth.user = null;
+    const demoTargets: readonly NewsFollowTarget[] = [authorTarget, {
+      targetType: "show",
+      targetId: "show-northern",
+      displayName: "Northern Hockey Hour",
+    }];
+    mocks.loadNewsDemoUniverse.mockResolvedValue(demoTargets);
+    mocks.loadNewsDemoFeed.mockResolvedValue([writtenItem]);
     const user = userEvent.setup();
     renderNews();
 
-    await user.click(screen.getByRole("button", { name: "Open Audio notebook: Reading the Patriots defense before the snap" }));
-    expect(screen.getByRole("heading", { name: "This item stays with its source" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Continue to Weekend Sports Radio episode page/i }));
-    expect(screen.getByRole("status")).toHaveTextContent("External destinations are not connected");
+    expect(await screen.findByText("Demo mode — sign in to save your feed.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Dismiss/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Add to Feed/i }));
+    const dialog = screen.getByRole("dialog", { name: "Add to Feed" });
+    expect(within(dialog).getByRole("heading", { name: "Alex Reporter" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Request/i)).not.toBeInTheDocument();
+    expect(mocks.searchNewsFollowTargets).not.toHaveBeenCalled();
+    expect(mocks.followNewsTarget).not.toHaveBeenCalled();
+  });
+
+  it("supports individual Add to Feed, scopes, mute, and unfollow with no Follow All", async () => {
+    const organizationTarget: NewsFollowTarget = {
+      targetType: "organization",
+      targetId: "organization-wire",
+      displayName: "Prairie Wire Desk",
+    };
+    mocks.searchNewsFollowTargets.mockResolvedValue([organizationTarget]);
+    const user = userEvent.setup();
+    renderNews();
+    await screen.findByRole("heading", { name: writtenItem.headline });
+    await user.click(screen.getByRole("button", { name: /Add to Feed/i }));
+    const dialog = screen.getByRole("dialog", { name: "Add to Feed" });
+    await waitFor(() => expect(mocks.searchNewsFollowTargets).toHaveBeenCalledWith("", null));
+    expect(within(dialog).queryByText(/Follow All/i)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Add" }));
+    expect(mocks.followNewsTarget).toHaveBeenCalledWith(organizationTarget);
+    await user.click(within(dialog).getByRole("tab", { name: "Following" }));
+
+    await user.selectOptions(within(dialog).getByLabelText("Add Sport scope"), "hockey");
+    await user.click(within(dialog).getByRole("button", { name: "Save scopes" }));
+    expect(mocks.setNewsFollowScopes).toHaveBeenCalledWith(["follow-alex"], ["hockey"], []);
+
+    await user.click(within(dialog).getByRole("button", { name: "Mute 7 days" }));
+    expect(mocks.muteNewsFollow).toHaveBeenCalledWith("follow-alex", "7_days");
+    await user.click(within(dialog).getByRole("button", { name: "Mute 30 days" }));
+    expect(mocks.muteNewsFollow).toHaveBeenCalledWith("follow-alex", "30_days");
+    await user.click(within(dialog).getByRole("button", { name: "Unfollow" }));
+    expect(mocks.unfollowNewsTarget).toHaveBeenCalledWith("follow-alex");
+  });
+
+  it("renders database-derived mute status without a frontend clock and offers Unmute now", async () => {
+    mocks.loadMyNewsFollowing.mockResolvedValue([{
+      ...following[0]!,
+      mutedUntil: "2026-09-05T17:00:00.000Z",
+    }]);
+    const user = userEvent.setup();
+    renderNews();
+    await screen.findByRole("heading", { name: writtenItem.headline });
+    await user.click(screen.getByRole("button", { name: /Add to Feed/i }));
+    const dialog = screen.getByRole("dialog", { name: "Add to Feed" });
+    await user.click(within(dialog).getByRole("tab", { name: "Following" }));
+    expect(within(dialog).getByText(/Muted through Sep 5, 2026/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Mute 7 days" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Unmute now" }));
+    expect(mocks.unmuteNewsFollow).toHaveBeenCalledWith("follow-alex");
+  });
+
+  it("shows the real official-Team Item as EXAMPLE when the zero-follow contract returns one", async () => {
+    mocks.loadMyNewsFollowing.mockResolvedValue([]);
+    mocks.loadMyNewsZeroFollowExample.mockResolvedValue(writtenItem);
+    renderNews();
+    expect(await screen.findByLabelText("Zero-follow News example")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: `Dismiss ${writtenItem.headline}` })).not.toBeInTheDocument();
+  });
+
+  it("renders canonical contributor profiles and keeps profile Items outside per-feed Dismiss", async () => {
+    mocks.loadNewsIdentityProfile.mockResolvedValue(authorTarget);
+    mocks.loadNewsIdentityItems.mockResolvedValue([writtenItem]);
+    render(
+      <MemoryRouter initialEntries={["/news/authors/author-alex"]}>
+        <Routes>
+          <Route path="/news/authors/:identityId" element={<NewsIdentityProfilePage targetType="author" />} />
+          <Route path="/news" element={<h1>News</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Alex Reporter" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Dismiss/i })).not.toBeInTheDocument();
   });
 });

@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import type { TeamId } from "../../domain/team";
 import { findFollowedTeam } from "../../data/followedTeams";
-import { mockNewsItems, mockSourceCatalog } from "../news/mockNewsData";
-import { getSourceForItem } from "../news/newsFiltering";
-import { newsDiscussionScopeMatchesTeam, newsItemDiscussionScope } from "../news/newsDiscussionScope";
+import {
+  articleDiscussionScopeForItem,
+  articleDiscussionScopeMatchesTeam,
+} from "./articleDiscussionScope";
+import { articleDiscussionNewsItems, getArticleDiscussionSource } from "./mockArticleDiscussionData";
 import { CommunityThreadView } from "./CommunityThreadView";
 import { ArticleDiscussionCard } from "./ArticleDiscussionCard";
 import { FanPhotosArea } from "./FanPhotosArea";
@@ -35,29 +37,27 @@ function EmptyArea({ children }: { children: ReactNode }) {
 
 function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "area">) {
   const fanbase = useFanbaseContext();
-  const selectedNewsItem = itemId ? mockNewsItems.find((item) => item.id === itemId) : undefined;
+  const selectedNewsItem = itemId ? articleDiscussionNewsItems.find((item) => item.id === itemId) : undefined;
   const articleThreads = fanbase.threads
     .filter((thread) => {
       if (thread.kind !== "article") return false;
-      const item = mockNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
+      const item = articleDiscussionNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
       if (!item) return false;
-      const scope = thread.discussionScope ?? newsItemDiscussionScope(item);
-      return newsDiscussionScopeMatchesTeam(scope, teamId);
+      const scope = thread.discussionScope ?? articleDiscussionScopeForItem(item);
+      return articleDiscussionScopeMatchesTeam(scope, teamId);
     })
     .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
 
   if (selectedNewsItem) {
-    const source = getSourceForItem(selectedNewsItem, mockSourceCatalog);
+    const source = getArticleDiscussionSource(selectedNewsItem);
     const thread = fanbase.getArticleThread(selectedNewsItem.id);
-    const discussionScope = thread?.discussionScope ?? newsItemDiscussionScope(selectedNewsItem);
-    const discussionPath = `/fanbase?area=article-comments&item=${selectedNewsItem.id}`;
+    const discussionScope = thread?.discussionScope ?? articleDiscussionScopeForItem(selectedNewsItem);
     return (
       <>
         <ArticleDiscussionCard
           item={selectedNewsItem}
           source={source}
           thread={thread}
-          discussionPath={discussionPath}
           onReact={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)}
           onReport={() => thread && fanbase.reportThread(thread.id)}
         />
@@ -88,11 +88,11 @@ function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaVie
     <>
       <div className="fanbase-list">
         {articleThreads.length ? articleThreads.map((thread) => {
-          const item = mockNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
+          const item = articleDiscussionNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
           if (!item) {
             return null;
           }
-          const source = getSourceForItem(item, mockSourceCatalog);
+          const source = getArticleDiscussionSource(item);
           return (
             <button className="fanbase-entry-card" key={thread.id} type="button" onClick={() => onOpenItem(item.id)}>
               <span className="news-source-avatar" aria-hidden="true">{source?.initials ?? "N"}</span>

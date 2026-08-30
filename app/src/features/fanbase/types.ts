@@ -1,6 +1,6 @@
 import type { TeamId } from "../../domain/team";
 import type { OfficialLeagueId, OfficialSportId, OfficialTeamId } from "../../data/officialSportsDatabase";
-import type { NewsDiscussionScope } from "../news/types";
+import type { ArticleDiscussionScope } from "./articleDiscussionTypes";
 
 export type FanbaseAreaId =
   | "article-comments"
@@ -39,7 +39,7 @@ export type DiscussionThread = Readonly<{
   id: string;
   kind: "article" | "locker" | "game" | "group";
   teamId: TeamId | null;
-  discussionScope?: NewsDiscussionScope;
+  discussionScope?: ArticleDiscussionScope;
   newsItemId?: string;
   title?: string;
   body?: string;

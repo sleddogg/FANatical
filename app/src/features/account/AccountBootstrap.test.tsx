@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   loadFollowedTeams: vi.fn(),
   loadHomeCustomization: vi.fn(),
   loadNavigationSide: vi.fn(),
+  loadNewsDemoSelections: vi.fn(),
   loadProfileImageShape: vi.fn(),
   loadProfileVisualImages: vi.fn(),
   loadRemoteProfileVisuals: vi.fn(),
@@ -52,6 +53,10 @@ vi.mock("../profileVisual/profileVisualStorage", () => ({
 vi.mock("../profileVisual/profileVisualRepository", () => ({
   loadRemoteProfileVisuals: mocks.loadRemoteProfileVisuals,
   uploadRemoteProfileVisual: mocks.uploadRemoteProfileVisual,
+}));
+
+vi.mock("../news/newsDemoState", () => ({
+  loadNewsDemoSelections: mocks.loadNewsDemoSelections,
 }));
 
 vi.mock("./accountRepository", () => ({
@@ -167,6 +172,24 @@ describe("real-account prototype bootstrap", () => {
     expect(mocks.saveAccountSettings).toHaveBeenNthCalledWith(2, realUserId, {
       prototypeMigrationVersion: 1,
     });
+  });
+
+  it("never reads or writes News Demo selections while bootstrapping a real account", async () => {
+    mocks.loadAccountSettings.mockResolvedValue({ prototypeMigrationVersion: 0 });
+    mocks.loadProfileVisualImages.mockResolvedValue([]);
+    mocks.loadNewsDemoSelections.mockReturnValue([
+      { targetType: "organization", targetId: "demo-organization" },
+    ]);
+
+    renderBootstrap();
+    await waitFor(() => expect(screen.getByText("ready:1:")).toBeInTheDocument());
+
+    expect(mocks.loadNewsDemoSelections).not.toHaveBeenCalled();
+    expect(JSON.stringify([
+      ...mocks.replaceAccountFollowedTeams.mock.calls,
+      ...mocks.saveAccountSettings.mock.calls,
+      ...mocks.uploadRemoteProfileVisual.mock.calls,
+    ])).not.toContain("demo-organization");
   });
 
   it("uses prototype_migration_version to avoid repeating any migration", async () => {

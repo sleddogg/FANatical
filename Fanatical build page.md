@@ -622,6 +622,24 @@ The scope belongs to the fan's follow preference. FANatical must not invent iden
 
 Several selected scopes match with OR behavior. No selected scope means All coverage.
 
+For the Phase 4 personal-feed contract, selectable follow scopes are **All
+coverage**, **Sport**, and **Team**. Competition and Competition Edition remain
+valid factual classifications and temporary filters, but are not durable
+follow-scope controls in this phase.
+
+### Mute
+
+A fan may temporarily mute an identity they already follow for either:
+
+* 7 days from database `statement_timestamp()`
+* 30 days from database `statement_timestamp()`
+
+Mute belongs to the followed identity, never to its publisher. It preserves the
+follow and every selected scope, expires automatically without a background job,
+and may be ended immediately with **Unmute now**. If another followed and
+unmuted identity also qualifies the same News Item, that Item remains eligible.
+Unfollowing removes the follow even while it is muted.
+
 ## **4. Classification and Feed Eligibility**
 
 News Item classification describes factual sporting scope, including:
@@ -667,7 +685,36 @@ Global Team context does not create a News follow or make official Team, organiz
 
 Temporary filters may include Sport, Competition, Team, and All Followed News.
 
-## **6. Zero-Follow EXAMPLE Onboarding**
+## **6. Signed-out Demo Mode and Zero-Follow EXAMPLE Onboarding**
+
+### Signed-out Demo Mode
+
+Signed-out visitors may use a deliberately bounded News **Demo Mode**, labelled:
+
+**Demo mode — sign in to save your feed.**
+
+Demo Mode uses real published Items but is not a public all-sports feed and does
+not use a shared authenticated dummy account. A versioned, staff-governed
+News-domain configuration defines the explicit contributor identities available
+in the demo universe. Anonymous callers cannot add arbitrary identities to that
+universe.
+
+Within that configured universe, visitors may temporarily follow or unfollow
+identities and change temporary filters in isolated browser-local state. Demo
+choices are never persisted. Sign-in or registration discards all Demo state and
+writes none of it to the real account. Durable follows, scopes, mute, Dismiss,
+and every other account-owned action require sign-in. Anonymous reads expose only
+the fan-safe fields required to render the configured demo.
+
+Anonymous contributor profiles and contributor-item lists are an intentional
+governed public boundary. They expose only the current stable public contributor
+identity and fan-safe published Item fields needed for presentation: public
+display name, historical raw attribution, published headline/summary/time,
+representative publisher destination, approved preview and factual
+classifications. They expose no Auth or staff identity, private profile data,
+review case, unresolved question, evidence, decision history or staff operation.
+
+### Signed-in zero-follow EXAMPLE
 
 When a signed-in fan has zero actual News follows, News shows one onboarding example rather than a blank personal feed or a silent subscription.
 
@@ -691,7 +738,10 @@ The Add to Feed action opens the relevant discovery context, such as:
 
 Once the fan creates their first real News follow, the EXAMPLE state disappears and the chronological personal feed becomes the normal page state.
 
-Detailed engagement behavior for the EXAMPLE card remains deferred until that UI is implemented.
+Phase 4 implements the EXAMPLE card's Add to Feed onboarding action. Dismiss is
+intentionally unavailable on EXAMPLE, and later Poll, Rating, Reaction or other
+engagement behavior remains governed by the normal card rules when each feature
+is implemented.
 
 ## **7. Add to Feed, Discovery, and Requests**
 
@@ -718,7 +768,17 @@ Direct search supports:
 
 After resolving an identity such as **TSN Staff**, Add to Feed presents its real observed coverage as optional follow scopes. A broad organizational contributor must not be permanently assigned to one Sport or Competition merely because it publishes some work there.
 
+Phase 4 search results use relevance with alphabetical tie-breaking. Unsearched
+browsing is alphabetical. **Highest Rated** and **Most Followed** are future
+user-selectable discovery sorts only: Phase 4 neither computes nor exposes
+cross-fan follower totals or ratings. Those future presentation sorts remain
+independent from publisher factual-verification trust, News availability, and
+feed eligibility.
+
 ### Requests
+
+Missing-identity requests, request persistence, fulfilment, and notifications are
+later News work and are not part of Phase 4. The eventual product behavior remains:
 
 If an identity is not found:
 
@@ -765,6 +825,7 @@ The action row may expose:
 
 * Discussion
 * Share
+* Dismiss for a signed-in fan, with immediate Undo
 * Polls when implemented
 * Ratings when implemented
 * Reactions when implemented
@@ -772,11 +833,27 @@ The action row may expose:
 
 Do not display a publisher-style article view count.
 
+Dismiss hides one canonical News Item only for that fan. It changes no follow,
+classification, canonical content, publication history, search access, or
+discussion. Undo restores the Item at its original chronological position rather
+than promoting it to the top. Dismiss is unavailable on the zero-follow EXAMPLE
+card and is separate from mute and unfollow.
+
 ## **9. Original Content Destination**
 
 For normal third-party written journalism, FANatical does not republish the article body.
 
 The article remains on the publisher's public site. Selecting the article headline, image, or read target opens the chosen public publisher manifestation directly.
+
+The representative destination must be a public `canonical` or `alternate` URL
+belonging to the Item's current manifestation assignment; a `wrapper` or
+`redirect` remains evidence/history and is never fan-facing. The local Phase 4
+migration enforces this rule for every new or changed row with the deliberately
+`NOT VALID` `news_manifestation_public_destination_kind_check`. Existing hosted
+rows were not scanned, repaired or validated in Phase 4. The service-only
+`private.news_manifestation_public_destination_kind_violations` diagnostic is
+the required inventory before any later evidence-based repair and constraint
+validation under BL-030.
 
 FANatical-owned destinations include:
 
@@ -830,6 +907,15 @@ Do not assume every publisher relationship is employment. It may be employee, fr
 Historical attribution remains attached to the correct item even after later identity or affiliation changes.
 
 Ambiguous identity resolution must be reviewable rather than guessed. Merge and split decisions must preserve history and be reversible.
+
+An attribution review structurally identifies the disputed person,
+organizational contributor, or Show and the affected byline; freeform context is
+not sufficient. While that identity relationship remains under open review, the
+Item stays published and its historical raw attribution remains visible, but the
+disputed identity alone loses its profile link, follow control, and ability to
+qualify the Item. Another undisputed credited identity may still qualify it. A
+governed confirmation restores linking and eligibility, and no review details are
+fan-visible.
 
 Visible public attribution outranks contradictory hidden metadata. Hidden metadata remains supporting evidence and cannot override what the publisher visibly attributes or independently authorize a destructive identity merge.
 
@@ -1102,13 +1188,16 @@ Use incoming content to exercise:
 * filter-group requirements
 * missing metadata and card fallbacks
 
+Phase 4 uses a row-based fan-safe navigation read model: one current row per
+Sport, Competition, or Team. The frontend groups those rows for presentation;
+it does not persist a parallel filter hierarchy or synthetic follow targets.
+
 Include deliberately difficult cases such as cross-competition writers, independent newsletter writers, multi-sport Staff identities, official Team content, wire-heavy publishers, shared-owner publications, podcasts, junior hockey, soccer cups, golf, and tennis.
 
 ## **25. News To-Do List**
 
 The following are intentionally deferred and are not blockers to the approved foundation phases:
 
-* signed-out News behavior
 * exact article rating scale
 * rating revision and withdrawal behavior
 * exact News reaction set
@@ -1120,7 +1209,6 @@ The following are intentionally deferred and are not blockers to the approved fo
 * public-versus-private exposure policy for commercial or licensed provider identifiers during the first real provider-ingestion phase
 * a shared Competition-participation read model and provider-appropriate Edition resolver before News consumers need those queries
 * a real-source/provider mapping spike for incoming Competition, Edition, and participant metadata in the earliest real-content phase
-* filter-group row-versus-aggregated read-model selection when the first real frontend/API consumer is implemented
 * repository-quality follow-up for existing Profile/Cheer regression tests that are timing-sensitive under the default five-second timeout; the reliable full-suite invocation currently uses one worker and a longer timeout
 
 No deferred item silently restores publisher follows, automatic Team eligibility, classification-created eligibility, local third-party article bodies, fixed refresh intervals, or publisher-style view counts.

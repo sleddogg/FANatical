@@ -6,6 +6,7 @@ import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 import { NewsPage } from "../features/news/NewsPage";
+import { NewsIdentityProfilePage } from "../features/news/NewsIdentityProfilePage";
 import { FanbasePage } from "../features/fanbase/FanbasePage";
 import { QuizPage } from "../features/quiz/QuizPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
@@ -44,6 +45,18 @@ export const appRoutes: RouteObject[] = [
           {
             path: "news",
             element: <NewsPage />,
+          },
+          {
+            path: "news/authors/:identityId",
+            element: <NewsIdentityProfilePage targetType="author" />,
+          },
+          {
+            path: "news/organizations/:identityId",
+            element: <NewsIdentityProfilePage targetType="organization" />,
+          },
+          {
+            path: "news/shows/:identityId",
+            element: <NewsIdentityProfilePage targetType="show" />,
           },
           {
             path: "fanbase",

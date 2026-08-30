@@ -1094,6 +1094,22 @@ select pg_temp.assert_true(
   'explicit public non-conflicting bridge evidence must permit automatic merge Resolution'
 );
 
+select pg_temp.assert_true(
+  public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000007'
+  ) = '86200000-0000-0000-0000-000000000008'
+  and public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000008'
+  ) = '86200000-0000-0000-0000-000000000008',
+  'the fan-safe single-person resolver must redirect both merged identities to the governed canonical person'
+);
+
+set local role anon;
+select public.resolve_news_canonical_person(
+  '86200000-0000-0000-0000-000000000007'
+);
+reset role;
+
 select pg_sleep(0.01);
 select set_config('request.jwt.claim.sub', '86000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
@@ -1125,6 +1141,16 @@ select pg_temp.assert_true(
       )
   ),
   'merge reversal must retain ambiguity, canonical merge, and restored distinct periods'
+);
+
+select pg_temp.assert_true(
+  public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000007'
+  ) = '86200000-0000-0000-0000-000000000007'
+  and public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000008'
+  ) = '86200000-0000-0000-0000-000000000008',
+  'the single-person resolver must restore each durable identity after governed merge reversal'
 );
 
 select pg_temp.assert_true(
@@ -2397,6 +2423,347 @@ select pg_temp.assert_true(
     )
   ) > 0,
   'all staff intake wrappers must remain thin callers of the shared private canonical operations'
+);
+
+-- The shared pair-state writer is the final gate for both automatic and
+-- staff-reviewed merges. These graph fixtures prove canonical consistency,
+-- cycle prevention, valid transitive merging, and rejection atomicity through
+-- the real governed entry points rather than by calling the private writer.
+insert into public.catalog_people(id, person_id)
+values
+  ('86200000-0000-0000-0000-000000000010', 'person-00000000000000000000000000000010'),
+  ('86200000-0000-0000-0000-000000000011', 'person-00000000000000000000000000000011'),
+  ('86200000-0000-0000-0000-000000000012', 'person-00000000000000000000000000000012'),
+  ('86200000-0000-0000-0000-000000000013', 'person-00000000000000000000000000000013'),
+  ('86200000-0000-0000-0000-000000000014', 'person-00000000000000000000000000000014'),
+  ('86200000-0000-0000-0000-000000000015', 'person-00000000000000000000000000000015'),
+  ('86200000-0000-0000-0000-000000000016', 'person-00000000000000000000000000000016');
+
+insert into public.person_identity_versions(person_id, public_name, name_kind)
+values
+  ('86200000-0000-0000-0000-000000000010', 'Graph X', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000011', 'Graph Y', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000012', 'Graph Z', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000013', 'Graph P', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000014', 'Graph Q', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000015', 'Graph R', 'professional_name'),
+  ('86200000-0000-0000-0000-000000000016', 'Graph S', 'professional_name');
+
+insert into public.news_author_profiles(person_id)
+values
+  ('86200000-0000-0000-0000-000000000010'),
+  ('86200000-0000-0000-0000-000000000011'),
+  ('86200000-0000-0000-0000-000000000012'),
+  ('86200000-0000-0000-0000-000000000013'),
+  ('86200000-0000-0000-0000-000000000014'),
+  ('86200000-0000-0000-0000-000000000015'),
+  ('86200000-0000-0000-0000-000000000016');
+
+insert into public.news_person_publisher_relationship_versions(
+  id, person_id, publisher_source_id, relationship_type,
+  effective_from, is_current
+)
+values
+  ('86900000-0000-0000-0000-000000000010', '86200000-0000-0000-0000-000000000010', '86100000-0000-0000-0000-000000000001', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000011', '86200000-0000-0000-0000-000000000011', '86100000-0000-0000-0000-000000000002', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000012', '86200000-0000-0000-0000-000000000012', '86100000-0000-0000-0000-000000000002', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000013', '86200000-0000-0000-0000-000000000013', '86100000-0000-0000-0000-000000000001', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000014', '86200000-0000-0000-0000-000000000013', '86100000-0000-0000-0000-000000000002', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000015', '86200000-0000-0000-0000-000000000014', '86100000-0000-0000-0000-000000000002', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000016', '86200000-0000-0000-0000-000000000015', '86100000-0000-0000-0000-000000000001', 'contributor', '2020-01-01', true),
+  ('86900000-0000-0000-0000-000000000017', '86200000-0000-0000-0000-000000000016', '86100000-0000-0000-0000-000000000002', 'contributor', '2020-01-01', true);
+
+select set_config('request.jwt.claim.sub', '86000000-0000-0000-0000-000000000001', true);
+set local role authenticated;
+
+-- X-Y -> Y is an ordinary automatic governed merge.
+select pg_temp.remember('case_graph_xy', public.admin_open_news_identity_case(
+  'person_merge', 'human', 'Graph X',
+  '86100000-0000-0000-0000-000000000001',
+  '86200000-0000-0000-0000-000000000010', null, null, null,
+  null, null, 'Does public evidence bridge Graph X to Graph Y?',
+  '{}'::jsonb, 'Synthetic merge-graph conflict proof.'
+));
+select pg_temp.remember('candidate_graph_xy',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_xy'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000011', 'Graph Y',
+    '{}'::jsonb, 'Record Graph Y as the governed merge target.'
+  )
+);
+select pg_temp.remember('evidence_graph_xy',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_xy'), pg_temp.id('candidate_graph_xy'),
+    'first_party_cross_publisher_bridge',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-x-to-y',
+    '86100000-0000-0000-0000-000000000001',
+    '86100000-0000-0000-0000-000000000002',
+    'visible_public', false,
+    'First-party evidence explicitly bridges Graph X and Graph Y.',
+    '{}'::jsonb, '2026-08-29T10:00:00Z',
+    'Synthetic automatic merge-graph proof.'
+  )
+);
+
+-- X-Z -> Z would give Graph X a second current canonical identity. Candidate
+-- intake creates one ambiguous period first; rejection must leave that exact
+-- period current rather than half-closing it.
+select pg_temp.remember('case_graph_xz', public.admin_open_news_identity_case(
+  'person_merge', 'human', 'Graph X',
+  '86100000-0000-0000-0000-000000000001',
+  '86200000-0000-0000-0000-000000000010', null, null, null,
+  null, null, 'Does public evidence bridge Graph X to Graph Z?',
+  '{}'::jsonb, 'Synthetic merge-graph conflict proof.'
+));
+select pg_temp.remember('candidate_graph_xz',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_xz'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000012', 'Graph Z',
+    '{}'::jsonb, 'Record Graph Z as the proposed merge target.'
+  )
+);
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select public.admin_record_news_identity_evidence(
+      pg_temp.id('case_graph_xz'), pg_temp.id('candidate_graph_xz'),
+      'first_party_cross_publisher_bridge',
+      '86100000-0000-0000-0000-000000000001',
+      'https://publisher-a.example/graph-x-to-z',
+      '86100000-0000-0000-0000-000000000001',
+      '86100000-0000-0000-0000-000000000002',
+      'visible_public', false,
+      'First-party evidence proposes a conflicting canonical identity.',
+      '{}'::jsonb, '2026-08-29T10:01:00Z',
+      'Synthetic automatic conflict rejection proof.'
+    )
+  $statement$,
+  'different canonical identity',
+  'automatic X-Z -> Z must be rejected after X-Y -> Y'
+);
+
+select pg_temp.assert_true(
+  public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000010'
+  ) = '86200000-0000-0000-0000-000000000011'
+  and (
+    select count(*) = 1
+      and count(*) filter (where is_current and state = 'ambiguous') = 1
+      and count(*) filter (where state = 'merged') = 0
+    from public.news_person_pair_state_periods
+    where person_a_id in (
+        '86200000-0000-0000-0000-000000000010',
+        '86200000-0000-0000-0000-000000000012'
+      )
+      and person_b_id in (
+        '86200000-0000-0000-0000-000000000010',
+        '86200000-0000-0000-0000-000000000012'
+      )
+  )
+  and not exists (
+    select 1 from public.news_identity_resolution_evidence
+    where case_id = pg_temp.id('case_graph_xz')
+      and evidence_url = 'https://publisher-a.example/graph-x-to-z'
+  ),
+  'automatic conflict rejection must preserve the first canonical graph and leave no partial pair-state or evidence write'
+);
+
+-- P-Q -> Q is automatic; R-Q -> Q is deliberately routed through staff
+-- review by recording two explicit candidates. The shared writer must accept
+-- this valid transitive component with one canonical identity.
+select pg_temp.remember('case_graph_pq', public.admin_open_news_identity_case(
+  'person_merge', 'human', 'Graph P',
+  '86100000-0000-0000-0000-000000000001',
+  '86200000-0000-0000-0000-000000000013', null, null, null,
+  null, null, 'Does public evidence bridge Graph P to Graph Q?',
+  '{}'::jsonb, 'Synthetic valid transitive merge proof.'
+));
+select pg_temp.remember('candidate_graph_pq',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_pq'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000014', 'Graph Q',
+    '{}'::jsonb, 'Record Graph Q as the governed merge target.'
+  )
+);
+select pg_temp.remember('evidence_graph_pq',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_pq'), pg_temp.id('candidate_graph_pq'),
+    'first_party_cross_publisher_bridge',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-p-to-q',
+    '86100000-0000-0000-0000-000000000001',
+    '86100000-0000-0000-0000-000000000002',
+    'visible_public', false,
+    'First-party evidence explicitly bridges Graph P and Graph Q.',
+    '{}'::jsonb, '2026-08-29T10:02:00Z',
+    'Synthetic automatic transitive merge proof.'
+  )
+);
+
+select pg_temp.remember('case_graph_rq', public.admin_open_news_identity_case(
+  'person_merge', 'human', 'Graph R',
+  '86100000-0000-0000-0000-000000000001',
+  '86200000-0000-0000-0000-000000000015', null, null, null,
+  null, null, 'Which public identity is Graph R?',
+  '{}'::jsonb, 'Synthetic staff-reviewed transitive merge proof.'
+));
+select pg_temp.remember('candidate_graph_rq',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_rq'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000014', 'Graph Q',
+    '{}'::jsonb, 'Record Graph Q as the intended target.'
+  )
+);
+select pg_temp.remember('candidate_graph_rq_other',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_rq'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000016', 'Graph S',
+    '{}'::jsonb, 'Record the competing explicit candidate.'
+  )
+);
+select pg_temp.remember('evidence_graph_rq_other',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_rq'), pg_temp.id('candidate_graph_rq_other'),
+    'publisher_author_profile',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-r-other-candidate', null, null,
+    'public_profile', false,
+    'A second explicit candidate requires staff adjudication.',
+    '{}'::jsonb, '2026-08-29T10:03:00Z',
+    'Synthetic manual-path ambiguity proof.'
+  )
+);
+select pg_temp.remember('evidence_graph_rq',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_rq'), pg_temp.id('candidate_graph_rq'),
+    'first_party_cross_publisher_bridge',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-r-to-q',
+    '86100000-0000-0000-0000-000000000001',
+    '86100000-0000-0000-0000-000000000002',
+    'visible_public', false,
+    'First-party evidence explicitly bridges Graph R and Graph Q.',
+    '{}'::jsonb, '2026-08-29T10:04:00Z',
+    'Synthetic manual transitive merge proof.'
+  )
+);
+select public.admin_review_news_identity_case(
+  pg_temp.id('case_graph_rq'), 'merge',
+  '86200000-0000-0000-0000-000000000014',
+  '{"identity_type":"human"}'::jsonb,
+  'Staff selected the explicit Graph Q bridge after reviewing both candidates.'
+);
+
+select pg_temp.assert_true(
+  public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000013'
+  ) = '86200000-0000-0000-0000-000000000014'
+  and public.resolve_news_canonical_person(
+    '86200000-0000-0000-0000-000000000015'
+  ) = '86200000-0000-0000-0000-000000000014'
+  and (
+    select count(*) = 2
+    from public.news_person_pair_state_periods
+    where is_current and state = 'merged'
+      and canonical_person_id = '86200000-0000-0000-0000-000000000014'
+      and (
+        '86200000-0000-0000-0000-000000000014' in (person_a_id, person_b_id)
+      )
+  ),
+  'automatic and manual governed paths must preserve a valid transitive component with one canonical identity'
+);
+
+-- R-P would close the triangle R-Q-P-R. Keep automatic evaluation in review
+-- with a competing explicit candidate, then prove the manual governed path is
+-- rejected before it changes the current ambiguous R-P period.
+select pg_temp.remember('case_graph_rp', public.admin_open_news_identity_case(
+  'person_merge', 'human', 'Graph R',
+  '86100000-0000-0000-0000-000000000001',
+  '86200000-0000-0000-0000-000000000015', null, null, null,
+  null, null, 'Would Graph R and Graph P close a merge cycle?',
+  '{}'::jsonb, 'Synthetic cycle-rejection proof.'
+));
+select pg_temp.remember('candidate_graph_rp',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_rp'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000013', 'Graph P',
+    '{}'::jsonb, 'Record Graph P as the proposed target.'
+  )
+);
+select pg_temp.remember('candidate_graph_rp_other',
+  public.admin_record_news_identity_candidate(
+    pg_temp.id('case_graph_rp'), 'merge_target', 'human',
+    '86200000-0000-0000-0000-000000000016', 'Graph S',
+    '{}'::jsonb, 'Record the competing explicit candidate.'
+  )
+);
+select pg_temp.remember('evidence_graph_rp_other',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_rp'), pg_temp.id('candidate_graph_rp_other'),
+    'publisher_author_profile',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-rp-other-candidate', null, null,
+    'public_profile', false,
+    'A second explicit candidate requires staff adjudication.',
+    '{}'::jsonb, '2026-08-29T10:05:00Z',
+    'Synthetic cycle manual-path ambiguity proof.'
+  )
+);
+select pg_temp.remember('evidence_graph_rp',
+  public.admin_record_news_identity_evidence(
+    pg_temp.id('case_graph_rp'), pg_temp.id('candidate_graph_rp'),
+    'first_party_cross_publisher_bridge',
+    '86100000-0000-0000-0000-000000000001',
+    'https://publisher-a.example/graph-r-to-p',
+    '86100000-0000-0000-0000-000000000001',
+    '86100000-0000-0000-0000-000000000002',
+    'visible_public', false,
+    'First-party evidence proposes an edge that would close a cycle.',
+    '{}'::jsonb, '2026-08-29T10:06:00Z',
+    'Synthetic manual cycle rejection proof.'
+  )
+);
+select pg_temp.assert_statement_rejected(
+  $statement$
+    select public.admin_review_news_identity_case(
+      pg_temp.id('case_graph_rp'), 'merge',
+      '86200000-0000-0000-0000-000000000013',
+      '{"identity_type":"human"}'::jsonb,
+      'This manual merge must be rejected because it closes R-Q-P-R.'
+    )
+  $statement$,
+  'create a cycle',
+  'manual R-P merge must be rejected after P-Q and Q-R'
+);
+reset role;
+
+select pg_temp.assert_true(
+  (
+    select count(*) filter (where is_current and state = 'ambiguous') = 1
+      and count(*) filter (where state = 'merged') = 0
+    from public.news_person_pair_state_periods
+    where person_a_id in (
+        '86200000-0000-0000-0000-000000000013',
+        '86200000-0000-0000-0000-000000000015'
+      )
+      and person_b_id in (
+        '86200000-0000-0000-0000-000000000013',
+        '86200000-0000-0000-0000-000000000015'
+      )
+  )
+  and not exists (
+    select 1
+    from public.news_identity_resolution_decisions
+    where case_id = pg_temp.id('case_graph_rp')
+      and action = 'merge'
+  )
+  and position(
+    'pg_advisory_xact_lock'
+    in pg_get_functiondef(
+      'private.set_news_person_pair_state(uuid,uuid,text,uuid,uuid)'::regprocedure
+    )
+  ) > 0,
+  'cycle rejection must leave no partial merged period or manual decision, and the shared writer must serialize graph checks with writes'
 );
 
 rollback;

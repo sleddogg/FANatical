@@ -86,6 +86,13 @@ only affected profile holds prototype values.
 profile viewing is built — whichever comes first.
 **Required at trigger** — REQUIRED
 **Origin** — Frontend deep audit; conversation, 27 Aug.
+**Assessment, 29 Aug 2026** — Phase 4 adds anonymous News Demo,
+navigation, contributor-profile, contributor-item and outbound-open RPCs. Their
+populations are mechanically bounded to the current governed Demo
+configuration, an explicitly addressed current followable News identity, and
+published fan-safe News rows. None calls `get_profile_for_viewer`, reads the fan
+profile population, or exposes fan personal fields. BL-007 therefore does not
+fire for Phase 4; its first real-fan-details/public-profile trigger is unchanged.
 
 ### BL-008
 **What** — Provide a fan-population exclusion that browser-side queries can
@@ -98,6 +105,12 @@ fan-facing discovery surface exists yet to prove it against.
 autocomplete, a fan directory, a leaderboard or equivalent.
 **Required at trigger** — REQUIRED
 **Origin** — `FAN-DEV-07`; conversation, 27 Aug.
+**Assessment, 29 Aug 2026** — Add to Feed discovers only versioned, currently
+followable News Authors (`catalog_people` plus `news_author_profiles`),
+organizational contributors and Shows. It never queries `profiles` or treats an
+Auth user, staff actor or service actor as a fan. This is contributor discovery,
+not fan discovery, so BL-008 does not fire; tagging, fan-directory, leaderboard
+or equivalent fan-population discovery remains its trigger.
 
 ### BL-009
 **What** — Add direct proof for the untested Team registry surfaces.
@@ -219,6 +232,13 @@ product outcome, or before any React concurrent rendering behaviour is relied on
 **Required at trigger** — REQUIRED
 **Origin** — First ESLint run, 28 Aug; `react-hooks/purity` and
 `react-hooks/refs`.
+**Pulled, 29 Aug** — Phase 4 now has a database-time followed-identity mute
+contract. The Phase 4 Following UI treats the owner-safe
+`get_my_news_following().muted_until` value as active only when the database
+reader returns it; that reader converts database-expired mutes to `null`, so no
+frontend render-time clock read decides mute behavior. The triggered News slice
+is complete; the broader entry remains open for its other seven affected
+surfaces.
 
 ### BL-022
 **What** — Clear the remaining lint warnings: 22 synchronous state updates inside
@@ -231,18 +251,6 @@ slows News UI work.
 **Required at trigger** — OPTIONAL
 **Origin** — First ESLint run, 28 Aug; `react-hooks/set-state-in-effect` and
 `react-refresh/only-export-components`.
-
-### BL-023
-**What** — Explicitly prove that a historical published byline remains attached
-to the intended stable person identity across a later governed person merge,
-including the resulting fan-facing byline and Author display.
-**Why deferred** — Phase 3 preserves the published byline text and points its
-Resolution history at stable identity records, but no fan-facing byline or
-Author display exists yet on which to prove merge rendering behavior.
-**Trigger** — Before Phase 4 exposes any fan-facing byline or Author display.
-**Required at trigger** — REQUIRED
-**Origin** — Phase 3 correction review; attribution proof required before the
-first fan-facing News read.
 
 ### BL-024
 **What** — Behaviourally prove the Phase 3 dedupe/assignment concurrency
@@ -308,20 +316,109 @@ external-identifier capability or News publisher-policy capability is required.
 **Required at trigger** — REQUIRED
 **Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
 
-### BL-027
-**What** — Add a mechanical schema proof that every News-domain table either has
-at least one governed canonical mutation path or is explicitly registered as
-read-only-by-design.
-**Why deferred** — The canary audit identified and recorded the current missing
-paths explicitly, but a durable table-to-mutation registry and its verification
-belong in a focused guard rather than this one-path correction.
-**Trigger** — Before the next News-domain migration adds any table.
-**Required at trigger** — REQUIRED
-**Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
+### BL-028
+**What** — Define and implement the operational-actor retirement path for an
+explicitly deleted account or removed staff/operational Auth user.
+**Why deferred** — Historical decisions and provenance correctly retain
+`catalog_actors` through `auth.users on delete set null`, but no account-deletion
+or staff-user removal workflow exists yet to coordinate the rest of the actor
+lifecycle.
+**Trigger** — Before explicit account deletion is implemented, or before an
+operational/staff user is removed from `auth.users`.
+**Required at trigger** — REQUIRED: preserve historical attribution; explicitly
+retire the actor; revoke active capabilities; reserve or deliberately release
+its handle/actor key under the approved identity policy; and prevent an active
+actor from remaining without its Auth user.
+**Origin** — Gemini blind audit, 29 Aug 2026; transferred before removal of the
+temporary report.
+
+### BL-029
+**What** — Add abuse and storage controls for anonymous
+`record_news_outbound_open` events.
+**Why deferred** — Phase 4 records only a validated Item/destination pair and
+stores no caller-supplied payload beyond that pair, but anonymous callers can
+still create unbounded valid events. Rate, retention and capacity values are
+material operating choices and are not invented during local entry hardening.
+**Trigger** — Before public launch of the anonymous News surface.
+**Required at trigger** — REQUIRED: approve and enforce bounded abuse, rate,
+retention and storage-capacity controls while keeping navigation independent
+from recording success.
+**Origin** — Phase 4 final correction review, 29 Aug 2026.
+
+### BL-030
+**What** — Inventory and resolve legacy rows reported by
+`private.news_manifestation_public_destination_kind_violations`, then validate
+`news_manifestation_public_destination_kind_check` when safe.
+**Why deferred** — The local migration deliberately uses `NOT VALID`: it rejects
+every new or updated public wrapper/redirect without scanning, rewriting or
+guessing about hosted legacy rows. Hosted state was not read or changed during
+Phase 4.
+**Trigger** — Before validating this constraint in any environment, or before
+claiming that every stored legacy manifestation URL already satisfies it.
+**Required at trigger** — REQUIRED: run the diagnostic, review each row with its
+provenance, repair through an approved governed path, validate the constraint,
+and verify the resulting representative destinations. Never silently rewrite
+the historical URL evidence.
+**Origin** — Phase 4 representative-destination correction, 29 Aug 2026.
+
+### BL-031
+**What** — Sweep the remaining historical audit/review files one at a time under
+the repository audit-artifact policy.
+**Why deferred** — The two temporary Phase 4 inputs were reconciled in this
+phase, but older audit files have not yet been mapped finding-by-finding to their
+durable homes.
+**Trigger** — Before deleting any remaining file under `audit/` as obsolete.
+**Required at trigger** — REQUIRED: confirm every unresolved finding has a
+durable home in code, a permanent proof, the build page, the invariant register,
+this backlog or an approved audit brief; preserve useful historical evidence;
+then remove only the specifically reconciled artifact.
+**Origin** — Phase 4 audit-artifact reconciliation, 29 Aug 2026.
+
+### BL-032
+**What** — Decide and implement how a fan can discover an Item first ingested
+after their feed cursor has already passed that Item's older source publication
+time.
+**Why deferred** — Phase 4 preserves the approved chronological order and stable
+publication-time cursor, but no automated ingestion or durable per-fan read
+cursor exists yet. Boosting a late-discovered older Item to the top would violate
+FAN-NEWS-11 and could fabricate seen-history.
+**Trigger** — Before automated ingestion and a durable incremental/resume cursor
+are both used for personal News feeds.
+**Required at trigger** — REQUIRED: approve and prove a discoverability/backfill
+behavior that preserves the source publication time, chronological feed order,
+stable pagination and truthful fan interaction history. Do not add a ranking or
+silently re-date the Item.
+**Origin** — Phase 4 pre-build review backlog finding; reconciled 29 Aug 2026
+before removal of the temporary planning package.
 
 ---
 
 ## Done
+
+### BL-027 — closed 29 Aug
+**What** — Add a mechanical schema proof that every News-domain table either has
+at least one governed canonical mutation path or is explicitly registered as
+read-only-by-design.
+**Closed by** — `202608290004_news_mutation_registry.sql` introduced the
+table-to-operation registry and a migration-time assertion before the first
+Phase 4 table. `202608290006_news_personal_feed_contract.sql` extends the
+registry before creating its seven tables, and `news_mutation_registry.sql`
+mechanically compares the registry with every current News-domain table. The
+clean local rebuild and full SQL suite passed with all 61 tables registered.
+**Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
+
+### BL-023 — closed 29 Aug
+**What** — Explicitly prove that a historical published byline remains attached
+to the intended stable person identity across a later governed person merge,
+including the resulting fan-facing byline and Author display.
+**Closed by** — `202608290005_news_identity_destination_hardening.sql` added a
+fan-safe single-person canonical resolver separate from the staff pair reader,
+and `202608290006_news_personal_feed_contract.sql` applies it to follow and
+fan-safe byline reads. The identity and Phase 4 proofs establish unchanged
+historical `raw_attribution`, canonical links and follow redirection, and no
+duplicate effective follows or feed cards across a governed merge.
+**Origin** — Phase 3 correction review; attribution proof required before the
+first fan-facing News read.
 
 ### BL-005 — closed 28 Aug
 **What** — Make the frontend test suite pass at its own committed configuration.

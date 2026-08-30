@@ -1,64 +1,109 @@
-import { formatPublishedAt } from "./newsFiltering";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { AppIcon, type AppIconName } from "../../components/AppIcon";
 import { NewsActionRow } from "./NewsActionRow";
-import type { NewsItem, NewsSource } from "./types";
-import { TeamBadge } from "../../components/TeamBadge";
-import { findFollowedTeam } from "../../data/followedTeams";
-import { AppIcon } from "../../components/AppIcon";
+import { formatFanSafeNewsPublishedAt, newsIdentityProfilePath } from "./newsPresentation";
+import type {
+  FanSafeNewsItem,
+  NewsByline,
+} from "./types";
 
 type NewsCardProps = {
-  readonly item: NewsItem;
-  readonly source: NewsSource;
-  readonly discussionCount: number;
-  readonly reacted: boolean;
-  readonly onOpen: (trigger: HTMLButtonElement) => void;
-  readonly onReaction: () => void;
-  readonly onDiscussion: () => void;
-  readonly onShare: () => void;
+  readonly item: FanSafeNewsItem;
+  readonly onOutboundOpen: (item: FanSafeNewsItem) => void;
+  readonly onShare: (item: FanSafeNewsItem) => void;
+  readonly onDismiss?: (item: FanSafeNewsItem) => void;
 };
 
-export function NewsCard({
-  item,
-  source,
-  discussionCount,
-  reacted,
-  onOpen,
-  onReaction,
-  onDiscussion,
-  onShare,
-}: NewsCardProps) {
-  const team = item.teamIds.length === 1 ? findFollowedTeam(item.teamIds[0]!) : undefined;
+const sportIcons: Readonly<Record<string, AppIconName>> = {
+  baseball: "mdi-baseball-outline",
+  basketball: "mdi-basketball",
+  football: "mdi-football",
+  hockey: "mdi-hockey-puck",
+  golf: "trophy",
+  rugby: "mdi-rugby",
+  soccer: "mdi-soccer",
+  tennis: "trophy",
+};
 
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function Byline({ byline }: { readonly byline: NewsByline }) {
+  return byline.targetType && byline.targetId
+    ? <Link to={newsIdentityProfilePath(byline.targetType, byline.targetId)}>{byline.rawAttribution}</Link>
+    : <span>{byline.rawAttribution}</span>;
+}
+
+function NewsPreview({ item, onOutboundOpen }: { readonly item: FanSafeNewsItem; readonly onOutboundOpen: () => void }) {
+  const [failed, setFailed] = useState(false);
+  const sport = item.classifications.find((classification) => classification.targetType === "sport");
+  const icon = sportIcons[sport?.targetId.toLowerCase() ?? ""] ?? "newspaper";
+  if (item.preview && !failed) {
+    return (
+      <a className="news-card__image" href={item.destinationUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open preview for ${item.headline} at ${item.publisher.name}`} onClick={onOutboundOpen}>
+        <img src={item.preview.url} alt={item.preview.alt} referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      </a>
+    );
+  }
   return (
-    <article className="news-card">
+    <a className="news-card__image news-card__image--fallback" href={item.destinationUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${sport ? `${sport.displayName} News` : "News"}: ${item.headline} at ${item.publisher.name}`} onClick={onOutboundOpen}>
+      <AppIcon name={icon} />
+    </a>
+  );
+}
+
+export function NewsCard({ item, onOutboundOpen, onShare, onDismiss }: NewsCardProps) {
+  const typeLabel = item.itemKind === "podcast_episode" ? "Podcast" : "Written";
+  return (
+    <article className={`news-card news-card--${item.itemKind.replace("_", "-")}`}>
       <div className="news-card__open">
         <div className="news-card__copy">
           <div className="news-card__source-row">
-            <span className="news-source-avatar" aria-hidden="true">{source.initials}</span>
-            <strong>{source.name}</strong>
-            <span className="news-content-type">{item.contentType}</span>
-            {item.viewType === "external" ? <span className="news-external-label">External <AppIcon name="arrow-top-right-on-square" /></span> : null}
+            <span className="news-source-avatar" aria-hidden="true">{initials(item.publisher.name) || "N"}</span>
+            <strong>{item.publisher.name}</strong>
+            <span className="news-content-type">{typeLabel}</span>
+            <span className="news-external-label">Publisher <AppIcon name="arrow-top-right-on-square" /></span>
           </div>
-          <h2><button className="news-card__headline" type="button" aria-label={`Open ${item.headline}`} onClick={(event) => onOpen(event.currentTarget)}>{item.headline}</button></h2>
+          {item.show ? (
+            <p className="news-card__show">
+              <AppIcon name="sparkles" />
+              <Link to={newsIdentityProfilePath("show", item.show.id)}>{item.show.name}</Link>
+            </p>
+          ) : null}
+          <h2>
+            <a
+              className="news-card__headline"
+              href={item.destinationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => onOutboundOpen(item)}
+            >
+              {item.headline}
+            </a>
+          </h2>
           <p className="news-card__summary">{item.summary}</p>
           <p className="news-card__meta">
-            {item.byline ? `By ${item.byline} · ` : ""}{formatPublishedAt(item.publishedAt)}
+            {item.bylines.length ? (
+              <>
+                By {item.bylines.map((byline, index) => (
+                  <span key={`${byline.rawAttribution}-${index}`}>
+                    {index ? ", " : ""}<Byline byline={byline} />
+                  </span>
+                ))} · {" "}
+              </>
+            ) : null}
+            {formatFanSafeNewsPublishedAt(item.publishedAt, item.serverTime)}
           </p>
         </div>
-        {item.imageUrl ? (
-          <span className="news-card__image">
-            <img src={item.imageUrl} alt={item.imageAlt ?? ""} />
-          </span>
-        ) : team ? <span className="news-card__image news-card__image--team"><TeamBadge team={team} /></span> : null}
+        <NewsPreview item={item} onOutboundOpen={() => onOutboundOpen(item)} />
       </div>
-
       <NewsActionRow
         item={item}
-        discussionCount={discussionCount}
-        reacted={reacted}
-        variant="card"
-        onReaction={onReaction}
-        onDiscussion={onDiscussion}
-        onShare={onShare}
+        onOutboundOpen={() => onOutboundOpen(item)}
+        onShare={() => onShare(item)}
+        {...(onDismiss ? { onDismiss: () => onDismiss(item) } : {})}
       />
     </article>
   );

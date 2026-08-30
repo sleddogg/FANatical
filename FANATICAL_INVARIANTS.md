@@ -555,7 +555,7 @@ Why: this is the product's central promise. Any ranking layer converts FANatical
 
 **FAN-NEWS-17 — A contributor becomes followable when FANatical has a stable public identity, evidence that the identity genuinely produces journalism or news, and a sufficiently reliable way to monitor or retrieve future work.** Followability never depends on factual verification trust tiers. No article-count, cadence or popularity threshold is defined; if one is later required it is a material value under FAN-DEV-04.
 
-**FAN-NEWS-18 — FANatical is positive-selection based: fans receive journalism from identities they chose to follow. There is no separate negative-preference or block system competing with follow eligibility.** If a mute feature is later added, it is a temporary suspension of an existing follow, not a parallel eligibility system. No default mute duration is defined.
+**FAN-NEWS-18 — FANatical is positive-selection based: fans receive journalism from identities they chose to follow. There is no separate negative-preference or block system competing with follow eligibility.** Mute is a temporary suspension of an existing followed identity for 7 or 30 days from database `statement_timestamp()` and preserves that follow and its scopes; it is not a parallel eligibility system. Per-fan, per-Item Dismiss is permitted display suppression: it hides only that canonical Item for that fan, changes no follow or canonical fact, and Undo restores the Item at its original chronological position. Dismiss is not a block system and is unavailable on the zero-follow EXAMPLE card.
 
 **FAN-NEWS-19 — A corrected factual classification applies to the item itself.** If a correction makes an item newly eligible for a fan, it appears at its original chronological position using its original publication time. It is never surfaced artificially at the top of the feed merely because the correction happened later. Corrections never rewrite prior fan interactions and never fabricate seen-history.
 
@@ -656,7 +656,7 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 **FAN-DEV-03 — One implementation owner per overlapping change set.** During audited work, one builder owns each overlapping area. Other agents may review, test, audit or work independently on unrelated areas, but do not simultaneously rewrite the same work under review. · `G:DEV-03`
 
 **FAN-DEV-04 — Never invent material numbers.** Material thresholds, percentages, cadences, retry intervals, scoring bands, qualification requirements and other operating constants are never silently invented where they affect product behaviour or architecture. If a required material value is genuinely undecided, implementation stops for an explicit decision. · `G:DEV-04`
-*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; mute duration if mute is added; deletion retention policy; the approved identity process for award re-association; handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles.*
+*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; deletion retention policy; the approved identity process for award re-association; handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles.*
 
 **FAN-DEV-05 — Approval and verification proportional to blast radius.** Consequential hosted-state changes require explicit approval and post-change verification appropriate to their risk. Small, routine, reversible changes do not require the ceremony owed to database migrations, permissions, infrastructure, security or financial systems. · `G:DEV-05`
 
@@ -698,6 +698,16 @@ unless the disagreement independently meets the task-expansion bar.
 
 A reviewer is rewarded for preventing meaningful failures, not for maximising the
 number of additional tasks.
+
+**FAN-DEV-09 — Planning packages and review reports are process inputs, not repository authority.**
+
+Accepted outcomes from a temporary package or review land in the implementation,
+permanent proofs, `Fanatical build page.md`, this invariant register,
+`FANATICAL_BACKLOG.md`, or an explicitly approved durable audit brief. A
+temporary artifact may be removed only after each unresolved finding has such a
+durable home and each rejected finding has been reconciled against current
+evidence. Historical audit files are never bulk-deleted on assumption; each is
+swept individually under BL-031.
 
 ---
 
@@ -759,10 +769,9 @@ number of additional tasks.
 2. Fan Score decay threshold, cadence, percentage and formula (FAN-SCR-07).
 3. Rating revision and withdrawal mechanics (FAN-DEST-06).
 4. The News reaction set, and Poll creation, voting and moderation governance.
-5. Mute default duration and suspension semantics, if mute is added (FAN-NEWS-18).
-6. The privacy/retention policy defining "minimum award record" and "anonymized" (FAN-ACCT-04).
-7. The approved identity process for reclaiming historical awards (FAN-ACCT-04).
-8. Handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles (FAN-ACCT-08).
+5. The privacy/retention policy defining "minimum award record" and "anonymized" (FAN-ACCT-04).
+6. The approved identity process for reclaiming historical awards (FAN-ACCT-04).
+7. Handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles (FAN-ACCT-08).
 
 ---
 

@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import type { NewsItem, NewsSource } from "../news/types";
-import { formatPublishedAt } from "../news/newsFiltering";
+import type {
+  ArticleDiscussionItem,
+  ArticleDiscussionSource,
+} from "./articleDiscussionTypes";
+import { formatArticleDiscussionPublishedAt } from "./mockArticleDiscussionData";
 import { getThreadCommentCount } from "./FanbaseContext";
 import { formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
 import { reactionTypes } from "./ReactionPicker";
@@ -9,10 +12,9 @@ import type { DiscussionThread, ReactionType } from "./types";
 import { AppIcon } from "../../components/AppIcon";
 
 type ArticleDiscussionCardProps = {
-  readonly item: NewsItem;
-  readonly source: NewsSource | undefined;
+  readonly item: ArticleDiscussionItem;
+  readonly source: ArticleDiscussionSource | undefined;
   readonly thread: DiscussionThread | undefined;
-  readonly discussionPath: string;
   readonly onReact: (reaction: ReactionType) => void;
   readonly onReport: () => void;
 };
@@ -28,7 +30,6 @@ export function ArticleDiscussionCard({
   item,
   source,
   thread,
-  discussionPath,
   onReact,
   onReport,
 }: ArticleDiscussionCardProps) {
@@ -61,7 +62,7 @@ export function ArticleDiscussionCard({
         <h2>{item.headline}</h2>
         <p>{item.summary}</p>
         <div className="article-discussion-card__meta">
-          <span>{item.byline ? `By ${item.byline} · ` : ""}{formatPublishedAt(item.publishedAt)}</span>
+          <span>{item.byline ? `By ${item.byline} · ` : ""}{formatArticleDiscussionPublishedAt(item.publishedAt)}</span>
           <span>{commentCount} {commentCount === 1 ? "comment" : "comments"}</span>
           <span>{thread ? `Active ${formatFanbaseTime(thread.createdAt)}` : "New discussion"}</span>
           <button type="button" disabled={!thread} onClick={onReport}>{thread?.reported ? "Reported" : "Report"}</button>
@@ -92,7 +93,7 @@ export function ArticleDiscussionCard({
           ) : null}
         </div>
         <button type="button" onClick={() => setShareNotice("Sharing is represented as a local frontend placeholder.")}><AppIcon name="share" /><small>Share</small></button>
-        <Link to={`/news?item=${item.id}`} state={{ articleDiscussionPath: discussionPath }}><AppIcon name="newspaper" /><small>View News Item</small></Link>
+        <Link to="/news"><AppIcon name="newspaper" /><small>View News Item</small></Link>
       </div>
       <div className="article-discussion-card__notice" role="status" aria-live="polite">{shareNotice}</div>
     </article>

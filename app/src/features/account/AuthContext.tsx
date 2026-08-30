@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase/client";
 import { clearProfileMediaSignedUrls } from "../profileMedia/profileMediaSignedUrlCache";
+import { clearNewsDemoState } from "../news/newsDemoState";
 
 type SignUpInput = Readonly<{
   email: string;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const updateUser = (nextUser: User | null) => {
       const previousUserId = authenticatedUserId.current;
       if (previousUserId && previousUserId !== nextUser?.id) clearProfileMediaSignedUrls(previousUserId);
+      if (nextUser) clearNewsDemoState();
       authenticatedUserId.current = nextUser?.id ?? null;
       setUser(nextUser);
     };
@@ -61,12 +63,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) throw new Error("FANatical's account service is not configured.");
+    clearNewsDemoState();
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) throw error;
   }, []);
 
   const signUp = useCallback(async ({ email, password, displayName }: SignUpInput) => {
     if (!supabase) throw new Error("FANatical's account service is not configured.");
+    clearNewsDemoState();
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,

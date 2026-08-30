@@ -4,8 +4,11 @@ import { getGameThreadStatus, useFanbaseContext } from "./FanbaseContext";
 import { findFollowedTeam } from "../../data/followedTeams";
 import { pollScopeForFollowedTeam, pollsForScope } from "./polls";
 import type { FanbaseAreaId } from "./types";
-import { mockNewsItems } from "../news/mockNewsData";
-import { newsDiscussionScopeMatchesTeam, newsItemDiscussionScope } from "../news/newsDiscussionScope";
+import { articleDiscussionNewsItems } from "./mockArticleDiscussionData";
+import {
+  articleDiscussionScopeForItem,
+  articleDiscussionScopeMatchesTeam,
+} from "./articleDiscussionScope";
 import { AppIcon, type AppIconName } from "../../components/AppIcon";
 
 type FanbaseHubProps = {
@@ -30,8 +33,13 @@ export function FanbaseHub({ teamId, onOpenArea }: FanbaseHubProps) {
     const teamThreads = threads.filter((thread) => thread.teamId === teamId);
     const articleThreads = threads.filter((thread) => {
       if (thread.kind !== "article") return false;
-      const item = mockNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
-      return item ? newsDiscussionScopeMatchesTeam(thread.discussionScope ?? newsItemDiscussionScope(item), teamId) : false;
+      const item = articleDiscussionNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
+      return item
+        ? articleDiscussionScopeMatchesTeam(
+            thread.discussionScope ?? articleDiscussionScopeForItem(item),
+            teamId,
+          )
+        : false;
     });
     const liveGames = gameThreads.filter((game) => game.teamId === teamId && getGameThreadStatus(game) === "Live").length;
     const upcomingEvents = events.filter((event) => event.teamId === teamId && Date.parse(event.startsAt) > Date.now()).length;

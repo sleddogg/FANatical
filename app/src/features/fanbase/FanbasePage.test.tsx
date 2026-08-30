@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -565,34 +565,21 @@ describe("FANbase frontend", () => {
     expect(screen.getByText("Swipe or select a category to browse, rate, and celebrate how fans show up.")).toBeInTheDocument();
   });
 
-  it("opens News Discussion in the one linked Article Discussion and reflects the first comment count", async () => {
+  it("keeps the existing Article Discussion separate from Phase 4 publisher-opening News cards", async () => {
     const user = userEvent.setup();
-    renderRoute("/news");
+    const { router } = renderRoute("/fanbase?area=article-comments&item=patriots-camp-tempo");
 
-    const newsCardOpenButton = screen.getByRole("button", { name: "Open Audio notebook: Reading the Patriots defense before the snap" });
-    const newsCard = newsCardOpenButton.closest("article");
-    expect(newsCard).not.toBeNull();
-    await user.click(within(newsCard as HTMLElement).getByRole("button", { name: "Open FANbase Article Discussion" }));
-
-    expect(screen.getByRole("heading", { name: "Audio notebook: Reading the Patriots defense before the snap" })).toBeInTheDocument();
-    expect(screen.getByText(/Your first comment will create it/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Add to the conversation" }), "The secondary communication stood out to me.");
     await user.click(screen.getByRole("button", { name: "Post comment" }));
-    expect(screen.getByText("1 comment")).toBeInTheDocument();
+    expect(screen.getByText("The secondary communication stood out to me.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: /View News Item/i }));
-    const itemOverlay = await screen.findByRole("dialog", { name: "Audio notebook: Reading the Patriots defense before the snap" });
-    expect(within(itemOverlay).getByRole("button", { name: "Open FANbase Article Discussion" })).toHaveTextContent("1");
-    expect(within(itemOverlay).getByRole("button", { name: "Back to Discussion" })).toBeInTheDocument();
-
-    await user.click(within(itemOverlay).getByRole("button", { name: "Back to Discussion" }));
-    await waitFor(() => expect(screen.getByText("The secondary communication stood out to me.")).toBeInTheDocument());
-    expect(screen.getAllByText("The secondary communication stood out to me.")).toHaveLength(1);
-
-    await user.click(screen.getByRole("link", { name: /View News Item/i }));
-    await user.click(screen.getByRole("button", { name: "Close News item" }));
     expect(screen.getByRole("heading", { name: "News" })).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: /Audio notebook/i })).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/news");
+    expect(router.state.location.search).toBe("");
+    expect(screen.queryByRole("dialog", { name: /Patriots turn up/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Open FANbase Article Discussion/i })).not.toBeInTheDocument();
   });
 
   it("uses one compact Article Discussion card and places the composer before comments", async () => {

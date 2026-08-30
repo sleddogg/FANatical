@@ -607,6 +607,82 @@ select pg_temp.create_delivery(
   'https://phase3-b.example/wire/shared-event',
   pg_temp.id('ev_manifest_b'), pg_temp.id('ev_rep_b'), false
 );
+
+select pg_temp.remember('url_wire_a_nonpublic', public.admin_add_news_manifestation_url(
+  pg_temp.id('m_wire_a'), 'alternate',
+  'https://phase3-a.example/private/shared-event',
+  false, pg_temp.id('ev_manifest_a'), 'Synthetic non-public URL.'
+));
+select pg_temp.remember('url_wire_a_wrapper', public.admin_add_news_manifestation_url(
+  pg_temp.id('m_wire_a'), 'wrapper',
+  'https://phase3-a.example/track/shared-event',
+  false, pg_temp.id('ev_manifest_a'), 'Synthetic retained wrapper evidence.'
+));
+select pg_temp.assert_statement_rejected(
+  format(
+    'select public.admin_add_news_manifestation_url(%L::uuid, %L, %L, true, %L::uuid, %L)',
+    pg_temp.id('m_wire_a')::text,
+    'wrapper',
+    'https://phase3-a.example/track/public-wrapper',
+    pg_temp.id('ev_manifest_a')::text,
+    'A wrapper must never be public.'
+  ),
+  'news_manifestation_public_destination_kind_check',
+  'a tracking wrapper must not be recordable as a public destination'
+);
+select pg_temp.assert_statement_rejected(
+  format(
+    'select public.admin_add_news_manifestation_url(%L::uuid, %L, %L, true, %L::uuid, %L)',
+    pg_temp.id('m_wire_a')::text,
+    'redirect',
+    'https://phase3-a.example/redirect/public-redirect',
+    pg_temp.id('ev_manifest_a')::text,
+    'A redirect must never be public.'
+  ),
+  'news_manifestation_public_destination_kind_check',
+  'a redirect must not be recordable as a public destination'
+);
+select pg_temp.assert_statement_rejected(
+  format(
+    'select public.admin_set_news_representative_destination(%L::uuid, %L::uuid, %L::uuid, %L)',
+    pg_temp.id('item_wire')::text,
+    pg_temp.id('url_wire_a_nonpublic')::text,
+    pg_temp.id('ev_rep_a')::text,
+    'A non-public URL must be rejected.'
+  ),
+  'canonical or alternate public url',
+  'the existing representative-destination trigger must reject a non-public URL'
+);
+select pg_temp.assert_statement_rejected(
+  format(
+    'select public.admin_set_news_representative_destination(%L::uuid, %L::uuid, %L::uuid, %L)',
+    pg_temp.id('item_wire')::text,
+    pg_temp.id('url_wire_a_wrapper')::text,
+    pg_temp.id('ev_rep_a')::text,
+    'A wrapper URL must be rejected.'
+  ),
+  'canonical or alternate public url',
+  'the representative-destination trigger must reject retained wrapper evidence'
+);
+
+select pg_temp.create_delivery(
+  'm_unassigned_destination', 'url_unassigned_destination', null,
+  '88100000-0000-0000-0000-000000000001', 'written_article',
+  '2026-08-29 11:00:30+00', 'unassigned-destination-proof',
+  'https://phase3-a.example/articles/unassigned-destination',
+  pg_temp.id('ev_manifest_a'), pg_temp.id('ev_rep_a'), false
+);
+select pg_temp.assert_statement_rejected(
+  format(
+    'select public.admin_set_news_representative_destination(%L::uuid, %L::uuid, %L::uuid, %L)',
+    pg_temp.id('item_wire')::text,
+    pg_temp.id('url_unassigned_destination')::text,
+    pg_temp.id('ev_rep_a')::text,
+    'An unassigned manifestation must be rejected.'
+  ),
+  'currently assigned to the news item',
+  'the existing representative-destination trigger must reject a manifestation not currently assigned to the Item'
+);
 select pg_temp.remember('dedupe_wire', public.admin_record_news_deduplication(
   pg_temp.id('m_wire_a'), pg_temp.id('m_wire_b'), 'syndicated_copy',
   pg_temp.id('ev_dedupe_same'),
@@ -1074,7 +1150,7 @@ select pg_temp.assert_true(
     where news_item_id = pg_temp.id('item_wire') and is_current
   )
   and (
-    select count(*) = 2
+    select count(*) = 4
     from public.news_manifestation_urls
     where manifestation_id = pg_temp.id('m_wire_a')
   ),
@@ -1735,9 +1811,9 @@ select pg_temp.assert_true(
     from information_schema.tables
     where table_schema = 'public'
       and table_type = 'BASE TABLE'
-      and table_name ~ '^news_.*(monitor|worker|queue|fetch|follow|feed|discussion|rating|reaction|poll|notification)'
+      and table_name ~ '^news_.*(monitor|worker|queue|fetch|discussion|rating|reaction|poll|notification)'
   ),
-  'Phase 3 must not add monitoring, runtime, follows, personalized feeds, discussion, engagement, or notification tables'
+  'the Phase 3 content foundation must remain free of monitoring, runtime, discussion, engagement, and notification tables'
 );
 
 select pg_temp.assert_true(
