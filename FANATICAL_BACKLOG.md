@@ -391,6 +391,26 @@ silently re-date the Item.
 **Origin** — Phase 4 pre-build review backlog finding; reconciled 29 Aug 2026
 before removal of the temporary planning package.
 
+### BL-033
+**What** — Add the missing permanent person-split reselection proof for the
+split half of FAN-ATTR-05.
+**Why deferred** — Phase 4 retains the original person and merge decisions on
+each follow, excludes a follow whose recorded merge decision is no longer
+current, and reports `needs_reselection` through Following. Existing permanent
+proofs cover merge redirection and corrupt-graph recovery, but none performs a
+governed merge and later governed split while comparing follows created before
+and during the merged period. The split behavior is therefore enforced but
+unproven.
+**Trigger** — Before a person-split decision is used on hosted data, or before
+FAN-ATTR-05's split half is claimed proven.
+**Required at trigger** — REQUIRED: add a rollback-safe, real-role SQL proof
+through the governed decision path showing that a pre-merge unambiguous follow
+returns to its original person after the split, a follow created during the
+ambiguous merged period is removed from feed eligibility and marked for
+reselection, neither follow is silently reassigned, and the fan can still
+manage the exact fan-owned follow.
+**Origin** — Phase 4 documentation follow-up, 30 Aug 2026; `FAN-ATTR-05`.
+
 ---
 
 ## Done

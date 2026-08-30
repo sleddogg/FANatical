@@ -306,6 +306,11 @@ Enforcement: governed explicit/supporting evidence classes and automatic Resolut
 Proof: `news_identity_foundation.sql` proves visible public evidence resolves despite contradictory hidden supporting metadata, while visible conflict routes to review
 Status: enforced + tested locally for Phase 2 identity Resolution; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
 
+**FAN-ATTR-05 — Follows survive person merges and splits without silent reassignment.** On merge, follows redirect to the canonical identity. On a later split, follows that were unambiguous when created are restored from provenance; fans who followed during the ambiguous merged period are prompted to choose, never silently assigned. Enough durable provenance must be retained to reconstruct fan intent; no specific storage mechanism is mandated. · `C:ATTR-05` `G:NEWS-16`
+Enforcement: original person, canonical person at follow time, and merge-decision provenance are retained on each Author follow; current canonical resolution redirects merged follows; a recorded merge decision that is no longer current removes the follow from feed eligibility and makes `get_my_news_following()` report `needs_reselection` — `202608290005`, `202608290006`
+Proof: `news_phase4_entry_hardening.sql` proves "an existing Author follow must resolve as one effective canonical follow after merge" and "a merge must not permit a second effective follow of the canonical Author." No permanent governed person-split regression proves the split half; see BL-033.
+Status: enforced but unproven; the merge half is proven and the split half remains unproven under BL-033
+
 ## Versioning and history
 
 **FAN-VER-03 — Information-lineage and agent-policy version content is immutable and its history is never deleted.**
@@ -562,8 +567,6 @@ Why: this is the product's central promise. Any ranking layer converts FANatical
 ## Attribution
 
 **FAN-ATTR-01 — Historical attribution stays attached to the item as published.** Later publisher moves, identity merges, host changes or relationship corrections never rewrite who the item was publicly attributed to at publication time. · `C:ATTR-01` `G:ATTR-03`
-
-**FAN-ATTR-05 — Follows survive person merges and splits without silent reassignment.** On merge, follows redirect to the canonical identity. On a later split, follows that were unambiguous when created are restored from provenance; fans who followed during the ambiguous merged period are prompted to choose, never silently assigned. Enough durable provenance must be retained to reconstruct fan intent; no specific storage mechanism is mandated. · `C:ATTR-05` `G:NEWS-16`
 
 ## Deduplication and syndication
 
@@ -913,13 +916,13 @@ is the only safe way to translate a reference from either draft.
 |---|---|
 | Guaranteed — enforced + tested | 28 |
 | Claimed — locally tested, independent verification pending | 12 |
-| Claimed — enforced but unproven or only partially proved | 16 |
+| Claimed — enforced but unproven or only partially proved | 17 |
 | Claimed — documented only or not universally enforced | 17 |
 | Claimed — unclear | 1 |
-| **Claimed total** | **46** |
-| Future — settled, unbuilt | 45 |
-| Process invariants | 7 |
-| **Total invariants** | **126** |
+| **Claimed total** | **47** |
+| Future — settled, unbuilt | 44 |
+| Process invariants | 9 |
+| **Total invariants** | **128** |
 | Current behavior / decision-needed items (not invariants) | 4 |
 | Open enforcement gaps | 10 |
 | Closed locally / hosted unknown gaps | 5 |

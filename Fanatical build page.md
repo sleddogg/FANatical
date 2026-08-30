@@ -699,12 +699,16 @@ News-domain configuration defines the explicit contributor identities available
 in the demo universe. Anonymous callers cannot add arbitrary identities to that
 universe.
 
-Within that configured universe, visitors may temporarily follow or unfollow
-identities and change temporary filters in isolated browser-local state. Demo
-choices are never persisted. Sign-in or registration discards all Demo state and
-writes none of it to the real account. Durable follows, scopes, mute, Dismiss,
-and every other account-owned action require sign-in. Anonymous reads expose only
-the fan-safe fields required to render the configured demo.
+On first signed-out Demo entry, every identity in the current governed Demo
+universe begins selected in isolated browser-local state. Visitors may change
+those selections and temporary filters locally, but the selected set is always
+limited to and cannot exceed the current governed Demo universe. Demo selections
+create no real follows and are never persisted. Sign-in or registration discards
+all Demo selections and other Demo state rather than converting them into
+account follows, and writes none of it to the real account. Durable follows,
+scopes, mute, Dismiss, and every other account-owned action require sign-in.
+Anonymous reads expose only the fan-safe fields required to render the configured
+demo.
 
 Anonymous contributor profiles and contributor-item lists are an intentional
 governed public boundary. They expose only the current stable public contributor
