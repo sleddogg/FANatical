@@ -10,6 +10,7 @@ vi.mock("../../lib/supabase/client", () => ({
 
 import {
   loadNewsDemoFeed,
+  loadNewsNavigation,
   loadPersonalNewsFeed,
   recordNewsOutboundOpen,
 } from "./newsRepository";
@@ -91,6 +92,41 @@ describe("Phase 4 News repository", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("record_news_outbound_open", {
       news_item_public_id_value: "news-item-one",
       destination_url_value: "https://publisher.example/item",
+    });
+  });
+
+  it("pages the canonical News navigation beyond the PostgREST row cap", async () => {
+    const firstPage = Array.from({ length: 1_000 }, (_, index) => ({
+      filter_type: "team",
+      target_id: `team-${index}`,
+      display_name: `Team ${index}`,
+      sport_id: "hockey",
+    }));
+    const range = vi.fn()
+      .mockResolvedValueOnce({ data: firstPage, error: null })
+      .mockResolvedValueOnce({
+        data: [{
+          filter_type: "competition",
+          target_id: "hockey-nhl",
+          display_name: "NHL",
+          sport_id: "hockey",
+        }],
+        error: null,
+      });
+    mocks.rpc.mockReturnValue({ range });
+
+    const result = await loadNewsNavigation();
+
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, "get_news_navigation");
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "get_news_navigation");
+    expect(range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(range).toHaveBeenNthCalledWith(2, 1_000, 1_999);
+    expect(result).toHaveLength(1_001);
+    expect(result.at(-1)).toEqual({
+      filterType: "competition",
+      targetId: "hockey-nhl",
+      displayName: "NHL",
+      sportId: "hockey",
     });
   });
 });

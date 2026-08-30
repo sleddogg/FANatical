@@ -1,4 +1,4 @@
-import type { Json } from "../../lib/supabase/database.types";
+import type { Database, Json } from "../../lib/supabase/database.types";
 import { requireSupabase } from "../../lib/supabase/client";
 import type {
   FanSafeNewsItem,
@@ -16,6 +16,7 @@ import type {
 } from "./types";
 
 type UnknownRecord = Record<string, unknown>;
+const newsNavigationPageSize = 1_000;
 
 function asRecord(value: unknown): UnknownRecord | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -257,9 +258,17 @@ export async function undoNewsItemDismissal(newsItemId: string) {
 }
 
 export async function loadNewsNavigation(): Promise<readonly NewsNavigationEntry[]> {
-  const { data, error } = await requireSupabase().rpc("get_news_navigation");
-  if (error) throw serviceError("News filters could not be loaded.", error);
-  return (data ?? []).flatMap((row) => {
+  const rows: Database["public"]["Functions"]["get_news_navigation"]["Returns"] = [];
+  for (let offset = 0; ; offset += newsNavigationPageSize) {
+    const { data, error } = await requireSupabase()
+      .rpc("get_news_navigation")
+      .range(offset, offset + newsNavigationPageSize - 1);
+    if (error) throw serviceError("News filters could not be loaded.", error);
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < newsNavigationPageSize) break;
+  }
+  return rows.flatMap((row) => {
     const filterType = row.filter_type;
     if (filterType !== "sport" && filterType !== "competition" && filterType !== "team") return [];
     return [{
