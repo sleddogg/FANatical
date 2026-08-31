@@ -411,6 +411,26 @@ reselection, neither follow is silently reassigned, and the fan can still
 manage the exact fan-owned follow.
 **Origin** — Phase 4 documentation follow-up, 30 Aug 2026; `FAN-ATTR-05`.
 
+### BL-034
+**What** — Populate and curate the hosted, staff-governed signed-out News Demo
+universe.
+**Why deferred** — Phase 4 built and deployed the governed Demo machinery, but
+hosted currently holds no Demo configuration version and no selected Demo
+identities. The safe fan-facing result is "Demo Mode is not configured yet"
+rather than a fallback to fake, mock or local News content. Brad does not need
+the public Demo curated yet and wants to consider it alongside the broader
+signed-out FANatical experience once more surfaces such as Quiz, FANbase and
+Cheer are further developed.
+**Trigger** — When the broader signed-out/public FANatical experience is being
+prepared for external beta, public evaluation, launch, or another situation
+where signed-out visitors are expected to see a representative News experience.
+**Required at trigger** — REQUIRED: choose and staff-approve the real News
+identities and Items intended for the Demo universe, populate the governed
+hosted configuration through the approved News/Admin path, and verify that
+anonymous visitors can see only that configured fan-safe universe.
+**Origin** — Phase 4 production closeout, 31 Aug 2026. The currently empty
+hosted Demo universe is deliberate configuration state, not a Phase 4 defect.
+
 ---
 
 ## Done

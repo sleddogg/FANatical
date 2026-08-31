@@ -9,10 +9,23 @@
 - Local `production-foundation` is synchronized with `origin/production-foundation`.
 - The stale `origin/main` reference has been pruned.
 - `fanaticalpeople.com` is live and points to the `fanatical-web` Cloudflare Worker.
-- Cloudflare build configuration:
+- Cloudflare Workers Builds configuration for the public `fanatical-web` Worker:
+  - Production branch: `production-foundation`
   - Root: `app`
   - Build: `npm run build`
-  - Deploy: `npm run deploy:web`
+  - Deploy: `npx wrangler versions upload --config wrangler.web.jsonc`
+- A Git push to `production-foundation` therefore builds and uploads a saved
+  Worker version without automatically sending production traffic to it.
+- Normal production promotion activates that already-uploaded version through the
+  Cloudflare Deployments interface rather than rebuilding the commit.
+- `npm run deploy:web` still runs `wrangler deploy` and immediately activates a
+  freshly built version. It remains an explicit rebuild-and-deploy command and is
+  not the normal release or promotion path.
+- Rollback restores a previously known-good saved version through Cloudflare
+  Deployments. Do not rebuild historical code merely to perform a normal frontend
+  rollback.
+- This entry describes the public `fanatical-web` Worker only. The
+  `fanatical-admin` Workers Builds configuration is unchanged.
 - Required Cloudflare build variables are:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -51,6 +64,7 @@ Do not assume the user is a programmer. Explain approvals or decisions in plain 
 - If the required migration is pending remotely, stop and request approval to apply it through the normal Supabase migration workflow.
 - After applying it, verify the hosted schema and all relevant RLS policies, functions, constraints, and other introduced backend dependencies.
 - A local migration file alone does not make a feature complete. Verify new dependencies are active in the environment where the feature is tested.
+- Before applying hosted migrations that precede frontend promotion, ensure they remain compatible with both the currently active frontend and the immediately previous rollback-capable frontend; see `docs/production-deployment.md`.
 
 ## Review Scope and Deferral
 

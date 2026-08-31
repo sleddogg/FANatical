@@ -6,7 +6,7 @@ FANatical uses two Cloudflare Workers Static Assets projects built by Workers Bu
 
 | Worker | Domains | Build command | Deploy command | Static assets | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `fanatical-web` | `fanaticalpeople.com`, `app.fanaticalpeople.com` | `npm run build` | `npm run deploy:web` | `app/dist` | The same responsive fan application for browser, mobile web, and the installable-web foundation. |
+| `fanatical-web` | `fanaticalpeople.com`, `app.fanaticalpeople.com` | `npm run build` | `npx wrangler versions upload --config wrangler.web.jsonc` | `app/dist` | The same responsive fan application for browser, mobile web, and the installable-web foundation. |
 | `fanatical-admin` | `admin.fanaticalpeople.com` | `npm run build:admin` | `npm run deploy:admin` | `app/dist-admin` | Private staff shell with no fan-facing navigation and no public account creation. |
 
 The two builds share the public Supabase client and authenticated account session model. Admin access additionally requires an active row in `public.staff_roles`; RLS permits a signed-in user to read only their own active assignment. Browser clients have no insert, update, or delete permission on this table. Future admin data mutations must also call RLS-protected tables or security-definer RPCs that check `public.has_staff_access(...)`.
@@ -25,9 +25,9 @@ Use these exact project settings:
 | Production branch | `production-foundation` | `production-foundation` |
 | Root directory | `app` | `app` |
 | Build command | `npm run build` | `npm run build:admin` |
-| Deploy command | `npm run deploy:web` | `npm run deploy:admin` |
+| Deploy command | `npx wrangler versions upload --config wrangler.web.jsonc` | `npm run deploy:admin` |
 
-Workers Builds installs dependencies before the build. Wrangler is pinned in `package.json`, and each deploy script selects its matching Wrangler configuration. The configs use Workers Static Assets with `not_found_handling: "single-page-application"`; no Worker runtime script is needed for this client-only application.
+Workers Builds installs dependencies before the build. Wrangler is pinned in `package.json`. The public Worker's Workers Builds deploy command names `wrangler.web.jsonc` directly and uploads a saved version without activating it; the admin Worker still runs its `deploy:admin` script, which selects `wrangler.admin.jsonc`. The configs use Workers Static Assets with `not_found_handling: "single-page-application"`; no Worker runtime script is needed for this client-only application.
 
 For both **Production** and any intentionally enabled **Preview** environment, configure:
 
@@ -49,6 +49,35 @@ After both Workers deploy successfully to their `workers.dev` test addresses, ad
 3. Let Cloudflare create/validate only the required web-host records and managed HTTPS certificates.
 
 Do not modify or replace `auth.fanaticalpeople.com`, Microsoft 365/Exchange MX records, SPF, DKIM, DMARC, Resend records, or any other mail/authentication records. Web hosting DNS changes are additive only. Cloudflare manages HTTPS after the custom domains become active.
+
+## Production release and rollback
+
+This section describes the public `fanatical-web` Worker. The `fanatical-admin` Worker is unchanged and still deploys through its own `deploy:admin` script.
+
+### Normal public-web release
+
+1. Push the accepted commit to `production-foundation`.
+2. Cloudflare Workers Builds builds it and uploads a saved Worker version. No production traffic moves to that version automatically.
+3. Confirm in the Worker's **Deployments** panel that the uploaded version corresponds to the expected commit and build, and that it is not yet active.
+4. Verify that uploaded version as appropriate for the change.
+5. Deliberately promote that exact uploaded version through Cloudflare **Deployments**.
+6. Perform the production smoke check.
+
+Promotion activates the version that was already built and verified. Do not rebuild the commit in order to promote it.
+
+`npm run deploy:web` is a different operation. It runs a fresh `wrangler deploy` and immediately activates the resulting version. It is not the normal promotion mechanism and should be used only when an immediate rebuild-and-deploy is explicitly intended.
+
+### Rollback
+
+Open the Worker in Cloudflare, go to **Deployments**, select a previously known-good saved version, and use **Rollback**.
+
+Rollback changes frontend traffic only.
+
+### Supabase and frontend rollback asymmetry
+
+A Cloudflare frontend rollback does not reverse hosted Supabase migrations. Any migration deployed before a frontend promotion must therefore remain compatible with both the currently active frontend and the immediately previous rollback-capable frontend version.
+
+Do not rely on frontend rollback to undo database or schema changes.
 
 ## Supabase production configuration
 
