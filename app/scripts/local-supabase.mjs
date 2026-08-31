@@ -2,6 +2,12 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createClient } from "@supabase/supabase-js";
+import { requireLoopbackSupabaseApiUrl } from "./local-supabase-safety.mjs";
+import {
+  ensureLocalAcceptanceDataset,
+  localAcceptanceFan,
+} from "./local-acceptance-fixtures.mjs";
 
 const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repositoryDirectory = resolve(appDirectory, "..");
@@ -78,6 +84,115 @@ function printSafeStatus(status) {
   console.log("Browser credentials were refreshed in .env.development.local (values hidden).");
 }
 
+function localClient(url, key) {
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}
+
+function runLocalSql(sql) {
+  const result = spawnSync(
+    "docker",
+    ["exec", "-i", "supabase_db_fanatical-local", "psql", "-U", "postgres", "-d", "postgres", "-At", "-v", "ON_ERROR_STOP=1", "-c", sql],
+    {
+      cwd: repositoryDirectory,
+      encoding: "utf8",
+      maxBuffer: 2 * 1024 * 1024,
+    },
+  );
+  if (result.error) throw new Error(`Could not run loopback-only fixture bootstrap SQL: ${result.error.message}`);
+  if (result.status !== 0) {
+    const detail = redact([result.stdout, result.stderr].filter(Boolean).join("\n") || "Local fixture bootstrap SQL failed.");
+    throw new Error(detail.trim());
+  }
+  return result.stdout.trim();
+}
+
+function requireUuid(value) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+    throw new Error("The local acceptance fan has an invalid user ID.");
+  }
+  return value;
+}
+
+function removeTemporaryFixtureAuthority(userIdValue) {
+  const userId = requireUuid(userIdValue);
+  runLocalSql(`do $fixture$ begin delete from public.staff_roles where user_id = '${userId}'::uuid; if exists (select 1 from public.staff_roles where user_id = '${userId}'::uuid) then raise exception 'Temporary fixture authority was not removed'; end if; end $fixture$;`);
+}
+
+function removeAcceptanceFixtureAuthorityResidue() {
+  const email = localAcceptanceFan.email.replaceAll("'", "''");
+  runLocalSql(`do $fixture$ begin delete from public.staff_roles where user_id in (select id from auth.users where lower(email) = lower('${email}')); if exists (select 1 from public.staff_roles role join auth.users auth_user on auth_user.id = role.user_id where lower(auth_user.email) = lower('${email}')) then raise exception 'Acceptance fixture authority residue was not removed'; end if; end $fixture$;`);
+}
+
+function grantTemporaryFixtureAuthority(userIdValue) {
+  const userId = requireUuid(userIdValue);
+  runLocalSql(`do $fixture$ begin if exists (select 1 from public.staff_roles where user_id = '${userId}'::uuid) then raise exception 'Stale fixture authority was not removed before grant'; end if; insert into public.staff_roles(user_id, role, permissions, is_active) values ('${userId}'::uuid, 'admin', array[]::text[], true); end $fixture$;`);
+}
+
+async function provisionLocalAcceptanceFan(status, { resetBaseline = false } = {}) {
+  const apiUrl = requireLoopbackSupabaseApiUrl(status.get("API_URL"));
+  const publicKey = status.get("PUBLISHABLE_KEY") ?? status.get("ANON_KEY");
+  const serviceKey = status.get("SECRET_KEY") ?? status.get("SERVICE_ROLE_KEY");
+  if (!publicKey || !serviceKey) throw new Error("Local Supabase did not report the keys needed for the acceptance fixture.");
+
+  const admin = localClient(apiUrl, serviceKey);
+  const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (listed.error) throw new Error(`Could not inspect the local acceptance fan: ${listed.error.message}`);
+  let existing = listed.data.users.find((candidate) => candidate.email?.toLowerCase() === localAcceptanceFan.email);
+
+  if (resetBaseline && existing) {
+    const removed = await admin.auth.admin.deleteUser(existing.id);
+    if (removed.error) throw new Error(`Could not reset the local acceptance fan: ${removed.error.message}`);
+    existing = undefined;
+  }
+
+  const fixtureResult = existing
+    ? await admin.auth.admin.updateUserById(existing.id, {
+        password: localAcceptanceFan.password,
+        email_confirm: true,
+        ban_duration: "none",
+      })
+    : await admin.auth.admin.createUser({
+        email: localAcceptanceFan.email,
+        password: localAcceptanceFan.password,
+        email_confirm: true,
+        user_metadata: { display_name: localAcceptanceFan.displayName },
+      });
+  if (fixtureResult.error) throw new Error(`Could not prepare the local acceptance fan: ${fixtureResult.error.message}`);
+
+  await ensureLocalAcceptanceDataset({
+    apiUrl,
+    publicKey,
+    serviceKey,
+    userId: fixtureResult.data.user.id,
+    removeTemporaryAuthority: removeTemporaryFixtureAuthority,
+    grantTemporaryAuthority: grantTemporaryFixtureAuthority,
+  });
+
+  const verifier = localClient(apiUrl, publicKey);
+  const verified = await verifier.auth.signInWithPassword({
+    email: localAcceptanceFan.email,
+    password: localAcceptanceFan.password,
+  });
+  if (verified.error || verified.data.user?.email !== localAcceptanceFan.email) {
+    throw new Error(`Local acceptance fan password verification failed${verified.error ? `: ${verified.error.message}` : "."}`);
+  }
+  const signedOut = await verifier.auth.signOut();
+  if (signedOut.error) throw new Error(`Could not close the local acceptance verification session: ${signedOut.error.message}`);
+  console.log(`Local acceptance fan is ready: ${localAcceptanceFan.email}`);
+}
+
+async function ensureLocalAcceptanceFan(status, options = {}) {
+  requireLoopbackSupabaseApiUrl(status.get("API_URL"));
+  removeAcceptanceFixtureAuthorityResidue();
+  try {
+    return await provisionLocalAcceptanceFan(status, options);
+  } finally {
+    removeAcceptanceFixtureAuthorityResidue();
+  }
+}
+
 function runSqlTests() {
   const testsDirectory = resolve(repositoryDirectory, "supabase/tests");
   const testFiles = readdirSync(testsDirectory)
@@ -111,13 +226,17 @@ function runSqlTests() {
 try {
   if (action === "start") {
     runSupabase(["start"]);
-    printSafeStatus(refreshLocalEnvironment());
+    const status = refreshLocalEnvironment();
+    await ensureLocalAcceptanceFan(status);
+    printSafeStatus(status);
   } else if (action === "stop") {
     runSupabase(["stop"]);
     console.log("FANatical local Supabase stopped. Local data was preserved.");
   } else if (action === "reset") {
     runSupabase(["db", "reset", "--local"]);
-    printSafeStatus(refreshLocalEnvironment());
+    const status = refreshLocalEnvironment();
+    await ensureLocalAcceptanceFan(status, { resetBaseline: true });
+    printSafeStatus(status);
     console.log("The local database was rebuilt from every repository migration.");
   } else if (action === "status") {
     printSafeStatus(refreshLocalEnvironment());

@@ -509,7 +509,7 @@ Still to define:
 
 The selected team is the default app context.
 
-News may use the currently selected Team as its initial temporary context and for onboarding, Add to Feed discovery, and relevant News-identity suggestions. Global Team context does not create a News follow or make otherwise-unfollowed journalism eligible for the personal News feed.
+For a signed-in fan, News may use the authenticated fan's selected Team as its initial temporary context and for onboarding, Add to Feed discovery, and relevant News-identity suggestions. Signed-out Demo News instead initializes its temporary filter at **All Demo News**, independently of global Team context. Global Team context does not create a News follow or make otherwise-unfollowed journalism eligible for the personal News feed.
 
 News uses its own temporary filters, which may include:
 
@@ -669,7 +669,7 @@ The required order is:
 
 Global FANatical Team follows and selected Team context remain application-wide preferences.
 
-News uses separate temporary navigation and filter state. Entering News through a Team may establish the initial temporary News context, but changing that News filter must not mutate the rest of FANatical's selected/global Team state.
+News uses separate temporary navigation and filter state. For a signed-in fan, entering News through a Team may establish the initial temporary News context, but changing that News filter must not mutate the rest of FANatical's selected/global Team state. Signed-out Demo News does not inherit that Team context on entry; its temporary filter initializes at **All Demo News**.
 
 For example, a Manchester United fan may enter through Manchester United and temporarily filter eligible News to Champions League without changing the rest of the app's Manchester United context.
 
@@ -698,6 +698,9 @@ not use a shared authenticated dummy account. A versioned, staff-governed
 News-domain configuration defines the explicit contributor identities available
 in the demo universe. Anonymous callers cannot add arbitrary identities to that
 universe.
+
+On signed-out entry, Demo News initializes its temporary filter at **All Demo
+News**, independently of the global selected Team context.
 
 On first signed-out Demo entry, every identity in the current governed Demo
 universe begins selected in isolated browser-local state. Visitors may change

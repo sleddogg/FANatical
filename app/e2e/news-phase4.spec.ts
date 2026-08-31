@@ -318,7 +318,11 @@ async function expectNoHorizontalOverflow(page: Page) {
 async function createSignedInFan(page: Page, viewportName: string) {
   const email = `${browserUserPrefix}${viewportName}@fanatical.invalid`;
   await page.addInitScript(() => {
-    window.localStorage.setItem("fanatical.selected-team-id", "edmonton-oilers");
+    window.localStorage.setItem(
+      "fanatical.followed-team-ids.v1",
+      JSON.stringify(["hockey-nhl-edmonton-oilers"]),
+    );
+    window.localStorage.setItem("fanatical.selected-team-id", "hockey-nhl-edmonton-oilers");
   });
   await page.goto("/profile");
   await page.getByRole("button", { name: "Create Account", exact: true }).first().click();
@@ -352,6 +356,7 @@ for (const viewport of viewports) {
       await page.goto("/news");
 
       await expect(page.getByText("Demo mode — sign in to save your feed.")).toBeVisible();
+      await expect(page.locator(".news-header__title p")).toHaveText("All Demo News");
       await expect(page.getByRole("heading", { name: writtenHeadline })).toBeVisible();
       await expect(page.getByRole("heading", { name: podcastHeadline })).toBeVisible();
       await expect(page.getByRole("button", { name: /Dismiss / })).toHaveCount(0);
@@ -387,6 +392,7 @@ for (const viewport of viewports) {
       await page.goto("/news");
 
       await expect(page.getByRole("heading", { name: writtenHeadline })).toBeVisible();
+      await expect(page.locator(".news-header__title p")).toHaveText("Edmonton Oilers");
       await expect(page.getByText("Demo mode — sign in to save your feed.")).toHaveCount(0);
 
       await page.getByRole("button", { name: "Add to Feed" }).first().click();

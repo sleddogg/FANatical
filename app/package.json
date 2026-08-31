@@ -12,6 +12,7 @@
     "backend:status": "node scripts/local-supabase.mjs status",
     "backend:test": "node scripts/local-supabase.mjs test",
     "backend:verify": "node scripts/verify-local-supabase.mjs",
+    "backend:acceptance:reset-proof": "node scripts/verify-local-acceptance.mjs",
     "backend:types": "node scripts/generate-supabase-types.mjs",
     "build": "tsc -b && vite build",
     "build:admin": "tsc -b && vite build --mode admin",

@@ -623,8 +623,27 @@ select pg_temp.assert_true(
       'Phase 4 Hockey Show', 'Phase 4 Wire Service'
     ]::text[]
     from public.search_news_follow_targets()
+    where display_name in (
+      'Alex Canonical', 'Alex Original',
+      'Phase 4 Hockey Show', 'Phase 4 Wire Service'
+    )
   ),
   'unsearched Add to Feed discovery must be alphabetical and individual-only'
+);
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.search_news_follow_targets() target
+    where not (
+      (target.target_type = 'author'
+        and target.target_id ~ '^author-[0-9a-f]{32}$')
+      or (target.target_type = 'organization'
+        and target.target_id ~ '^organization-[0-9a-f]{32}$')
+      or (target.target_type = 'show'
+        and target.target_id ~ '^show-[0-9a-f]{32}$')
+    )
+  ),
+  'the complete Add to Feed RPC contract must never expose a publication, publisher-follow, Follow All, or other aggregate target shape'
 );
 select pg_temp.assert_true(
   (
@@ -643,6 +662,7 @@ select pg_temp.assert_true(
     from public.search_news_follow_targets(
       null, 'hockey-nhl-edmonton-oilers'
     )
+    where display_name in ('Alex Original', 'Phase 4 Wire Service')
   ),
   'Team discovery must resolve legacy Team IDs and list credited identities individually without Follow All'
 );

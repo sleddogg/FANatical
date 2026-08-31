@@ -7,6 +7,7 @@ type FilterPanel = "root" | "team" | "competition" | "sport";
 
 type NewsFilterMenuProps = {
   readonly currentFilter: NewsTemporaryFilter;
+  readonly allFilter: Extract<NewsTemporaryFilter, { kind: "all" }>;
   readonly navigation: readonly NewsNavigationEntry[];
   readonly onApply: (filter: NewsTemporaryFilter) => void;
   readonly onClose: () => void;
@@ -21,6 +22,7 @@ const panelTitles: Readonly<Record<FilterPanel, string>> = {
 
 export function NewsFilterMenu({
   currentFilter,
+  allFilter,
   navigation,
   onApply,
   onClose,
@@ -96,8 +98,11 @@ export function NewsFilterMenu({
             <button type="button" onClick={() => setPanel("sport")}>
               <span><strong>Sport</strong><small>Temporarily combine eligible News in one Sport</small></span><AppIcon name="chevron-right" />
             </button>
-            <button type="button" aria-pressed={currentFilter.kind === "all"} onClick={() => onApply({ kind: "all", displayName: "All Followed News" })}>
-              <span><strong>All Followed News</strong><small>Everything that qualifies through your follows</small></span>
+            <button type="button" aria-pressed={currentFilter.kind === "all"} onClick={() => onApply(allFilter)}>
+              <span>
+                <strong>{allFilter.displayName}</strong>
+                <small>{allFilter.displayName === "All Demo News" ? "Everything selected from the governed Demo universe" : "Everything that qualifies through your follows"}</small>
+              </span>
               {currentFilter.kind === "all" ? <AppIcon name="check" /> : <AppIcon name="chevron-right" />}
             </button>
           </div>

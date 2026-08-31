@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppIcon, type AppIconName } from "../../components/AppIcon";
 import { TeamBadge } from "../../components/TeamBadge";
@@ -52,10 +52,20 @@ const sportIcons: Readonly<Record<string, AppIconName>> = {
   tennis: "trophy",
 };
 
-function initialFilter(teamId: string | null, teamName: string): NewsTemporaryFilter {
-  return teamId
+type NewsFilterSelection = Readonly<{
+  userId: string | null;
+  followsTeamContext: boolean;
+  value: NewsTemporaryFilter;
+}>;
+
+function allNewsFilter(signedIn: boolean): Extract<NewsTemporaryFilter, { kind: "all" }> {
+  return { kind: "all", displayName: signedIn ? "All Followed News" : "All Demo News" };
+}
+
+function initialFilter(signedIn: boolean, teamId: string | null, teamName: string): NewsTemporaryFilter {
+  return signedIn && teamId
     ? { kind: "team", targetId: teamId, displayName: teamName }
-    : { kind: "all", displayName: "All Followed News" };
+    : allNewsFilter(signedIn);
 }
 
 function NewsLoadingState() {
@@ -109,8 +119,22 @@ export function NewsPage() {
   const { configured, loading: authLoading, user } = useAuth();
   const { selectedTeam } = useTeamContext();
   const theme = useAppTheme();
+  const signedIn = Boolean(user);
+  const authUserId = user?.id ?? null;
   const selectedTeamPublicId = selectedTeam.officialTeamId;
-  const [filter, setFilter] = useState<NewsTemporaryFilter>(() => initialFilter(selectedTeamPublicId, selectedTeam.name));
+  const [filterSelection, setFilterSelection] = useState<NewsFilterSelection>(() => ({
+    userId: authUserId,
+    followsTeamContext: signedIn,
+    value: initialFilter(signedIn, selectedTeamPublicId, selectedTeam.name),
+  }));
+  const authUserIdRef = useRef(authUserId);
+  const contextFilter = useMemo(
+    () => initialFilter(signedIn, selectedTeamPublicId, selectedTeam.name),
+    [selectedTeam.name, selectedTeamPublicId, signedIn],
+  );
+  const filter = filterSelection.userId !== authUserId || (signedIn && filterSelection.followsTeamContext)
+    ? contextFilter
+    : filterSelection.value;
   const [navigation, setNavigation] = useState<readonly NewsNavigationEntry[]>([]);
   const [following, setFollowing] = useState<readonly NewsFollowingEntry[]>([]);
   const [demoUniverse, setDemoUniverse] = useState<readonly NewsFollowTarget[]>([]);
@@ -126,7 +150,6 @@ export function NewsPage() {
   const filterTriggerRef = useRef<HTMLButtonElement>(null);
   const addToFeedTriggerRef = useRef<HTMLButtonElement>(null);
   const pendingDismissalsRef = useRef(new Map<string, Promise<void>>());
-  const signedIn = Boolean(user);
 
   const closeFilter = useCallback(() => {
     setFilterOpen(false);
@@ -137,6 +160,16 @@ export function NewsPage() {
     setAddToFeedOpen(false);
     window.requestAnimationFrame(() => addToFeedTriggerRef.current?.focus());
   }, []);
+
+  useEffect(() => {
+    if (authLoading || authUserIdRef.current === authUserId) return;
+    authUserIdRef.current = authUserId;
+    setFilterSelection({
+      userId: authUserId,
+      followsTeamContext: signedIn,
+      value: initialFilter(signedIn, selectedTeamPublicId, selectedTeam.name),
+    });
+  }, [authLoading, authUserId, selectedTeam.name, selectedTeamPublicId, signedIn]);
 
   useEffect(() => {
     if (authLoading || !configured) return;
@@ -283,7 +316,7 @@ export function NewsPage() {
   };
 
   const applyFilter = (nextFilter: NewsTemporaryFilter) => {
-    setFilter(nextFilter);
+    setFilterSelection({ userId: authUserId, followsTeamContext: false, value: nextFilter });
     closeFilter();
   };
 
@@ -357,7 +390,7 @@ export function NewsPage() {
               <AppIcon name="information-circle" />
               <h2>No News matches this filter</h2>
               <p>Your follows are still active. Choose another temporary filter or return to All Followed News.</p>
-              <button className="news-primary-button" type="button" onClick={() => setFilter({ kind: "all", displayName: "All Followed News" })}>Show All Followed News</button>
+              <button className="news-primary-button" type="button" onClick={() => setFilterSelection({ userId: authUserId, followsTeamContext: false, value: allNewsFilter(true) })}>Show All Followed News</button>
             </div>
           ) : null}
           {showDemoZero ? (
@@ -398,7 +431,7 @@ export function NewsPage() {
       </div>
 
       {filterOpen ? (
-        <NewsFilterMenu currentFilter={filter} navigation={navigation} onApply={applyFilter} onClose={closeFilter} />
+        <NewsFilterMenu currentFilter={filter} allFilter={allNewsFilter(signedIn)} navigation={navigation} onApply={applyFilter} onClose={closeFilter} />
       ) : null}
 
       {addToFeedOpen ? (

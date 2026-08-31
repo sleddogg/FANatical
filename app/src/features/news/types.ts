@@ -42,7 +42,7 @@ export type FanSafeNewsItem = Readonly<{
 }>;
 
 export type NewsTemporaryFilter =
-  | Readonly<{ kind: "all"; displayName: "All Followed News" }>
+  | Readonly<{ kind: "all"; displayName: "All Followed News" | "All Demo News" }>
   | Readonly<{
       kind: "sport" | "competition" | "team";
       targetId: string;

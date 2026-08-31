@@ -83,6 +83,7 @@ vi.mock("./newsRepository", () => ({
 
 import { NewsIdentityProfilePage } from "./NewsIdentityProfilePage";
 import { NewsPage } from "./NewsPage";
+import { clearNewsDemoState } from "./newsDemoState";
 
 const navigation: readonly NewsNavigationEntry[] = [
   { filterType: "sport", targetId: "hockey", displayName: "Hockey", sportId: "hockey" },
@@ -145,6 +146,7 @@ function renderNews() {
 
 describe("Phase 4 News frontend", () => {
   beforeEach(() => {
+    clearNewsDemoState();
     mocks.auth.configured = true;
     mocks.auth.loading = false;
     mocks.auth.user = { id: "fan-1" } as User;
@@ -204,6 +206,17 @@ describe("Phase 4 News frontend", () => {
     expect(screen.queryByText(/views/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Discussion/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/New England moved through/i)).not.toBeInTheDocument();
+  });
+
+  it("starts signed-in News from the authenticated fan's selected-Team context", async () => {
+    renderNews();
+
+    await waitFor(() => expect(mocks.loadPersonalNewsFeed).toHaveBeenCalledWith({
+      kind: "team",
+      targetId: "hockey-nhl-edmonton-oilers",
+      displayName: "Edmonton Oilers",
+    }));
+    expect(screen.getByText("Edmonton Oilers", { selector: ".news-header__title p" })).toBeInTheDocument();
   });
 
   it("opens the representative publisher destination directly and starts outbound recording without awaiting it", async () => {
@@ -310,7 +323,7 @@ describe("Phase 4 News frontend", () => {
     expect(screen.queryByText("EXAMPLE")).not.toBeInTheDocument();
   });
 
-  it("uses only the configured Demo universe in memory and exposes no durable account actions", async () => {
+  it("starts signed-out Demo at All Demo News regardless of the global selected Team", async () => {
     mocks.auth.user = null;
     const demoTargets: readonly NewsFollowTarget[] = [authorTarget, {
       targetType: "show",
@@ -323,6 +336,12 @@ describe("Phase 4 News frontend", () => {
     renderNews();
 
     expect(await screen.findByText("Demo mode — sign in to save your feed.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
+    expect(screen.getByText("All Demo News", { selector: ".news-header__title p" })).toBeInTheDocument();
+    await waitFor(() => expect(mocks.loadNewsDemoFeed).toHaveBeenCalledWith([
+      { targetType: "author", targetId: "author-alex" },
+      { targetType: "show", targetId: "show-northern" },
+    ], { kind: "all", displayName: "All Demo News" }));
     expect(screen.queryByRole("button", { name: /Dismiss/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Add to Feed/i }));
     const dialog = screen.getByRole("dialog", { name: "Add to Feed" });
