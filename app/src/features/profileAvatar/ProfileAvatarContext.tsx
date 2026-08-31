@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { subscribeToAccountChanges } from "../account/accountRepository";
 import { useAuth } from "../account/AuthContext";
+import { accountClientStateClearedEvent } from "../account/accountClientState";
 import { createCoalescedProfileMediaRefresh } from "../profileMedia/profileMediaRefresh";
 import { activateRemoteProfileAvatar, deleteRemoteProfilePhoto, loadRemoteProfileAvatarLibrary, loadRemoteProfileAvatarSummary, uploadRemoteProfileAvatar } from "./profileAvatarRepository";
 import type { ProfileAvatarCrop, ProfileAvatarRecord } from "./types";
@@ -29,6 +30,7 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
   const [avatar, setAvatar] = useState<ProfileAvatarRecord | null>(null);
   const [photos, setPhotos] = useState<readonly ProfileAvatarRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   activeUserId.current = userId;
 
   const load = useCallback(async (scope?: "active" | "library") => {
@@ -38,6 +40,7 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
         setAvatar(null);
         setPhotos([]);
         setLoading(false);
+        setLoadedUserId(null);
         lastLoadedAt.current = Date.now();
       }
       return;
@@ -50,9 +53,23 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
     if (requestId !== requestSequence.current || activeUserId.current !== userId) return;
     setAvatar(library.active);
     setPhotos(library.photos);
+    setLoadedUserId(userId);
     setLoading(false);
     lastLoadedAt.current = Date.now();
   }, [configured, userId]);
+
+  useEffect(() => {
+    const clear = () => {
+      requestSequence.current += 1;
+      libraryRequested.current = false;
+      setAvatar(null);
+      setPhotos([]);
+      setLoading(false);
+      setLoadedUserId(null);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
+  }, []);
 
   useEffect(() => {
     libraryRequested.current = false;
@@ -105,7 +122,8 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
       ? await uploadRemoteProfileAvatar(userId, record)
       : await activateRemoteProfileAvatar(userId, record);
     if (activeUserId.current !== userId) return;
-    setAvatar(saved);
+      setAvatar(saved);
+    setLoadedUserId(userId);
     setPhotos((current) => current.some((photo) => photo.id === saved.id)
       ? current.map((photo) => photo.id === saved.id ? saved : photo)
       : [...current, saved]);
@@ -117,6 +135,7 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
     const saved = await activateRemoteProfileAvatar(userId, { ...avatar, crop });
     if (activeUserId.current !== userId) return;
     setAvatar(saved);
+    setLoadedUserId(userId);
     setPhotos((current) => current.map((photo) => photo.id === saved.id ? saved : photo));
   }, [avatar, configured, userId]);
 
@@ -127,10 +146,19 @@ export function ProfileAvatarProvider({ children }: PropsWithChildren) {
     libraryRequested.current = true;
     setAvatar(library.active);
     setPhotos(library.photos);
+    setLoadedUserId(userId);
     return library.active;
   }, [configured, userId]);
 
-  const value = useMemo<ProfileAvatarContextValue>(() => ({ avatar, photos, loading, resolveLibrary, saveAvatar, saveCrop, removePhoto }), [avatar, loading, photos, removePhoto, resolveLibrary, saveAvatar, saveCrop]);
+  const value = useMemo<ProfileAvatarContextValue>(() => ({
+    avatar: userId && loadedUserId === userId ? avatar : null,
+    photos: userId && loadedUserId === userId ? photos : [],
+    loading,
+    resolveLibrary,
+    saveAvatar,
+    saveCrop,
+    removePhoto,
+  }), [avatar, loadedUserId, loading, photos, removePhoto, resolveLibrary, saveAvatar, saveCrop, userId]);
   return <ProfileAvatarContext.Provider value={value}>{children}</ProfileAvatarContext.Provider>;
 }
 

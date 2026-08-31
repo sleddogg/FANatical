@@ -172,14 +172,18 @@ describe("profile media provider lifecycle containment", () => {
 
   it("ignores a stale avatar response after authenticated identity changes", async () => {
     const oldLoad = deferred<{ active: ProfileAvatarRecord; photos: ProfileAvatarRecord[] }>();
+    const newLoad = deferred<{ active: ProfileAvatarRecord; photos: ProfileAvatarRecord[] }>();
     mocks.avatarSummary.mockImplementation((userId: string) => userId === "user-a"
       ? oldLoad.promise
-      : Promise.resolve({ active: avatarB, photos: [avatarB] }));
+      : newLoad.promise);
     const view = render(<ProfileAvatarProvider><AvatarProbe /></ProfileAvatarProvider>);
     await waitFor(() => expect(mocks.avatarSummary).toHaveBeenCalledWith("user-a"));
 
     mocks.user = { id: "user-b" };
     view.rerender(<ProfileAvatarProvider><AvatarProbe /></ProfileAvatarProvider>);
+    expect(screen.getByTestId("avatar-active")).toHaveTextContent("none");
+    expect(screen.getByTestId("avatar-library")).toBeEmptyDOMElement();
+    await act(async () => { newLoad.resolve({ active: avatarB, photos: [avatarB] }); });
     await waitFor(() => expect(screen.getByTestId("avatar-active")).toHaveTextContent("avatar-b"));
     await act(async () => { oldLoad.resolve({ active: avatarA, photos: [avatarA] }); });
 
@@ -202,5 +206,28 @@ describe("profile media provider lifecycle containment", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resolve visual library" }));
     await waitFor(() => expect(screen.getByTestId("visual-library")).toHaveTextContent("visual-inactive:true"));
     expect(mocks.visualLibrary).toHaveBeenCalledOnce();
+  });
+
+  it("shows no account A visual while account B media is unresolved", async () => {
+    const nextLoad = deferred<{ images: { mobile: ProfileVisualImageRecord; wide: ProfileVisualImageRecord }; library: ProfileVisualLibrary }>();
+    mocks.visualSummary.mockImplementation((userId: string) => userId === "user-a"
+      ? Promise.resolve({
+          images: { mobile: visualMobile, wide: visualWide },
+          library: { mobile: [visualMobile], wide: [visualWide] },
+        })
+      : nextLoad.promise);
+    const view = render(<ProfileVisualProvider><VisualProbe /></ProfileVisualProvider>);
+    await waitFor(() => expect(screen.getByTestId("visual-active")).toHaveTextContent("visual-mobile|visual-wide"));
+
+    mocks.user = { id: "user-b" };
+    view.rerender(<ProfileVisualProvider><VisualProbe /></ProfileVisualProvider>);
+    expect(screen.getByTestId("visual-active")).toHaveTextContent("none|none");
+    expect(screen.getByTestId("visual-library")).toBeEmptyDOMElement();
+
+    await act(async () => nextLoad.resolve({
+      images: { mobile: visual("visual-b-mobile", "mobile"), wide: visual("visual-b-wide", "wide") },
+      library: { mobile: [visual("visual-b-mobile", "mobile")], wide: [visual("visual-b-wide", "wide")] },
+    }));
+    await waitFor(() => expect(screen.getByTestId("visual-active")).toHaveTextContent("visual-b-mobile|visual-b-wide"));
   });
 });

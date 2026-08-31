@@ -6,7 +6,7 @@ export interface SelectedTeamPreferenceStore {
   saveSelectedTeamId(teamId: TeamId): Promise<void>;
 }
 
-const selectedTeamStorageKey = "fanatical.selected-team-id";
+export const selectedTeamStorageKey = "fanatical.selected-team-id";
 
 export const localSelectedTeamPreferenceStore: SelectedTeamPreferenceStore = {
   async loadSelectedTeamId() {

@@ -456,6 +456,34 @@ Sidebar shortcuts:
 * frosted/translucent style  
 * icon-only by default
 
+### **Signed-Out and Account-Transition Presentation**
+
+Signed-out Home keeps the existing generic FANatical presentation and contains
+no account-derived identity, statistics, media, Team selection, Team colours or
+customization. Signed-out Profile is blank onboarding apart from its existing
+**Sign In** and **Create Account** controls. Logout returns to neutral signed-out
+Home. While authentication is unresolved, account surfaces remain neutral and
+must not flash a previous fan or prototype persona.
+
+**BL-020 note:** the static North Star / NorthStarFan prototype persona no longer
+reaches anonymous Home or Profile surfaces. This presentation correction does
+not alter the hosted `NorthStarFan` profile row; that row remains governed by
+BL-020 and its existing trigger.
+
+**Local browser state is not an offline cache.** Initial authentication
+resolution clears account-derived browser presentation and re-derives it from
+durable Supabase state. Local browser storage is therefore no longer treated as
+an offline cache for a signed-in fan's Team, theme, Home customization,
+navigation side, profile-image shape or related account presentation. On a slow
+or failed settings fetch, defaults may appear temporarily rather than stale
+cached account values. This is an intentional privacy tradeoff of the accepted
+account-state correction, not a Phase 4 defect.
+
+**Follow-up, non-blocking:** `TeamContext` may continue displaying an
+account-derived Team strip for the short interval before the centralized clear
+event lands during an external or session-expiry sign-out. Recorded for later
+attention; it does not block Phase 4 acceptance.
+
 ---
 
 ## **All Other Main Pages**

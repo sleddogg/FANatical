@@ -20,13 +20,13 @@ import type { CreateFanMomentInput, FanMoment, ProfileRecord, ProfileTabId } fro
 import { buildSportsStatsSnapshot, fanScoreForUser, resolveFanbaseCompetition, sportsStatsUser } from "../stats/sportsStats";
 import { AccountDialog } from "../account/AccountDialog";
 import { useAuth } from "../account/AuthContext";
+import { accountClientStateClearedEvent, profileFeaturedCategorySessionKey } from "../account/accountClientState";
 import { useAccountBootstrap } from "../account/AccountBootstrap";
 import { loadOwnedProfile, saveOwnedProfile, subscribeToAccountChanges } from "../account/accountRepository";
 import "../fanbase/fanbase.css";
 import "./profile.css";
 
 const photoCategories = ["Game Face", "Fan Cave", "Memorabilia"] as const satisfies readonly FanPhotoCategory[];
-const featuredCategorySessionKey = "fanatical.profile.featuredFanPhotoCategory";
 
 const profileTabs: readonly { id: ProfileTabId; label: string }[] = [
   { id: "bio", label: "Bio" },
@@ -54,7 +54,7 @@ function formatMomentDate(value: string) {
 
 function initialSessionProfile(): ProfileRecord {
   if (typeof window === "undefined") return initialProfile;
-  const storedCategory = window.sessionStorage.getItem(featuredCategorySessionKey);
+  const storedCategory = window.sessionStorage.getItem(profileFeaturedCategorySessionKey);
   return photoCategories.includes(storedCategory as FanPhotoCategory)
     ? { ...initialProfile, featuredFanPhotoCategory: storedCategory as FanPhotoCategory }
     : initialProfile;
@@ -189,6 +189,7 @@ function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpe
 
 export function ProfilePage() {
   const { configured, loading: authLoading, user, signOut } = useAuth();
+  const prototypeMode = import.meta.env.DEV && !configured;
   const { ready, revision } = useAccountBootstrap();
   const navigate = useNavigate();
   const location = useLocation();
@@ -203,7 +204,8 @@ export function ProfilePage() {
     : stat.label === "Sport IQ"
       ? { ...stat, value: sportsStats?.overallSportIq?.toString() ?? "—", detail: "Overall Sport IQ" }
       : stat);
-  const [profile, setProfile] = useState<ProfileRecord>(initialSessionProfile);
+  const [storedProfile, setProfile] = useState<ProfileRecord | null>(() => prototypeMode ? initialSessionProfile() : null);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTabId>("bio");
   const [editing, setEditing] = useState(false);
   const [openPhoto, setOpenPhoto] = useState<FanPhoto | null>(null);
@@ -222,8 +224,8 @@ export function ProfilePage() {
   const [photoOrder, setPhotoOrder] = useState<PhotoOrder>(() => buildInitialPhotoOrder(ownerPhotos));
 
   useEffect(() => {
-    window.sessionStorage.setItem(featuredCategorySessionKey, profile.featuredFanPhotoCategory);
-  }, [profile.featuredFanPhotoCategory]);
+    if (prototypeMode && storedProfile) window.sessionStorage.setItem(profileFeaturedCategorySessionKey, storedProfile.featuredFanPhotoCategory);
+  }, [prototypeMode, storedProfile]);
 
   useEffect(() => {
     setPhotoOrder((current) => {
@@ -237,15 +239,13 @@ export function ProfilePage() {
   }, [ownerPhotos]);
 
   useEffect(() => {
-    if (!configured || !user) {
-      if (configured) setProfile(initialProfile);
-      return;
-    }
+    if (!configured || !user) return;
     if (!ready) return;
     let current = true;
     const load = () => loadOwnedProfile(user.id).then((record) => {
       if (!current || !record) return;
       setProfile(record);
+      setLoadedUserId(user.id);
       setProfileError("");
     }).catch((reason: unknown) => {
       if (current) setProfileError(reason instanceof Error ? reason.message : "Profile could not be refreshed.");
@@ -263,6 +263,26 @@ export function ProfilePage() {
       unsubscribe();
     };
   }, [configured, ready, revision, user]);
+
+  useEffect(() => {
+    const clear = () => {
+      setProfile(prototypeMode ? initialSessionProfile() : null);
+      setLoadedUserId(null);
+      setEditing(false);
+      setOpenPhoto(null);
+      setOpenPhotoCategory(null);
+      setCreatePhotoOpen(false);
+      setOpenMomentId(null);
+      setMomentCreateOpen(false);
+      setAddTeamOpen(false);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
+  }, [prototypeMode]);
+
+  const profile = configured
+    ? !authLoading && user && ready && loadedUserId === user.id ? storedProfile : null
+    : prototypeMode ? storedProfile ?? initialProfile : null;
 
   const photoById = useMemo(() => new Map(ownerPhotos.map((photo) => [photo.id, photo])), [ownerPhotos]);
   const orderedOwnerPhotos = useMemo(() => photoCategories.flatMap((category) => photoOrder[category].map((id) => photoById.get(id)).filter((photo): photo is FanPhoto => Boolean(photo))), [photoById, photoOrder]);
@@ -310,7 +330,7 @@ export function ProfilePage() {
   const saveProfile = async (nextProfile: ProfileRecord) => {
     const ownedProfile = user ? { ...nextProfile, id: user.id } : nextProfile;
     if (configured && user) {
-      await saveOwnedProfile(user.id, ownedProfile, profile.visibility);
+      await saveOwnedProfile(user.id, ownedProfile, storedProfile?.visibility ?? initialProfile.visibility);
     }
     setProfile(ownedProfile);
   };
@@ -321,12 +341,37 @@ export function ProfilePage() {
     try {
       await signOut();
       setEditing(false);
+      navigate("/", { replace: true });
     } catch (reason) {
       setAccountActionError(reason instanceof Error ? reason.message : "This device could not be signed out.");
     } finally {
       setAccountActionBusy(false);
     }
   };
+
+  if (configured && authLoading) {
+    return <div className="profile-page profile-page--auth-neutral" aria-busy="true" />;
+  }
+
+  if (!configured && !prototypeMode) {
+    return <div className="profile-page profile-page--auth-neutral" />;
+  }
+
+  if (configured && !user) {
+    return (
+      <div className="profile-page profile-page--signed-out">
+        <div className="profile-account-panel__actions">
+          <button type="button" onClick={() => setAccountDialogMode("sign-in")}>Sign In</button>
+          <button type="button" onClick={() => setAccountDialogMode("create")}>Create Account</button>
+        </div>
+        {accountDialogMode ? <AccountDialog initialMode={accountDialogMode} onClose={() => setAccountDialogMode(null)} /> : null}
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <div className="profile-page profile-page--auth-neutral" aria-busy="true" />;
+  }
 
   if (openMoment) {
     return (

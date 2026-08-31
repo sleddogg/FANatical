@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   authCallback: undefined as ((event: string, session: unknown) => void) | undefined,
-  clearSignedUrls: vi.fn(),
+  clearClientState: vi.fn(),
   clearNewsDemoState: vi.fn(),
   getSession: vi.fn(),
   signInWithPassword: vi.fn(),
@@ -30,8 +30,8 @@ vi.mock("../../lib/supabase/client", () => ({
   },
 }));
 
-vi.mock("../profileMedia/profileMediaSignedUrlCache", () => ({
-  clearProfileMediaSignedUrls: mocks.clearSignedUrls,
+vi.mock("./accountClientState", () => ({
+  clearAccountDerivedClientState: mocks.clearClientState,
 }));
 
 vi.mock("../news/newsDemoState", () => ({
@@ -54,17 +54,18 @@ function AuthProbe() {
 }
 
 function AuthActions() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signOut, signUp } = useAuth();
   return <>
     <button type="button" onClick={() => { void signIn("fan@example.test", "password"); }}>Test sign in</button>
     <button type="button" onClick={() => { void signUp({ email: "new@example.test", password: "password", displayName: "New Fan" }); }}>Test register</button>
+    <button type="button" onClick={() => { void signOut().catch(() => undefined); }}>Test sign out</button>
   </>;
 }
 
 describe("Auth profile-media cache isolation", () => {
   beforeEach(() => {
     mocks.authCallback = undefined;
-    mocks.clearSignedUrls.mockReset();
+    mocks.clearClientState.mockReset().mockResolvedValue(undefined);
     mocks.clearNewsDemoState.mockReset();
     mocks.getSession.mockReset().mockResolvedValue({ data: { session: session(user("user-a")) }, error: null });
     mocks.signInWithPassword.mockReset().mockResolvedValue({ data: { session: session(user("user-a")) }, error: null });
@@ -73,23 +74,46 @@ describe("Auth profile-media cache isolation", () => {
     mocks.unsubscribe.mockReset();
   });
 
-  it("keeps same-user token refreshes stable and clears the previous user's URLs on identity change or sign-out", async () => {
+  it("runs one central cleanup on initial resolution, identity changes, expiry, and not same-user refreshes", async () => {
     render(<AuthProvider><AuthProbe /></AuthProvider>);
     await waitFor(() => expect(screen.getByText("user-a")).toBeInTheDocument());
-    expect(mocks.clearSignedUrls).not.toHaveBeenCalled();
+    expect(mocks.clearClientState).toHaveBeenCalledTimes(1);
 
     await act(async () => { mocks.authCallback?.("TOKEN_REFRESHED", session(user("user-a"))); });
     expect(screen.getByText("user-a")).toBeInTheDocument();
-    expect(mocks.clearSignedUrls).not.toHaveBeenCalled();
+    expect(mocks.clearClientState).toHaveBeenCalledTimes(1);
 
     await act(async () => { mocks.authCallback?.("SIGNED_IN", session(user("user-b"))); });
     expect(screen.getByText("user-b")).toBeInTheDocument();
-    expect(mocks.clearSignedUrls).toHaveBeenLastCalledWith("user-a");
+    expect(mocks.clearClientState).toHaveBeenCalledTimes(2);
 
     await act(async () => { mocks.authCallback?.("SIGNED_OUT", null); });
     expect(screen.getByText("signed-out")).toBeInTheDocument();
-    expect(mocks.clearSignedUrls).toHaveBeenLastCalledWith("user-b");
-    expect(mocks.clearSignedUrls).toHaveBeenCalledTimes(2);
+    expect(mocks.clearClientState).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps presentation neutral until transition cleanup finishes", async () => {
+    let releaseCleanup!: () => void;
+    mocks.clearClientState.mockReturnValue(new Promise<void>((resolve) => { releaseCleanup = resolve; }));
+
+    render(<AuthProvider><AuthProbe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText("loading")).toBeInTheDocument());
+    expect(screen.queryByText("user-a")).not.toBeInTheDocument();
+
+    await act(async () => releaseCleanup());
+    await waitFor(() => expect(screen.getByText("user-a")).toBeInTheDocument());
+  });
+
+  it("restores the current user when explicit local sign-out fails", async () => {
+    mocks.signOut.mockResolvedValue({ error: new Error("sign-out failed") });
+    const interaction = userEvent.setup();
+    render(<AuthProvider><AuthProbe /><AuthActions /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText("user-a")).toBeInTheDocument());
+    mocks.clearClientState.mockClear();
+
+    await interaction.click(screen.getByRole("button", { name: "Test sign out" }));
+    await waitFor(() => expect(screen.getByText("user-a")).toBeInTheDocument());
+    expect(mocks.clearClientState).not.toHaveBeenCalled();
   });
 
   it("discards memory-only News Demo choices during sign-in and registration", async () => {

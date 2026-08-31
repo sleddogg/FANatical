@@ -73,6 +73,22 @@ export async function loadProfileVisualImages() {
   return Object.values((await loadProfileVisualLibrary()).images).filter((record): record is ProfileVisualImageRecord => Boolean(record));
 }
 
+export async function clearProfileVisualStorage() {
+  if (!window.indexedDB) return;
+  const database = await openDatabase();
+  const stores = [legacyImageStore, libraryStore].filter((store) => database.objectStoreNames.contains(store));
+  if (!stores.length) {
+    database.close();
+    return;
+  }
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(stores, "readwrite");
+    for (const store of stores) transaction.objectStore(store).clear();
+    transaction.oncomplete = () => { database.close(); resolve(); };
+    transaction.onerror = () => { database.close(); reject(transaction.error ?? new Error("Profile image storage could not be cleared.")); };
+  });
+}
+
 export async function storeProfileVisualImage(record: ProfileVisualImageRecord): Promise<ProfileVisualImageRecord> {
   const database = await openDatabase();
   const records = await allStoredVisuals();

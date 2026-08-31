@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccountBootstrap } from "../features/account/AccountBootstrap";
 import { loadAccountSettings, saveAccountSettings, subscribeToAccountChanges } from "../features/account/accountRepository";
 import { useAuth } from "../features/account/AuthContext";
+import { accountClientStateClearedEvent } from "../features/account/accountClientState";
 import {
+  defaultHomeCustomization,
   homeCustomizationChangeEvent,
   loadHomeCustomization,
   saveHomeCustomization,
@@ -23,18 +25,30 @@ export {
 
 export function useHomeCustomization() {
   const { configured, user } = useAuth();
+  const prototypeMode = import.meta.env.DEV && !configured;
   const { ready, revision } = useAccountBootstrap();
-  const [customization, setCustomizationState] = useState<HomeCustomization>(loadHomeCustomization);
+  const [storedCustomization, setStoredCustomization] = useState<HomeCustomization>(loadHomeCustomization);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const syncFromStorage = () => setCustomizationState(loadHomeCustomization());
-    const syncFromApp = (event: Event) => setCustomizationState((event as CustomEvent<HomeCustomization>).detail);
+    if (!prototypeMode) return;
+    const syncFromStorage = () => setStoredCustomization(loadHomeCustomization());
+    const syncFromApp = (event: Event) => setStoredCustomization((event as CustomEvent<HomeCustomization>).detail);
     window.addEventListener("storage", syncFromStorage);
     window.addEventListener(homeCustomizationChangeEvent, syncFromApp);
     return () => {
       window.removeEventListener("storage", syncFromStorage);
       window.removeEventListener(homeCustomizationChangeEvent, syncFromApp);
     };
+  }, [prototypeMode]);
+
+  useEffect(() => {
+    const clear = () => {
+      setLoadedUserId(null);
+      setStoredCustomization(defaultHomeCustomization);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
   }, []);
 
   useEffect(() => {
@@ -42,8 +56,8 @@ export function useHomeCustomization() {
     let current = true;
     const load = () => loadAccountSettings(user.id).then((settings) => {
       if (!current) return;
-      saveHomeCustomization(settings.homeCustomization);
-      setCustomizationState(settings.homeCustomization);
+      setStoredCustomization(settings.homeCustomization);
+      setLoadedUserId(user.id);
     }).catch((error: unknown) => console.error("FANatical could not refresh Home Customization.", error));
     void load();
     const focus = () => { void load(); };
@@ -53,9 +67,15 @@ export function useHomeCustomization() {
   }, [configured, ready, revision, user]);
 
   const setCustomization = useCallback(async (nextCustomization: HomeCustomization) => {
-    saveHomeCustomization(nextCustomization);
-    if (configured && user) await saveAccountSettings(user.id, { homeCustomization: nextCustomization });
-  }, [configured, user]);
+    setStoredCustomization(nextCustomization);
+    if (configured && user) {
+      setLoadedUserId(user.id);
+      await saveAccountSettings(user.id, { homeCustomization: nextCustomization });
+    } else if (prototypeMode) saveHomeCustomization(nextCustomization);
+  }, [configured, prototypeMode, user]);
 
+  const customization = configured
+    ? user && loadedUserId === user.id ? storedCustomization : defaultHomeCustomization
+    : prototypeMode ? storedCustomization : defaultHomeCustomization;
   return { customization, setCustomization } as const;
 }

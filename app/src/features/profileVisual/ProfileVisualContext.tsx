@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { subscribeToAccountChanges } from "../account/accountRepository";
 import { useAuth } from "../account/AuthContext";
+import { accountClientStateClearedEvent } from "../account/accountClientState";
 import { createCoalescedProfileMediaRefresh } from "../profileMedia/profileMediaRefresh";
 import { deleteProfileVisualImage, loadProfileVisualLibrary, storeProfileVisualImage } from "./profileVisualStorage";
 import { activateRemoteProfileVisual, deleteRemoteProfileVisualImage, loadRemoteProfileVisualLibrary, loadRemoteProfileVisualSummary, uploadRemoteProfileVisual } from "./profileVisualRepository";
@@ -30,6 +31,7 @@ export function ProfileVisualProvider({ children }: PropsWithChildren) {
   const lastLoadedAt = useRef(0);
   const [images, setImages] = useState<ProfileVisualRecords>({});
   const [library, setLibrary] = useState<ProfileVisualLibrary>(emptyLibrary);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   activeUserId.current = userId;
 
   const load = useCallback(async (scope?: "active" | "library") => {
@@ -43,9 +45,22 @@ export function ProfileVisualProvider({ children }: PropsWithChildren) {
     if (requestId !== requestSequence.current || activeUserId.current !== userId) return result;
     setImages(result.images);
     setLibrary(result.library);
+    setLoadedUserId(configured ? userId : null);
     lastLoadedAt.current = Date.now();
     return result;
   }, [configured, userId]);
+
+  useEffect(() => {
+    const clear = () => {
+      requestSequence.current += 1;
+      libraryRequested.current = false;
+      setImages({});
+      setLibrary(emptyLibrary);
+      setLoadedUserId(null);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
+  }, []);
 
   useEffect(() => {
     libraryRequested.current = false;
@@ -95,6 +110,7 @@ export function ProfileVisualProvider({ children }: PropsWithChildren) {
       : await storeProfileVisualImage(record);
     if (activeUserId.current !== userId) return saved;
     setImages((current) => ({ ...current, [saved.variant]: saved }));
+    setLoadedUserId(configured ? userId : null);
     setLibrary((current) => ({
       ...current,
       [saved.variant]: current[saved.variant].some((candidate) => candidate.id === saved.id)
@@ -113,10 +129,17 @@ export function ProfileVisualProvider({ children }: PropsWithChildren) {
     libraryRequested.current = true;
     setImages(result.images);
     setLibrary(result.library);
+    setLoadedUserId(configured ? userId : null);
     return result.images[variant];
   }, [configured, userId]);
 
-  const value = useMemo<ProfileVisualContextValue>(() => ({ images, library, resolveLibrary, saveImage, removeImage }), [images, library, removeImage, resolveLibrary, saveImage]);
+  const value = useMemo<ProfileVisualContextValue>(() => ({
+    images: configured ? userId && loadedUserId === userId ? images : {} : images,
+    library: configured ? userId && loadedUserId === userId ? library : emptyLibrary : library,
+    resolveLibrary,
+    saveImage,
+    removeImage,
+  }), [configured, images, library, loadedUserId, removeImage, resolveLibrary, saveImage, userId]);
   return <ProfileVisualContext.Provider value={value}>{children}</ProfileVisualContext.Provider>;
 }
 

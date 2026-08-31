@@ -44,17 +44,26 @@ test.describe("themed News navigation", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test("matches the shared Home bar treatment", async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem("fanatical.theme-preference.v1", JSON.stringify({
-        source: "custom",
-        order: "normal",
-        customColor1: "#00205B",
-        customColor2: "#D14520",
-      }));
-    });
+    await page.goto("/profile");
+    await page.locator(".profile-page--signed-out").getByRole("button", { name: "Sign In" }).click();
+    await page.getByLabel("Email").fill("dummy@fanatical.invalid");
+    await page.getByLabel("Password").fill("dummy123");
+    await page.getByRole("button", { name: "Sign In", exact: true }).last().click();
+    await expect(page.getByRole("region", { name: "Signed in" })).toBeVisible();
+    await page.getByRole("button", { name: "Edit profile" }).click();
+    const profileEditor = page.getByRole("dialog", { name: "Edit Profile" });
+    const customTheme = profileEditor.getByRole("radio", { name: /^Custom/ });
+    await customTheme.click();
+    await expect(customTheme).toBeChecked();
+    await profileEditor.getByLabel("Choose Custom Color 1").fill("#00205B");
+    await profileEditor.getByLabel("Choose Custom Color 2").fill("#D14520");
+    await profileEditor.getByRole("button", { name: "Save profile" }).click();
+    await expect(page.locator(".application-shell")).toHaveAttribute("data-theme-source", "custom");
     await page.goto("/news");
     await expect(page.getByRole("heading", { name: "News" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Application navigation" })).toBeVisible();
+    await expect(page.locator(".application-shell")).toHaveAttribute("data-theme-source", "custom");
+    await expect(page.locator(".application-shell")).toHaveAttribute("data-theme-active", "true");
 
     const styles = await page.evaluate(() => {
       const header = document.querySelector<HTMLElement>(".news-header")!;

@@ -22,6 +22,7 @@ import {
 import type { FollowedTeam, TeamId } from "../domain/team";
 import type { OfficialTeamId } from "../data/officialSportsDatabase";
 import { useAuth } from "../features/account/AuthContext";
+import { accountClientStateClearedEvent } from "../features/account/accountClientState";
 import { useAccountBootstrap } from "../features/account/AccountBootstrap";
 import { loadAccountTeamState, replaceAccountFollowedTeams, saveAccountSettings, subscribeToAccountChanges } from "../features/account/accountRepository";
 
@@ -57,10 +58,26 @@ export function TeamProvider({
   preferenceStore = localSelectedTeamPreferenceStore,
 }: TeamProviderProps) {
   const { configured, user } = useAuth();
+  const prototypeMode = import.meta.env.DEV && !configured;
   const { ready, revision } = useAccountBootstrap();
-  const [followedTeams, setFollowedTeams] = useState<readonly FollowedTeam[]>(loadFollowedTeams);
-  const [selectedTeamId, setSelectedTeamId] = useState<TeamId>(defaultSelectedTeamId);
+  const [storedFollowedTeams, setStoredFollowedTeams] = useState<readonly FollowedTeam[]>(() => prototypeMode ? loadFollowedTeams() : seededFollowedTeams);
+  const [storedSelectedTeamId, setStoredSelectedTeamId] = useState<TeamId>(defaultSelectedTeamId);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const selectionChangedInSession = useRef(false);
+
+  const followedTeams = configured && user && loadedUserId !== user.id ? seededFollowedTeams : storedFollowedTeams;
+  const selectedTeamId = configured && user && loadedUserId !== user.id ? defaultSelectedTeamId : storedSelectedTeamId;
+
+  useEffect(() => {
+    const clear = () => {
+      selectionChangedInSession.current = false;
+      setLoadedUserId(null);
+      setStoredFollowedTeams(seededFollowedTeams);
+      setStoredSelectedTeamId(defaultSelectedTeamId);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
+  }, []);
 
   useEffect(() => {
     if (!configured || !user || !ready) return;
@@ -68,11 +85,12 @@ export function TeamProvider({
     const load = () => loadAccountTeamState(user.id).then((state) => {
       if (!current) return;
       const nextTeams = followedTeamsFromOfficialIds(state.followedTeamIds);
-      setFollowedTeams(nextTeams);
+      setStoredFollowedTeams(nextTeams);
       if (!selectionChangedInSession.current && state.selectedTeamId) {
         const selected = nextTeams.find((team) => team.officialTeamId === state.selectedTeamId);
-        if (selected) setSelectedTeamId(selected.id);
+        if (selected) setStoredSelectedTeamId(selected.id);
       }
+      setLoadedUserId(user.id);
     }).catch((error: unknown) => console.error("FANatical could not refresh followed teams.", error));
     void load();
     const focus = () => { void load(); };
@@ -82,24 +100,23 @@ export function TeamProvider({
   }, [configured, ready, revision, user]);
 
   useEffect(() => {
-    if (configured && user) return;
+    if (!prototypeMode || user) return;
     let isCurrent = true;
 
     void preferenceStore.loadSelectedTeamId().then((storedTeamId) => {
       if (isCurrent && !selectionChangedInSession.current && storedTeamId && followedTeams.some((team) => team.id === storedTeamId)) {
-        setSelectedTeamId(storedTeamId);
+        setStoredSelectedTeamId(storedTeamId);
       }
     });
 
     return () => {
       isCurrent = false;
     };
-  }, [configured, followedTeams, preferenceStore, user]);
+  }, [followedTeams, preferenceStore, prototypeMode, user]);
 
   useEffect(() => {
-    if (!configured) setFollowedTeams(loadFollowedTeams());
-    else if (!user) setFollowedTeams(loadFollowedTeams());
-  }, [configured, user]);
+    if (prototypeMode) setStoredFollowedTeams(loadFollowedTeams());
+  }, [prototypeMode, user]);
 
   const selectTeam = useCallback(
     (teamId: TeamId) => {
@@ -108,12 +125,12 @@ export function TeamProvider({
       }
 
       selectionChangedInSession.current = true;
-      setSelectedTeamId(teamId);
+      setStoredSelectedTeamId(teamId);
       const selected = followedTeams.find((team) => team.id === teamId);
       if (configured && user && selected?.officialTeamId) void saveAccountSettings(user.id, { selectedTeamId: selected.officialTeamId });
-      else void preferenceStore.saveSelectedTeamId(teamId);
+      else if (prototypeMode) void preferenceStore.saveSelectedTeamId(teamId);
     },
-    [configured, followedTeams, preferenceStore, user],
+    [configured, followedTeams, preferenceStore, prototypeMode, user],
   );
 
   const persistFollowedTeams = useCallback(async (teamIds: readonly OfficialTeamId[]) => {
@@ -121,19 +138,19 @@ export function TeamProvider({
     if (configured && user) {
       await replaceAccountFollowedTeams(user.id, uniqueIds);
     } else {
-      savePersistedFollowedTeamIds(uniqueIds);
+      if (prototypeMode) savePersistedFollowedTeamIds(uniqueIds);
     }
     const nextTeams = followedTeamsFromOfficialIds(uniqueIds);
-    setFollowedTeams(nextTeams);
+    setStoredFollowedTeams(nextTeams);
 
     if (!nextTeams.some((team) => team.id === selectedTeamId)) {
       const nextSelected = nextTeams[0];
       selectionChangedInSession.current = true;
-      setSelectedTeamId(nextSelected?.id ?? defaultSelectedTeamId);
+      setStoredSelectedTeamId(nextSelected?.id ?? defaultSelectedTeamId);
       if (configured && user) await saveAccountSettings(user.id, { selectedTeamId: nextSelected?.officialTeamId ?? null });
-      else if (nextSelected) await preferenceStore.saveSelectedTeamId(nextSelected.id);
+      else if (prototypeMode && nextSelected) await preferenceStore.saveSelectedTeamId(nextSelected.id);
     }
-  }, [configured, preferenceStore, selectedTeamId, user]);
+  }, [configured, preferenceStore, prototypeMode, selectedTeamId, user]);
 
   const addFollowedTeam = useCallback(async (teamId: OfficialTeamId) => {
     if (followedTeams.some((team) => team.officialTeamId === teamId)) return "duplicate";

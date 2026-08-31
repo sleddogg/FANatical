@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useAccountBootstrap } from "../features/account/AccountBootstrap";
 import { loadAccountSettings, saveAccountSettings, subscribeToAccountChanges } from "../features/account/accountRepository";
 import { useAuth } from "../features/account/AuthContext";
+import { accountClientStateClearedEvent } from "../features/account/accountClientState";
 import {
   loadThemePreference,
   saveThemePreference,
   themePreferenceChangeEvent,
 } from "./themePreferenceStorage";
-import type { ThemePreference } from "../theme/theme";
+import { defaultThemePreference, type ThemePreference } from "../theme/theme";
 
 export {
   defaultThemePreference,
@@ -22,18 +23,30 @@ export { loadThemePreference, saveThemePreference, themePreferenceStorageKey } f
 
 export function useThemePreference() {
   const { configured, user } = useAuth();
+  const prototypeMode = import.meta.env.DEV && !configured;
   const { ready, revision } = useAccountBootstrap();
-  const [preference, setPreferenceState] = useState<ThemePreference>(loadThemePreference);
+  const [storedPreference, setStoredPreference] = useState<ThemePreference>(loadThemePreference);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const syncFromStorage = () => setPreferenceState(loadThemePreference());
-    const syncFromApp = (event: Event) => setPreferenceState((event as CustomEvent<ThemePreference>).detail);
+    if (!prototypeMode) return;
+    const syncFromStorage = () => setStoredPreference(loadThemePreference());
+    const syncFromApp = (event: Event) => setStoredPreference((event as CustomEvent<ThemePreference>).detail);
     window.addEventListener("storage", syncFromStorage);
     window.addEventListener(themePreferenceChangeEvent, syncFromApp);
     return () => {
       window.removeEventListener("storage", syncFromStorage);
       window.removeEventListener(themePreferenceChangeEvent, syncFromApp);
     };
+  }, [prototypeMode]);
+
+  useEffect(() => {
+    const clear = () => {
+      setLoadedUserId(null);
+      setStoredPreference(defaultThemePreference);
+    };
+    window.addEventListener(accountClientStateClearedEvent, clear);
+    return () => window.removeEventListener(accountClientStateClearedEvent, clear);
   }, []);
 
   useEffect(() => {
@@ -41,8 +54,8 @@ export function useThemePreference() {
     let current = true;
     const load = () => loadAccountSettings(user.id).then((settings) => {
       if (!current) return;
-      saveThemePreference(settings.themePreference);
-      setPreferenceState(settings.themePreference);
+      setStoredPreference(settings.themePreference);
+      setLoadedUserId(user.id);
     }).catch((error: unknown) => console.error("FANatical could not refresh App Theme.", error));
     void load();
     const focus = () => { void load(); };
@@ -52,9 +65,15 @@ export function useThemePreference() {
   }, [configured, ready, revision, user]);
 
   const setPreference = useCallback(async (nextPreference: ThemePreference) => {
-    saveThemePreference(nextPreference);
-    if (configured && user) await saveAccountSettings(user.id, { themePreference: nextPreference });
-  }, [configured, user]);
+    setStoredPreference(nextPreference);
+    if (configured && user) {
+      setLoadedUserId(user.id);
+      await saveAccountSettings(user.id, { themePreference: nextPreference });
+    } else if (prototypeMode) saveThemePreference(nextPreference);
+  }, [configured, prototypeMode, user]);
 
+  const preference = configured
+    ? user && loadedUserId === user.id ? storedPreference : defaultThemePreference
+    : prototypeMode ? storedPreference : defaultThemePreference;
   return { preference, setPreference } as const;
 }

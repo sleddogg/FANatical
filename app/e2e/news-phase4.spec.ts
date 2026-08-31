@@ -317,13 +317,6 @@ async function expectNoHorizontalOverflow(page: Page) {
 
 async function createSignedInFan(page: Page, viewportName: string) {
   const email = `${browserUserPrefix}${viewportName}@fanatical.invalid`;
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      "fanatical.followed-team-ids.v1",
-      JSON.stringify(["hockey-nhl-edmonton-oilers"]),
-    );
-    window.localStorage.setItem("fanatical.selected-team-id", "hockey-nhl-edmonton-oilers");
-  });
   await page.goto("/profile");
   await page.getByRole("button", { name: "Create Account", exact: true }).first().click();
   await page.getByLabel("Display name").fill(`Phase 4 ${viewportName} Fan`);
@@ -331,6 +324,13 @@ async function createSignedInFan(page: Page, viewportName: string) {
   await page.getByLabel("Password").fill(browserPassword);
   await page.getByRole("button", { name: "Create Account", exact: true }).last().click();
   await expect(page.getByRole("region", { name: "Signed in" })).toContainText(email);
+  await page.getByRole("tab", { name: "Fan Identity" }).click();
+  await page.getByRole("button", { name: "Add Team" }).click();
+  await page.getByRole("button", { name: /^Hockey/ }).click();
+  await page.getByRole("button", { name: /^NHL/ }).click();
+  await page.getByRole("button", { name: "Select Edmonton Oilers" }).click();
+  await page.getByRole("button", { name: "Confirm Add Team" }).click();
+  await expect(page.getByLabel("Profile followed teams").getByText("Edmonton Oilers")).toBeVisible();
 }
 
 test.describe.configure({ mode: "serial" });
@@ -404,9 +404,6 @@ for (const viewport of viewports) {
       await expect.poll(() => state.followCalls).toContain("show-phase4-browser");
       await addDialog.getByRole("button", { name: "Close Add to Feed" }).click();
 
-      const selectedTeamBefore = await page.evaluate(
-        () => window.localStorage.getItem("fanatical.selected-team-id"),
-      );
       await page.getByRole("button", { name: /Filter News/ }).click();
       await page.getByRole("dialog", { name: "Choose News context" })
         .getByRole("button", { name: /Competition/ })
@@ -415,9 +412,6 @@ for (const viewport of viewports) {
         .getByRole("button", { name: "NHL" })
         .click();
       await expect(page.locator(".news-header__title p")).toHaveText("NHL");
-      expect(await page.evaluate(
-        () => window.localStorage.getItem("fanatical.selected-team-id"),
-      )).toBe(selectedTeamBefore);
 
       await expect(page.getByRole("heading", { name: podcastHeadline })).toBeVisible();
       await page.getByRole("button", { name: `Dismiss ${podcastHeadline}` }).click();
@@ -436,6 +430,9 @@ for (const viewport of viewports) {
       await expect.poll(() => state.outboundStarted).toBe(true);
       state.releaseOutbound?.();
       await publisherPage.close();
+
+      await page.getByRole("link", { name: "FANatical home" }).click();
+      await expect(page.getByRole("button", { name: "Select Edmonton Oilers" })).toHaveAttribute("aria-pressed", "true");
 
       await expectNoHorizontalOverflow(page);
     });
