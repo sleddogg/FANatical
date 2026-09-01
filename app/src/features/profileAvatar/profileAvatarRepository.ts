@@ -4,6 +4,7 @@ import { cachedProfileMediaSignedUrl, evictProfileMediaSignedUrls, profileMediaB
 import { clampProfileAvatarCrop, type ProfileAvatarRecord } from "./types";
 
 type ProfileRow = Readonly<{ active_profile_photo_id: unknown }>;
+type ProfileMediaNamespaceRow = Readonly<{ media_namespace: unknown }>;
 
 type ProfilePhotoRow = Readonly<{
   id: unknown;
@@ -107,15 +108,21 @@ async function activatePhoto(record: ProfileAvatarRecord) {
 export async function uploadRemoteProfileAvatar(userId: string, record: ProfileAvatarRecord): Promise<ProfileAvatarRecord> {
   if (!record.sourceBlob || !record.displayBlob) throw new Error("The selected profile photo is not available for upload.");
   const client = requireSupabase();
-  const count = await client.from("profile_photos").select("id", { count: "exact", head: true }).eq("user_id", userId);
+  const [count, profileResult] = await Promise.all([
+    client.from("profile_photos").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    client.from("profiles").select("media_namespace").eq("user_id", userId).maybeSingle(),
+  ]);
   if (count.error) throw new Error(count.error.message);
+  if (profileResult.error) throw new Error(profileResult.error.message);
   if ((count.count ?? 0) >= 3) throw new Error("You already have three saved profile photos. Remove one before adding another.");
+  const mediaNamespace = text((profileResult.data as ProfileMediaNamespaceRow | null)?.media_namespace);
+  if (!/^fan-media-[0-9a-f]{32}$/.test(mediaNamespace)) throw new Error("The account avatar namespace is unavailable.");
 
   const id = createUuid();
   const version = `${Date.now()}-${id}`;
   const folder = `${userId}/avatar`;
   const sourcePath = `${folder}/${version}-source.${safeExtension(record.sourceBlob, record.sourceFilename)}`;
-  const displayPath = `${folder}/${version}-display.webp`;
+  const displayPath = `${mediaNamespace}/avatar/${version}-display.webp`;
   const createdPaths: string[] = [];
   let inserted = false;
 

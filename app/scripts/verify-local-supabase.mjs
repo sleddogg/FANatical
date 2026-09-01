@@ -10,6 +10,7 @@ const productionHostname = "lsuceoieqgbagxxwobxu.supabase.co";
 const bucket = "profile-media";
 const password = "Local-only-verification-2026!";
 const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const ownerName = `Verify${Math.random().toString(36).slice(2, 10)}`;
 const requestedUrls = [];
 
 const originalFetch = globalThis.fetch;
@@ -116,6 +117,8 @@ let ownerId;
 let viewerId;
 let sourcePath;
 let displayPath;
+let crossUserSourcePath;
+let crossUserDisplayPath;
 let channel;
 
 try {
@@ -124,15 +127,26 @@ try {
   viewerId = await createVerificationUser(viewer, "viewer");
 
   const ownerProfile = requireResult(
-    await owner.from("profiles").select("user_id, visibility").eq("user_id", ownerId).single(),
+    await owner.from("profiles").select("user_id, visibility, media_namespace").eq("user_id", ownerId).single(),
     "Auth profile trigger verification failed",
   );
   assert(ownerProfile.user_id === ownerId, "Auth signup did not create the owner profile.");
+  assert(ownerProfile.visibility === "private", "A newly created profile did not default to Private.");
+  assert(/^fan-media-[0-9a-f]{32}$/.test(ownerProfile.media_namespace), "The owner profile is missing its opaque media namespace.");
+
+  requireResult(
+    await owner.rpc("set_my_fanatical_name", { fanatical_name_value: ownerName }),
+    "Fanatical Name setup failed",
+  );
 
   sourcePath = `${ownerId}/avatar/local-verification-source.png`;
-  displayPath = `${ownerId}/avatar/local-verification-display.webp`;
+  displayPath = `${ownerProfile.media_namespace}/avatar/local-verification-display.webp`;
+  crossUserSourcePath = `${ownerId}/avatar/cross-user-insert.png`;
+  crossUserDisplayPath = `${ownerProfile.media_namespace}/avatar/cross-user-insert.webp`;
   const sourceBytes = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10])], { type: "image/png" });
   const displayBytes = new Blob([Uint8Array.from([82, 73, 70, 70, 0, 0, 0, 0])], { type: "image/webp" });
+  const updatedSourceBytes = new Blob([Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1])], { type: "image/png" });
+  const updatedDisplayBytes = new Blob([Uint8Array.from([82, 73, 70, 70, 1, 0, 0, 0])], { type: "image/webp" });
 
   requireResult(
     await owner.storage.from(bucket).upload(sourcePath, sourceBytes, { contentType: "image/png", upsert: false }),
@@ -141,6 +155,22 @@ try {
   requireResult(
     await owner.storage.from(bucket).upload(displayPath, displayBytes, { contentType: "image/webp", upsert: false }),
     "Owner display upload failed",
+  );
+  requireDenied(
+    await viewer.storage.from(bucket).upload(crossUserSourcePath, sourceBytes, { contentType: "image/png", upsert: false }),
+    "A non-owner inserted media into another fan's UUID source namespace.",
+  );
+  requireDenied(
+    await viewer.storage.from(bucket).upload(crossUserDisplayPath, displayBytes, { contentType: "image/webp", upsert: false }),
+    "A non-owner inserted media into another fan's opaque display namespace.",
+  );
+  requireResult(
+    await owner.storage.from(bucket).update(sourcePath, updatedSourceBytes, { contentType: "image/png", upsert: false }),
+    "Owner source update failed",
+  );
+  requireResult(
+    await owner.storage.from(bucket).update(displayPath, updatedDisplayBytes, { contentType: "image/webp", upsert: false }),
+    "Owner display update failed",
   );
 
   requireDenied(await viewer.storage.from(bucket).download(sourcePath), "Unrecorded source media was readable by a non-owner.");
@@ -167,44 +197,71 @@ try {
     }),
     "Profile photo activation failed",
   );
-  requireResult(
-    await owner.from("profiles").update({ visibility: "public" }).eq("user_id", ownerId),
-    "Public visibility update failed",
-  );
+  requireResult(await owner.rpc("set_my_profile_privacy", {
+    visibility_value: "members_visible",
+    personal_field_visibility_value: {},
+  }), "Members-visible profile update failed");
 
   requireResult(await owner.storage.from(bucket).download(sourcePath), "Owner could not read the original media");
   requireResult(await owner.storage.from(bucket).download(displayPath), "Owner could not read display media");
   requireDenied(await viewer.storage.from(bucket).download(sourcePath), "A non-owner could read original media.");
-  requireResult(await viewer.storage.from(bucket).download(displayPath), "A viewer could not read public display media");
-  requireResult(await anonymous.storage.from(bucket).download(displayPath), "An anonymous viewer could not read public display media");
+  requireResult(await viewer.storage.from(bucket).download(displayPath), "A signed-in fan could not read the active opaque avatar derivative");
+  requireDenied(await anonymous.storage.from(bucket).download(displayPath), "An anonymous viewer could read profile media.");
+  requireDenied(
+    await viewer.storage.from(bucket).update(sourcePath, sourceBytes, { contentType: "image/png", upsert: false }),
+    "A non-owner updated another fan's UUID source object.",
+  );
+  requireDenied(
+    await viewer.storage.from(bucket).update(displayPath, displayBytes, { contentType: "image/webp", upsert: false }),
+    "A non-owner updated another fan's readable opaque display object.",
+  );
 
   requireResult(await owner.storage.from(bucket).createSignedUrl(sourcePath, 60), "Owner could not sign original media");
   requireDenied(await viewer.storage.from(bucket).createSignedUrl(sourcePath, 60), "A non-owner could sign original media.");
   const publicSigned = requireResult(
     await viewer.storage.from(bucket).createSignedUrl(displayPath, 60),
-    "A viewer could not sign public display media",
+    "A signed-in fan could not sign the active avatar derivative",
   );
   assert(new URL(publicSigned.signedUrl).hostname === "127.0.0.1", "A signed media URL escaped the local stack.");
 
   const publicProfile = requireResult(
-    await viewer.rpc("get_profile_for_viewer", { profile_user_id: ownerId }),
-    "Public viewer profile RPC failed",
+    await viewer.rpc("get_member_profile_by_fanatical_name", { fanatical_name_value: ownerName }),
+    "Members-visible profile RPC failed",
   );
-  assert(publicProfile?.avatar?.display_path === displayPath, "Public profile RPC omitted the display asset.");
-  assert(!JSON.stringify(publicProfile).includes(sourcePath), "Public profile RPC exposed an original media path.");
+  assert(publicProfile?.avatar?.display_path === displayPath, "Members-visible profile RPC omitted the avatar derivative.");
+  assert(!JSON.stringify(publicProfile).includes(sourcePath), "Fan-safe profile RPC exposed an original media path.");
+  assert(!JSON.stringify(publicProfile).includes(ownerId), "Fan-safe profile RPC exposed an Auth UUID.");
+  requireDenied(
+    await anonymous.rpc("get_member_profile_by_fanatical_name", { fanatical_name_value: ownerName }),
+    "An anonymous viewer could execute the member profile reader.",
+  );
 
-  requireResult(
-    await owner.from("profiles").update({ visibility: "private" }).eq("user_id", ownerId),
-    "Private visibility update failed",
-  );
-  requireDenied(await viewer.storage.from(bucket).download(displayPath), "A viewer could read private display media.");
+  requireResult(await owner.rpc("set_my_profile_privacy", {
+    visibility_value: "private",
+    personal_field_visibility_value: {},
+  }), "Private profile update failed");
+  requireResult(await viewer.storage.from(bucket).download(displayPath), "Private attribution lost its active avatar derivative.");
   requireDenied(await anonymous.storage.from(bucket).download(displayPath), "An anonymous viewer could read private display media.");
-  requireDenied(await viewer.storage.from(bucket).createSignedUrl(displayPath, 60), "A viewer could sign private display media.");
+  requireResult(await viewer.storage.from(bucket).createSignedUrl(displayPath, 60), "A signed-in fan could not sign a Private attribution avatar.");
   const privateProfile = requireResult(
-    await viewer.rpc("get_profile_for_viewer", { profile_user_id: ownerId }),
+    await viewer.rpc("get_member_profile_by_fanatical_name", { fanatical_name_value: ownerName }),
     "Private viewer profile RPC failed",
   );
-  assert(privateProfile === null, "Private profile data was returned to a non-owner.");
+  assert(
+    privateProfile?.fanatical_name === ownerName
+      && privateProfile.visibility === "private"
+      && privateProfile.is_private === true
+      && privateProfile.avatar?.display_path === displayPath,
+    "Private profile attribution was not returned through the fan-safe boundary.",
+  );
+  assert(
+    privateProfile
+      && !("display_name" in privateProfile)
+      && !("tagline" in privateProfile)
+      && !("personal_fields" in privateProfile)
+      && !JSON.stringify(privateProfile).includes(ownerId),
+    "Private profile payload exposed member-only or protected data.",
+  );
   requireResult(await owner.storage.from(bucket).download(sourcePath), "Private owner lost original media access");
   requireResult(await owner.storage.from(bucket).download(displayPath), "Private owner lost display media access");
 
@@ -237,6 +294,21 @@ try {
   }
   assert(realtimeDelivered, "Realtime change event timed out.");
 
+  await viewer.storage.from(bucket).remove([sourcePath]);
+  requireResult(
+    await owner.storage.from(bucket).download(sourcePath),
+    "A non-owner delete attempt removed another fan's UUID source object.",
+  );
+  await viewer.storage.from(bucket).remove([displayPath]);
+  requireResult(
+    await owner.storage.from(bucket).download(displayPath),
+    "A non-owner delete attempt removed another fan's opaque display object.",
+  );
+  requireResult(await owner.storage.from(bucket).remove([sourcePath]), "Owner source delete failed");
+  requireResult(await owner.storage.from(bucket).remove([displayPath]), "Owner display delete failed");
+  requireDenied(await owner.storage.from(bucket).download(sourcePath), "Owner source delete left the object readable.");
+  requireDenied(await owner.storage.from(bucket).download(displayPath), "Owner display delete left the object readable.");
+
   assert(requestedUrls.length > 0, "No local integration requests were observed.");
   assert(
     requestedUrls.every((url) => new URL(url).hostname !== productionHostname),
@@ -244,13 +316,15 @@ try {
   );
 
   console.log("Passed local Auth signup/session/profile trigger verification.");
-  console.log("Passed profile-media upload, owner/original, public/display, private, and signed-URL privacy verification.");
+  console.log("Passed opaque profile-media, owner/cross-user Storage writes, signed-in attribution, Private payload, and signed-URL verification.");
   console.log("Passed local Realtime subscription and database-change delivery verification.");
   console.log(`Observed ${requestedUrls.length} Supabase HTTP requests; hosted production requests: 0.`);
 } finally {
   if (channel) await owner.removeChannel(channel);
-  if (sourcePath || displayPath) {
-    await admin.storage.from(bucket).remove([sourcePath, displayPath].filter(Boolean));
+  if (sourcePath || displayPath || crossUserSourcePath || crossUserDisplayPath) {
+    await admin.storage.from(bucket).remove(
+      [sourcePath, displayPath, crossUserSourcePath, crossUserDisplayPath].filter(Boolean),
+    );
   }
   for (const userId of [ownerId, viewerId].filter(Boolean)) {
     await admin.auth.admin.deleteUser(userId);

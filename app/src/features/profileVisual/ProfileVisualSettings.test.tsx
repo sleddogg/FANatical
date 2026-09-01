@@ -58,7 +58,10 @@ describe("ProfileVisualSettings", () => {
     vi.clearAllMocks();
     mocks.images = { mobile, wide };
     mocks.library = { mobile: [mobile], wide: [wide] };
-    mocks.saveImage.mockImplementation(async (record: ProfileVisualImageRecord) => ({ ...record, id: record.id ?? "saved-image" }));
+    mocks.saveImage.mockImplementation(async (record: ProfileVisualImageRecord) => {
+      const { sourceBlob: _sourceBlob, displayBlob: _displayBlob, ...persisted } = record;
+      return { ...persisted, id: record.id ?? "saved-image" };
+    });
     mocks.removeImage.mockResolvedValue(undefined);
     mocks.resolveLibrary.mockResolvedValue(undefined);
   });
@@ -85,6 +88,7 @@ describe("ProfileVisualSettings", () => {
     await user.click(screen.getAllByRole("button", { name: "Save image" })[0]!);
 
     expect(mocks.saveImage).toHaveBeenCalledWith(expect.objectContaining({ sourceFilename: "phone-camera.jpg" }));
+    expect(screen.getAllByRole("button", { name: "Save image" })[0]).toBeDisabled();
   });
 
   it("keeps a first-attempt Wide picker selection through an active-record refresh", async () => {

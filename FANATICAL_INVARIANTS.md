@@ -1,11 +1,14 @@
 # FANatical Invariants Register
 
-> **STATUS: INDEPENDENTLY VERIFIED — LOCAL ENFORCEMENT SCOPE.**
-> Enforcement and proof statuses were independently verified against the repository
-> and local proof suites by Cursor on 2026-08-27. Hosted Supabase is separately
-> verified current through `202608270004`; future hosted changes remain subject to
-> FAN-RUN-04. A `Guaranteed` status describes the proved system rule, not a
-> permanent assertion that every future hosted deployment remains in sync.
+> **STATUS: HISTORICAL VERIFICATION PLUS PHASE 5A INDEPENDENT CLOSEOUT COMPLETE.**
+> Cursor independently verified the then-current repository and local proof suites
+> on 2026-08-27. That verification does not certify the later Phase 5A change set.
+> Hosted Supabase was separately verified current through Phase 4 migration
+> `202608290008` during the read-only Phase 5A preflight. The separate Phase 5A
+> closeout audit passed on 2026-09-01 with no implementation blockers. Phase 5A
+> entries below remain `Claimed` only because hosted activation and hosted
+> behavioral proof remain pending under FAN-RUN-04, not because another local
+> independent audit is required.
 
 Rules that must not silently become false. Each entry states the rule in plain
 English, where it is enforced, what proves it, and how much of that is actually
@@ -48,27 +51,32 @@ written as two entries rather than one optimistic one.
 Recorded 2026-08-27 from the independent blind audit and Cursor verification
 report (`audit/grok-blind-audit-2026-08-27.md` and
 `audit/grok-register-verification-2026-08-27.md`). The reports remain historical
-evidence; this register incorporates their corrections. Local verification is
-complete, and hosted Supabase is current through `202608270004`. Individual entry
-status lines below may still carry the older "hosted state pending" wording and
-are corrected only by an independent verifier, never in place.
+evidence; this register incorporates their corrections. That historical local
+verification was complete for its reviewed tree. Hosted Supabase is now known to
+contain Phase 4 through `202608290008`, but no Phase 5A migration. `Guaranteed`
+entries retain only their independently proved scope; later behavior remains in
+Part II until an independent verifier promotes it.
 
 **The B1 and B2 fixes are locally proved.** `202608270001` plus
 `profile_privacy.sql` bind profile-media metadata to the true owner's folder and
 deny the old cross-user display-path rebind. `AccountBootstrap.test.tsx` proves
 that first sign-in no longer writes the demo persona or unchosen demo follows to
-a real account. Hosted presence and already-affected hosted records were not
-inspected.
+a real account. At the time of that 2026-08-27 verification, hosted presence and
+already-affected records had not been inspected. The later Phase 5A read-only
+inventory is recorded under FAN-ACCT-12. BL-020 and BL-035 were later closed by
+the designated test-persona and safe generic-avatar decisions; BL-043 governs the
+pre-beta purge.
 
 **Team resolution no longer guesses locally.** `202608270002` adds the
 status-returning `resolve_catalog_team(...)` and makes
 `resolve_catalog_team_id(...)` raise on a bare external identifier that maps to
 more than one Team. `team_resolution.sql` directly proves canonical, unique
-external, ambiguous and existing compatibility cases. Hosted presence remains
-unknown under FAN-RUN-04.
+external, ambiguous and existing compatibility cases. Hosted migration presence
+is confirmed through `202608290008`; independent hosted behavior has not been
+re-proved under FAN-RUN-04.
 
-**Current behavior is not automatically product authority.** Public-by-default
-profiles, signed-URL lifetime, anonymous venue-map reads and device-local
+**Current behavior is not automatically product authority.** Legacy hosted
+Public-by-default profiles, signed-URL lifetime, anonymous venue-map reads and device-local
 sign-out are recorded below as current behavior / decision-needed items, not as
 permanent FAN-* promises.
 
@@ -230,11 +238,11 @@ Status: enforced + tested for the Postgres ledger; the Cloudflare executor bound
 
 ## Account and privacy
 
-**FAN-ACCT-02 — Profile media is owner-bound, and public delivery never exposes owner-only originals.**
-A fan's profile, photo and visual-media metadata resolves only inside that fan's Storage folder. Third-party display access follows the true owner's visibility, never a claimant's. Public and other non-owner viewers may receive a permitted display derivative only; source/original objects remain owner-only.
+**FAN-ACCT-02 — Profile media is owner-bound, and non-owner delivery never exposes owner-only originals.**
+A fan's profile, photo and visual-media metadata resolves only inside that fan's owned Storage paths. Third-party display access follows the true owner's authorization, never a claimant's. Non-owners may receive only a permitted display derivative; source/original objects remain owner-only. The newer opaque fan-facing namespace and Private-comment-attribution behavior are separately Claimed under FAN-ACCT-12.
 Enforcement: owner RLS; four owner-path CHECKs; `private.profile_media_path_is_visible`; original-versus-display Storage policies — `202608270001`
 Proof: `profile_privacy.sql` asserts the old cross-user `avatar_path` attack, library source/display path binding, malformed legacy-row denial, true-owner visibility, and owner/original versus viewer/display access under `SET LOCAL ROLE`
-Status: enforced + tested locally. The CHECKs are `NOT VALID`, so malformed legacy rows require review through `private.profile_media_path_ownership_violations`; hosted state is unknown under FAN-RUN-04. · `C:ACCT-02` `GK:B1` `GK:M3` `GK:M4`
+Status: enforced + tested locally. The CHECKs are `NOT VALID`, so malformed legacy rows require review through `private.profile_media_path_ownership_violations`. Read-only hosted inventory on 2026-08-31 found one active UUID-prefixed display derivative on the designated `NorthStarFan` test account. Fan-safe readers already reject it and return the generic avatar; the decision is to clear/remove rather than migrate that test display, with remaining test media removed under BL-043. The newer opaque delivery boundary remains Claimed under FAN-ACCT-12. · `C:ACCT-02` `GK:B1` `GK:M3` `GK:M4`
 
 **FAN-ACCT-05 — First sign-in never overwrites a real account identity or follow state with hard-coded demo/prototype identity or unchosen demo follows.**
 Locally held fan preferences may be migrated only when they are actual stored user state; mock defaults are not account data.
@@ -254,7 +262,7 @@ Status: enforced + tested · `GK:B2`
 Exact canonical `team_id` matches take deterministic precedence. A unique bare external identifier remains compatible; the same external identifier attached to different Teams across namespaces returns every candidate, and the strict UUID resolver raises.
 Enforcement: `resolve_catalog_team(...)` returns `resolved` / `none` / `ambiguous`; `resolve_catalog_team_id(...)` raises — `202608270002`
 Proof: "an exact canonical Team public ID must resolve deterministically"; "one bare external identifier in two namespaces must report ambiguity"; "the strict Team resolver must raise instead of choosing a candidate" — `team_resolution.sql`
-Status: enforced + tested locally by this implementation pass; independent promotion to Guaranteed and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04 · `CV:GAP-06`
+Status: enforced + tested locally by this implementation pass; independent promotion to Guaranteed and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04 · `CV:GAP-06`
 
 **FAN-ID-17 — Sport, League, Team and Venue permanent public IDs never change through ordinary mutation.**
 Enforcement: `protect_catalog_public_identity()` protects both the internal UUID and `sport_id`, `league_id`, `team_id` or `venue_id`
@@ -274,37 +282,37 @@ Status: documented only · `G:ID-12`
 **FAN-NEWS-01 — A human Author is a persistent person identity that survives publisher changes.** Publisher-specific contributor profiles and bylines are linked evidence, not replacement people. · `C:NEWS-01` `G:NEWS-01`
 Enforcement: `catalog_people`, publisher-specific contributor profiles, and time-bounded person/publisher relationship versions — `202608280001`
 Proof: `news_identity_foundation.sql` proves same-name people remain distinct and one person's historical affiliation survives a publisher move
-Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-NEWS-02 — A stable public professional identity, including a pen name, is a valid Author identity.** A private or legal identity is not required to attribute journalism correctly. · `G:NEWS-02`
 Enforcement: professional and pen-name kinds on versioned public person identities — `202608280001`
 Proof: `news_identity_foundation.sql` creates and resolves a synthetic pen-name identity without legal/private identity data
-Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-NEWS-03 — A podcast Show is a persistent identity that survives host and network changes.** Host, contributor and network relationships are time-bounded records attached to the Show. · `C:NEWS-13` `G:NEWS-03`
 Enforcement: stable `podcast_shows` identities plus versioned Show names, contributors and publisher/network relationships — `202608280001`
 Proof: `news_identity_foundation.sql` retains one Show identity across synthetic host and network changes
-Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-NEWS-14 — News availability and monitoring policy is independent of factual verification trust.** News approval never grants verification authority; a factual trust tier never by itself determines News follow or feed eligibility. · `C:NEWS-14` `G:GOV-01`
 Enforcement: News policy is versioned separately in `news_publisher_policy_versions`; no factual-governance field backfills or derives it — `202608280001`
 Proof: `news_identity_foundation.sql` proves approved/Tier-1 factual governance leaves News status unreviewed and that an explicit News status remains independently recorded
-Status: enforced + tested locally for the Phase 2 publisher-policy boundary; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally for the Phase 2 publisher-policy boundary; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-ATTR-02 — Merge and split decisions on ambiguous identities preserve history and are reversible; ambiguity is reviewed, never guessed.** · `C:ATTR-02` `G:NEWS-16`
 Enforcement: immutable Resolution decisions/evidence and time-bounded `news_person_pair_state_periods` retain distinct, ambiguous and canonical-merge periods — `202608280001`
 Proof: `news_identity_foundation.sql` proves ambiguity, explicit-bridge merge, manual reversal, and direct point-in-time state/canonical answers
-Status: enforced + tested locally for Phase 2 person Resolution; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally for Phase 2 person Resolution; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-ATTR-03 — A publisher/contributor relationship never implies employment.** Employee, freelance, contract, guest, columnist, contributor and unknown are distinct and recorded as what they are. · `C:ATTR-03` `G:ATTR-02`
 Enforcement: governed relationship types and explicit time-bounded relationship versions — `202608280001`
 Proof: `news_identity_foundation.sql` proves an unknown relationship and historical publisher move without inferring employment
-Status: enforced + tested locally; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-ATTR-04 — Visible publisher attribution controls the public byline.** Hidden machine metadata alone — JSON-LD, meta tags, embedded fields — never overrides visible organizational attribution. Where the publisher itself publicly identifies the human Author elsewhere through a genuine public author, profile or byline identity, that public evidence may establish the human attribution. Hidden metadata remains usable as an internal resolution signal. · `C:ATTR-04` `G:ATTR-01`
 Enforcement: governed explicit/supporting evidence classes and automatic Resolution rules reject hidden evidence as explicit and ignore hidden contradiction when non-conflicting visible public evidence establishes the identity — `202608280001`
 Proof: `news_identity_foundation.sql` proves visible public evidence resolves despite contradictory hidden supporting metadata, while visible conflict routes to review
-Status: enforced + tested locally for Phase 2 identity Resolution; independent verification and hosted state remain pending under FAN-DEV-01 and FAN-RUN-04
+Status: enforced + tested locally for Phase 2 identity Resolution; independent verification and independent hosted behavioral verification remain pending under FAN-DEV-01 and FAN-RUN-04
 
 **FAN-ATTR-05 — Follows survive person merges and splits without silent reassignment.** On merge, follows redirect to the canonical identity. On a later split, follows that were unambiguous when created are restored from provenance; fans who followed during the ambiguous merged period are prompted to choose, never silently assigned. Enough durable provenance must be retained to reconstruct fan intent; no specific storage mechanism is mandated. · `C:ATTR-05` `G:NEWS-16`
 Enforcement: original person, canonical person at follow time, and merge-decision provenance are retained on each Author follow; current canonical resolution redirects merged follows; a recorded merge decision that is no longer current removes the follow from feed eligibility and makes `get_my_news_following()` report `needs_reselection` — `202608290005`, `202608290006`
@@ -443,38 +451,113 @@ Status: documented only; split from the proved Postgres-ledger half of FAN-RUN-0
 
 ## Account and privacy
 
-**FAN-ACCT-01 — Profile visibility is exactly `public` or `private`.**
-Enforcement: table CHECK and `save_my_profile` validation
-Proof: `profile_privacy.sql` round-trips both legal values but does not assert rejection of an illegal value
-Status: enforced but unproven · `C:ACCT-01`
+**FAN-ACCT-01 — A new or unconfigured fan profile is Private; Members-visible is an explicit owner selection and is readable only by signed-in, non-separated ordinary fans.**
+The old default `public` state is not evidence of owner consent and is treated as Private until the owner explicitly selects Members-visible. Private comment attribution is the narrow FAN-ACCT-12 exception, not profile access. Anonymous profile reading is forbidden.
+Enforcement: default/conservative legacy conversion; signed-in current-name allowlisted reader; per-field owner controls; anonymous UUID-reader removal; fan-population and reciprocal-Hide checks — `20260831203014`
+Proof: `profile_privacy.sql`, `ProfilePrivacySettings.test.tsx`, the Phase 5A browser Test Fan check, and the live signed-URL/Private-payload assertions in `verify-local-supabase.mjs`; `profile_privacy_verification.sql` remains a diagnostic inventory
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending · `C:ACCT-01`
 
 **FAN-ACCT-03 — Authentication and ownership are required for every profile write.**
 Enforcement: function grants, `auth.uid()` checks and owner-only write RLS
 Proof: no permanent suite invokes the write path as `anon` or asserts a cross-user table write denial
 Status: enforced but unproven · `C:ACCT-03`
 
-**FAN-ACCT-06 — Profile-media Storage uploads, updates and deletes stay inside the authenticated owner's first path segment.**
-Enforcement: `storage.objects` policies compare `(storage.foldername(name))[1]` with `auth.uid()::text`
-Proof: Cursor's rolled-back foreign-folder upload probe was denied, but `profile_privacy.sql` does not permanently assert the upload/write boundary
-Status: enforced but unproven · `CV:owner-folder-uploads` · GAP-08
+**FAN-ACCT-06 — Profile-media Storage uploads, updates and deletes stay inside either the authenticated owner's UUID source/original namespace or that owner's immutable opaque display namespace.**
+Enforcement: `private.profile_media_path_belongs_to_user` plus owner insert/update/delete policies — `20260831203014`
+Proof: `verify-local-supabase.mjs` exercises real authenticated Storage API owner upload/update/delete and cross-user insert/update/delete denial across UUID and opaque namespaces; `profile_privacy.sql` exercises owner/non-owner read access; the earlier independent foreign-folder probe remains historical evidence
+Status: enforced + tested locally for Phase 5A; independent closeout passed; hosted activation pending · `CV:owner-folder-uploads`
 
-**FAN-ACCT-07 — A claimed handle is a 3–30 character, case-insensitive identity made only from ASCII letters, numbers and underscores, with no leading or trailing underscore.**
+**FAN-ACCT-07 — A claimed Fanatical Name is a 3–20 character, case-insensitive identity made only from ASCII letters, numbers and underscores, with no leading or trailing underscore.**
 Numbers may lead and underscores may repeat. The entered casing is preserved for display, while ownership uses `lower(handle)`. The empty string is the unclaimed state. Reserved identities are case-insensitive and include the centrally maintained exact-name set and the entire `fanatical_` prefix. A presentation `@` is not stored as part of the handle.
-Enforcement: private reservation registry; authoritative profile-write validation trigger; partial unique index on `lower(handle)`; unclaimed signup behaviour; clear collision handling in `save_my_profile` — `202608270003`
-Proof: `profile_handle_integrity.sql` exercises every settled boundary, all required reservations, normalized collision rejection, multiple blank handles, casing preservation and owner changes through the authenticated RPC
-Status: enforced + tested locally; independent verification and hosted state remain pending · GAP-12
+Enforcement: authoritative validation trigger; normalized unique index and namespace lock; reservation registry; `set_my_fanatical_name`; claim/change UI — `20260831203014`
+Proof: `profile_handle_integrity.sql`, `operational_identity_handles.sql`, and `phase5a_concurrency.sh` cover boundaries, taken/reserved cases, concurrent claim, immediate release, reclaim, casing, and history ownership
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending · GAP-12
+
+**FAN-ACCT-08 — The permanent fan identity is the stable internal account/user ID; it never changes, is never displayed, and is never derived from or replaced by a Fanatical Name or display name.**
+Trophies, follows, comments, tags, history and every other fan-owned record belong to that permanent identity. `profiles.handle` is the one active public Fanatical Name while claimed; display name is non-unique and never an identifier. Renaming immediately releases the old name and never changes ownership. There is no cooldown, alias, redirect, rename-frequency limit, or historical-handle binding. If a released name is later claimed by someone else, the new holder receives only the label and inherits none of the prior holder's records. A name use resolves to the identity holding it at the time of the action.
+Enforcement: Auth UUID FKs, current-name readers/routes, name namespace lock and normalized uniqueness, and UUID-owned Community/follow/profile records — `20260831203014`, `20260831203022`, `20260831203030`
+Proof: `profile_handle_integrity.sql`, `phase5a_community_requests.sql`, and `phase5a_concurrency.sh` prove rename/reclaim while historical comments remain with the original UUID
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-ACCT-12 — Fan-facing avatar delivery uses an immutable opaque media namespace and never exposes an Auth UUID, while owner source/original media may remain UUID-bound and owner-only.**
+Private comment attribution may return only the active registered opaque avatar derivative to a signed-in, non-separated ordinary fan. Other profile media remains subject to Members-visible/owner access. A legacy UUID-prefixed active display is never returned to another fan; it falls back to the generic avatar until an approved owner transition.
+Enforcement: immutable `profiles.media_namespace`; fan-safe/attributable path predicates; current-name profile and media readers; record-backed Storage policies — `20260831203014`
+Proof: `profile_privacy.sql` asserts opaque active delivery, UUID/path omission, legacy-display denial, original-owner access, anonymous denial, and malformed path rejection; `verify-local-supabase.mjs` asserts the live signed-URL path; `profile_privacy_verification.sql` is a diagnostic inventory, not an assertion suite
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending. Read-only hosted inventory found one active UUID-prefixed display on `NorthStarFan`; the proved generic-avatar fallback closes BL-035 as an activation blocker, and BL-043 governs final removal with the test-account purge.
+
+**FAN-ACCT-13 — Designated pre-launch fan test accounts and all fan-owned test data are removed before real beta/public onboarding.**
+Brad, TestFan, and NorthStarFan are controlled acceptance accounts, not real fan population. NorthStarFan may retain its test persona during controlled testing, and its legacy avatar uses the generic fan-facing fallback rather than a migration into the opaque namespace. Before the first real beta/public fan is onboarded, one governed cleanup removes all three Auth users and their fan-owned data/media without deleting real application schema, migrations, or governed News/catalog foundations, then verifies that no test identity or artifact remains.
+Enforcement: none yet; governed purge required by BL-043
+Proof: none yet; BL-043 requires post-purge identity, ownership, media, and fixture inventory
+Status: settled pre-beta gate — unbuilt · BL-043
 
 **FAN-ACCT-10 — Operational agent/service identities are not fan identities and never claim public fan handles or appear in ordinary fan-only surfaces.**
 Their permanent Auth user and `catalog_actors` identity remain intact independently of any technical profile row, profile visibility or handle state so capabilities, audit history, verification decisions and provenance retain the same actor. Shared Auth bootstrap may create a technical profile row, but the canonical fan-profile population excludes every profile linked to an agent/service actor, active or inactive. Fan discovery, tagging autocomplete, leaderboards and equivalent fan-only surfaces must use that enforceable population rather than assuming that every profile or Auth user is a fan.
 Enforcement: `private.fan_profile_population`; operational check in `private.enforce_profile_handle_integrity()`; `private.can_view_profile()` fan-population join; migration preflight that refuses nonblank operational handles — `202608270004`
 Proof: `operational_identity_handles.sql` proves technical-row retention, agent/service exclusion across active states, fan-facing RPC exclusion, direct and authenticated-RPC handle rejection, and preservation of the actor/Auth linkage
-Status: enforced + tested locally; independent verification and hosted state remain pending
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending
 
 **FAN-ACCT-11 — A fan can never claim a handle matching an active operational actor's canonical identifier.**
 Every agent/service `catalog_actors.actor_key` is automatically recorded case-insensitively in the central handle reservation registry without deriving a second operational name. The current reservation cannot be removed or reassigned while that actor is active. Manual reservations remain removable; an automatic reservation becomes removable after retirement or after the actor is renamed, while activation always recreates and validates the current reservation.
 Enforcement: catalog-actor reservation trigger; actor-linked reservation provenance and lifecycle trigger; shared handle-namespace transaction lock; existing-claim rejection — `202608270004`
 Proof: `operational_identity_handles.sql` proves agent and service reservation, punctuation-preserving actor keys, case-insensitive fan denial, active protection, rename/retirement release, reactivation, and collision-safe activation
-Status: enforced + tested locally; independent verification and hosted state remain pending
+Status: enforced + tested locally; independent verification and independent hosted behavioral verification remain pending
+
+## Phase 5A contextual Community, Requests and notifications
+
+**FAN-NEWS-19 — A corrected factual classification applies to the Item and future contextual-discussion routing only.**
+If a correction makes an Item newly eligible, chronology still uses its original publication time. Corrections never rewrite prior interaction, move/delete a discussion, or fabricate seen-history. A discussion for a removed classification remains reachable and preserves eligible owner/moderation lifecycle actions, but no longer permits new roots/replies or appears as a newly routed action from that classification.
+Enforcement: current-classification routing predicate and preserved direct-discussion reader — `20260831203022`
+Proof: `phase5a_community_requests.sql` removes a classification, preserves the discussion/history, and denies new root/reply creation through both contextual and direct paths
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-DEST-02 — A canonical News Item has at most one FANatical discussion per valid public Team, Competition, or Sport context.**
+There is no General or All discussion. An explicit Team or Competition filter wins when directly current. An explicit Sport filter wins when the Item reaches that Sport through the same current Team/Competition/Edition/Sport roll-up as feed eligibility. Otherwise routing falls back to exactly one current direct Competition, then exactly one current direct Sport, and never infers Team. Opening an empty discussion creates no row; the first comment creates/resolves it atomically. Canonical and unambiguous legacy Team identifiers converge on the same canonical context. Classification correction follows FAN-NEWS-19.
+Enforcement: exclusive context CHECK, real catalog FKs, three partial unique indexes, shared effective-Sport predicate, ambiguity-safe Team resolver, and transactional first-comment RPC — `20260831203022`, `20260901020424`
+Proof: `phase5a_community_requests.sql` covers Team-, Competition-, and direct-Sport-classified Sport roll-up; `phase5a_concurrency.sh`, `discussionRouting.test.ts`, `NewsDiscussionAction.test.tsx`, and the targeted Phase 5A browser proof cover the remaining boundary
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending · `C:DEST-02` `G:DEST-02`
+
+**FAN-COMM-01 — Community comment ownership is the hidden permanent Auth identity, while every fan-facing attribution resolves the author's current Fanatical Name and permitted avatar at read time.**
+A Fanatical Name is required before post/reply. Auth UUIDs and historical handle text are never exposed as community identity. Attribution masking and durable content state are independent: Hide, and Block once implemented, masks attribution, while an existing tombstone still controls the body. Hidden plus author-deleted therefore renders `Hidden fan` / `Comment deleted`; Unhide restores the current Fanatical Name/avatar while `Comment deleted` remains. `Unavailable author` never results merely from Hide/Block and tombstone overlap. A posting restriction never erases prior authorship.
+Enforcement: UUID owner FKs, fan-population/current-name attribution reader, tombstone-safe payload projection, opaque avatar boundary, and claim gate — `20260831203014`, `20260831203022`, `20260901020424`
+Proof: `profile_privacy.sql`, `phase5a_community_requests.sql` covers author and moderator tombstones plus restriction independence, `phase5a_concurrency.sh`, and targeted browser claim/current-name flows
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-02 — Comment history and reply topology are durable.**
+When not under an active Community suspension, owners may edit only for seven days by database time and may delete under the ordinary owner lifecycle rule; internal revisions are append-only and have no public viewer. Author deletion is an irreversible tombstone, descendants survive, and contextual counts include all durable nodes including tombstones. Cross-user mutation is denied. Suspension expiry or lift restores these ordinary rules and creates no comment-specific permanent lock.
+Enforcement: comment/revision tables, same-discussion parent constraint, mutation RPCs, count triggers, immutable revision/tombstone protections — `20260831203022`
+Proof: `phase5a_community_requests.sql`, `CommentTree.test.tsx`, and browser post/reply proof
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-03 — Hide is directed owner intent with reciprocal effect.**
+Effective separation exists while either directed row exists. Each fan controls only their own row. Separated fans receive `Content unavailable` for each other's community content, cannot directly reply or view profiles, and receive no direct-interaction notifications from each other. One shared database predicate governs every relevant read and write.
+Enforcement: unique directed intent, owner-only remove RPC, shared effective-separation predicate across profile/comment/notification readers and writers — `20260831203022`
+Proof: `phase5a_community_requests.sql` exercises none, A-to-B, B-to-A and both directions plus reciprocal reads/writes/notifications
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-04 — Community reports and moderation are distinct from Hide and require exact staff authority.**
+Only `staff_roles` permission `community_moderate` authorizes dismiss, tombstone/remove, Community suspension, or suspension lift. Catalog capabilities, role labels, and catalog wildcard `*` never grant this authority. A fan can report each durable comment at most once. Restriction cadence remains 7, 7, 14, then 14 days by database time. While active, the restriction is a fan-wide Community suspension: Community is readable, but ordinary participation is read-only across every discussion/context, including Phase 5A post, reply, edit, and delete. Hide/Unhide and Report remain safety/protection actions. Later reactions, Quote, interaction-producing mentions, new discussions, Group Chat posting, Poll creation/voting, and comparable participation must reuse this boundary. Expiry or a lift immediately restores only the ordinary underlying permissions, including the seven-day edit window; no thread/comment receives separate suspension state or a permanent lock. Report evidence, tombstones, moderation actions, restrictions, and lifts remain preserved, and restriction/lift history is append-only. Each successful lift creates exactly one fan-owned, retry-safe restoration notice in the separate moderation-notice system, never in social notifications.
+Enforcement: reporter/comment uniqueness and idempotent report RPC, exact-permission moderation/lift RPCs and queue, one database-time fan-wide participation boundary shared by post/reply/edit/delete and capability reads, append-only restriction/lift history, and lift-keyed separate notice table/UI — `20260831203022`, `20260901020424`
+Proof: `phase5a_community_requests.sql` covers unrestricted lifecycle actions, cross-context suspension, post/reply/edit/delete denial, unaffected fans, normal post-lift permissions and edit timing, report/history preservation, authority denial, notice idempotency/separation, cadence, and append-only protection; focused repository/component tests prove suspended capability projection
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-05 — Request resolution is `Pending → Available | Unable to add`, shared by target but owned per requester.**
+Raw evidence is retained; one fan cannot duplicate the same requester relationship. Available means currently followable under Phase 4 authority, never auto-Follows, and current actionability follows live followability. Terminal requests never reopen or re-notify.
+Enforcement: normalized shared target/per-fan relation, request-domain state guards, current followability resolver, staff resolution RPC and explicit fan Follow UI — `20260831203030`
+Proof: `phase5a_community_requests.sql` and `phase5a_request_concurrency.sh` cover same-normalized-name dedupe, same-normalized-URL dedupe, shared candidates, both terminal outcomes/orderings, Author merge, exactly-once notification and no auto-Follow. Name-versus-URL convergence for one underlying identity is explicitly deferred under BL-042.
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-06 — The Phase 5A social inbox contains only typed, idempotent direct-reply and final-request notifications.**
+Routine comments do not notify. Each terminal Request outcome notifies each requester exactly once. A direct reply notifies exactly once only when the fans are not separated. Moderation notices remain a separate system channel.
+Enforcement: typed/idempotent notification constraints, shared separation predicate, account-owned readers and owner-keyed React state — `20260831203022`, `20260831203030`
+Proof: `phase5a_community_requests.sql`, request concurrency, account-transition component structure, and browser reply-to-inbox increment
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
+
+**FAN-COMM-07 — Every mutable Phase 5A domain table is mechanically governed before completion.**
+`news_*` and `user_news_*` request tables extend the News mutation registry; `community_*` tables, including social notifications and moderation notices, are covered by a parallel Community registry/assertion. Browser roles have no unregistered direct mutation path.
+Enforcement: extended News registry plus Community mutation registry and migration-time assertions, including the append-only restriction-lift table — `20260831203022`, `20260831203030`, `20260901020424`
+Proof: both registry assertions run in migrations; `phase5a_community_requests.sql` checks governed operations, RLS, and grants; `security_definer_hygiene.sql` checks SECURITY DEFINER hygiene in the full backend suite
+Status: enforced + tested locally; Phase 5A independent closeout passed; hosted activation pending
 
 ## Product integration and truthfulness
 
@@ -500,19 +583,24 @@ Status: documented only (core philosophy) · `C:SYS-02` `G:SCORE-04`
 ## Current behavior / decision needed — not ratified invariants
 
 These entries deliberately use `CURRENT-*`, not `FAN-*`. They describe the
-repository as observed on 2026-08-27 and must not be read as permanent product
-authority.
+verified local/hosted split and other current behavior as observed through
+2026-08-31; they are drift-prone deployment/runtime observations and must not be
+read as permanent product authority.
 
-**CURRENT-01 — New profiles default to `public`.** `profiles.visibility` has a
-`public` default, and the public-viewer RPC is available to `anon`. Decision
-needed: explicitly ratify public-by-default or replace it with an approved
-privacy-onboarding rule. · `GK:M1`
+**CURRENT-01 — SUPERSEDED LOCALLY BY PHASE 5A: the Phase 4 hosted project still
+has the earlier profile contract until approved migration, while the local Phase
+5A tree defaults Private, offers explicit Members-visible, and removes anonymous
+and UUID-shaped profile reading.** This is tracked as deployment state under
+FAN-RUN-04, not as permission to restore the old product behavior. · `GK:M1`
 
-**CURRENT-02 — A signed display-media URL issued while a profile is public may
-remain usable after the profile becomes private until its bearer URL expires.**
-The documented/client lifetime is approximately one hour with a five-minute
-cache safety window. This is a delivery caveat to FAN-ACCT-02, not proof that
-current visibility can revoke an already-issued bearer URL. · `GK:M4`
+**CURRENT-02 — A signed display-media URL issued while its viewer is authorized
+may remain usable after the profile becomes Private or reciprocal Hide begins
+until its bearer URL expires.** Authorization may have been owner access,
+Members-visible profile access, or the narrow signed-in comment-attribution
+exception. The documented/client lifetime is approximately one hour with a
+five-minute cache safety window. This is a delivery caveat to FAN-ACCT-02 and
+FAN-ACCT-12, not proof that a later authorization change can revoke an
+already-issued bearer URL. · `GK:M4`
 
 **CURRENT-03 — Venue mapping, section, exception, inventory-rule, override and
 team-profile rows are readable by `anon`.** Decision needed before those rows
@@ -562,8 +650,6 @@ Why: this is the product's central promise. Any ranking layer converts FANatical
 
 **FAN-NEWS-18 — FANatical is positive-selection based: fans receive journalism from identities they chose to follow. There is no separate negative-preference or block system competing with follow eligibility.** Mute is a temporary suspension of an existing followed identity for 7 or 30 days from database `statement_timestamp()` and preserves that follow and its scopes; it is not a parallel eligibility system. Per-fan, per-Item Dismiss is permitted display suppression: it hides only that canonical Item for that fan, changes no follow or canonical fact, and Undo restores the Item at its original chronological position. Dismiss is not a block system and is unavailable on the zero-follow EXAMPLE card.
 
-**FAN-NEWS-19 — A corrected factual classification applies to the item itself.** If a correction makes an item newly eligible for a fan, it appears at its original chronological position using its original publication time. It is never surfaced artificially at the top of the feed merely because the correction happened later. Corrections never rewrite prior fan interactions and never fabricate seen-history.
-
 ## Attribution
 
 **FAN-ATTR-01 — Historical attribution stays attached to the item as published.** Later publisher moves, identity merges, host changes or relationship corrections never rewrite who the item was publicly attributed to at publication time. · `C:ATTR-01` `G:ATTR-03`
@@ -583,8 +669,6 @@ Why: this is the product's central promise. Any ranking layer converts FANatical
 ## Destination and publisher obligations
 
 **FAN-DEST-01 — FANatical does not republish third-party article bodies without explicit permission or licensing.** Absent permission the read target opens the publisher's public manifestation. · `C:DEST-01` `G:DEST-01`
-
-**FAN-DEST-02 — Each canonical News Item has exactly one canonical FANatical discussion; the database relationship must prevent duplicate discussion roots.** An item may surface in many feeds and filters but resolves to one discussion container. · `C:DEST-02` `G:DEST-02`
 
 **FAN-DEST-03 — FANatical-generated outbound opens are never labelled or presented as publisher views or readers.** · `C:DEST-03` `G:DEST-04`
 
@@ -631,11 +715,6 @@ Why: queue delivery is at-least-once, so any state in a payload will eventually 
 
 **FAN-ACCT-04 — Explicit account deletion retains only the minimum permissible historical award record necessary to preserve competition history.** Identifiability, anonymization and retention mechanics are explicitly deferred to the later privacy and retention policy and are not defined here. If a returning person can later be safely re-associated with historical awards through an approved identity process, those awards may be reattached. Both the retention policy and the identity process are material decisions under FAN-DEV-04.
 
-**FAN-ACCT-08 — The permanent fan identity is the stable internal account/user ID; it never changes, is never displayed, and is never derived from or replaced by a handle or display name.** Trophies, follows, comments, tags, history and every other fan-owned record belong to that permanent identity. Handle and display name are mutable facts attached to it: a handle is a case-insensitively unique public label while claimed, while a display name is non-unique and is never an identifier. Renaming a handle never changes ownership. If a released handle is later claimed by someone else, the new holder receives only the label and inherits none of the prior holder's mentions, trophies, follows or history. A handle use resolves to the identity holding it at the time of the action.
-Enforcement: none
-Proof: none
-Status: settled — unbuilt
-
 **FAN-ACCT-09 — Tags and mentions reference the permanent fan identity, never handle text.** A historical tag displays the tagged fan's current handle rather than the text originally typed, so a rename continues to identify the intended person and a later handle reassignment cannot rebind history. This is deliberately distinct from FAN-ATTR-01: a News byline preserves what a publisher published as a fact about the past, while a tag records which person the fan meant as an identity pointer that follows that person.
 Enforcement: none
 Proof: none
@@ -659,7 +738,7 @@ Currently: Codex builds, Cursor verifies, Claude reviews adversarially. This is 
 **FAN-DEV-03 — One implementation owner per overlapping change set.** During audited work, one builder owns each overlapping area. Other agents may review, test, audit or work independently on unrelated areas, but do not simultaneously rewrite the same work under review. · `G:DEV-03`
 
 **FAN-DEV-04 — Never invent material numbers.** Material thresholds, percentages, cadences, retry intervals, scoring bands, qualification requirements and other operating constants are never silently invented where they affect product behaviour or architecture. If a required material value is genuinely undecided, implementation stops for an explicit decision. · `G:DEV-04`
-*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; deletion retention policy; the approved identity process for award re-association; handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles.*
+*Currently gated by this rule: Overall Sport IQ qualification; Fan Score decay parameters; rating revision and withdrawal mechanics; the reaction set; Poll governance; deletion retention policy; and the approved identity process for award re-association.*
 
 **FAN-DEV-05 — Approval and verification proportional to blast radius.** Consequential hosted-state changes require explicit approval and post-change verification appropriate to their risk. Small, routine, reversible changes do not require the ceremony owed to database migrations, permissions, infrastructure, security or financial systems. · `G:DEV-05`
 
@@ -746,7 +825,7 @@ swept individually under BL-031.
 
 **GAP-10 — CLOSED LOCALLY: all profile-media metadata tables are owner-folder bound.** `202608270001` installs four `NOT VALID` owner-path CHECKs and a legacy diagnostic view; `profile_privacy.sql` asserts new library source/display writes and the old avatar rebind are rejected. The remaining legacy-row review is an explicit FAN-ACCT-02 caveat, not an unbound-table gap. · `GK:M3`
 
-**GAP-12 — CLOSED LOCALLY: claimed handles now have authoritative format, reservation and case-insensitive ownership enforcement.** `202608270003` preserves entered casing, permits multiple unclaimed profiles, stops deriving handles from display names, rejects unsafe existing rows instead of rewriting them, and makes the normalized unique index the final ownership boundary. `202608270004` adds serialized operational-identifier reservation and fan-population separation without rewriting profile data. `profile_handle_integrity.sql` and `operational_identity_handles.sql` prove the settled local contract. Hosted state remains unknown under FAN-RUN-04. · `GK:M2`
+**GAP-12 — CLOSED LOCALLY: claimed handles now have authoritative format, reservation and case-insensitive ownership enforcement.** `202608270003` preserves entered casing, permits multiple unclaimed profiles, stops deriving handles from display names, rejects unsafe existing rows instead of rewriting them, and makes the normalized unique index the final ownership boundary. `202608270004` adds serialized operational-identifier reservation and fan-population separation without rewriting profile data. `profile_handle_integrity.sql` and `operational_identity_handles.sql` prove the settled local contract. Hosted migration presence is confirmed through `202608290008`; independent hosted behavior has not been re-proved under FAN-RUN-04. · `GK:M2`
 
 ---
 
@@ -774,7 +853,6 @@ swept individually under BL-031.
 4. The News reaction set, and Poll creation, voting and moderation governance.
 5. The privacy/retention policy defining "minimum award record" and "anonymized" (FAN-ACCT-04).
 6. The approved identity process for reclaiming historical awards (FAN-ACCT-04).
-7. Handle release behaviour, cooldown length, handle history, redirects and any versioning of past handles (FAN-ACCT-08).
 
 ---
 
@@ -900,6 +978,7 @@ is the only safe way to translate a reference from either draft.
 | FAN-ACCT-09 | — | — |
 | FAN-ACCT-10 | — | — |
 | FAN-ACCT-11 | — | — |
+| FAN-ACCT-13 | — | BL-043 |
 | FAN-UX-01 | — | UX-02 |
 | FAN-DEV-01…05 | — | DEV-01…05 |
 | FAN-DEV-06 | — | — |
@@ -915,19 +994,19 @@ is the only safe way to translate a reference from either draft.
 | Bucket | Count |
 |---|---|
 | Guaranteed — enforced + tested | 28 |
-| Claimed — locally tested, independent verification pending | 12 |
+| Claimed — locally tested; independent or hosted verification pending | 25 |
 | Claimed — enforced but unproven or only partially proved | 17 |
-| Claimed — documented only or not universally enforced | 17 |
+| Claimed — documented only or not universally enforced | 15 |
 | Claimed — unclear | 1 |
-| **Claimed total** | **47** |
-| Future — settled, unbuilt | 44 |
+| **Claimed total** | **58** |
+| Future — settled, unbuilt | 42 |
 | Process invariants | 9 |
-| **Total invariants** | **128** |
+| **Total invariants** | **137** |
 | Current behavior / decision-needed items (not invariants) | 4 |
 | Open enforcement gaps | 10 |
-| Closed locally / hosted unknown gaps | 5 |
+| Closed locally / hosted behavior not independently re-proved gaps | 5 |
 | Architectural principles | 4 |
-| Deferred mechanics | 8 |
+| Deferred mechanics | 6 |
 
 Roughly a quarter of this register is mechanically guaranteed by a direct local
 assertion today. The largest block remains settled-but-unbuilt News, Cheer and

@@ -114,6 +114,23 @@ describe("ProfileAvatarEditor", () => {
     expect(mocks.saveAvatar).toHaveBeenCalledWith(expect.objectContaining({ sourceFilename: "replacement.png" }));
   });
 
+  it("keeps the mobile picker file attached until asynchronous decoding finishes", async () => {
+    let finishPreparing!: (record: ProfileAvatarRecord) => void;
+    mocks.prepareImage.mockImplementationOnce(() => new Promise<ProfileAvatarRecord>((resolve) => {
+      finishPreparing = resolve;
+    }));
+    render(<ProfileAvatarEditor onDone={vi.fn()} onCancel={vi.fn()} />);
+    const input = screen.getByLabelText("Choose another photo") as HTMLInputElement;
+    const upload = userEvent.upload(input, new File(["image"], "camera.jpg", { type: "image/jpeg" }));
+
+    await screen.findByText("Processing…");
+    expect(input.files).toHaveLength(1);
+    finishPreparing({ ...avatar, sourceFilename: "camera.jpg", sourceBlob: new Blob(["image"]), displayBlob: new Blob(["preview"]) });
+    await upload;
+    expect(input.value).toBe("");
+    expect(screen.getByRole("button", { name: "Save photo" })).toBeEnabled();
+  });
+
   it("loads a saved thumbnail as the working photo without activating it before Save", async () => {
     const user = userEvent.setup();
     const second = { ...avatar, id: "photo-2", sourceFilename: "second.webp", displayUrl: "data:image/svg+xml,%3Csvg%20id='second'%20xmlns='http://www.w3.org/2000/svg'/%3E", crop: { focalX: 0.3, focalY: 0.7, zoom: 1.4 } };

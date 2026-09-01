@@ -3,7 +3,7 @@ import { AppIcon } from "../../components/AppIcon";
 import { trapDialogFocus } from "./dialogKeyboard";
 import type { NewsNavigationEntry, NewsTemporaryFilter } from "./types";
 
-type FilterPanel = "root" | "team" | "competition" | "sport";
+type FilterPanel = "root" | "team" | "league" | "competition" | "sport";
 
 type NewsFilterMenuProps = {
   readonly currentFilter: NewsTemporaryFilter;
@@ -16,6 +16,7 @@ type NewsFilterMenuProps = {
 const panelTitles: Readonly<Record<FilterPanel, string>> = {
   root: "Choose News context",
   team: "Team",
+  league: "League",
   competition: "Competition",
   sport: "Sport",
 };
@@ -31,13 +32,14 @@ export function NewsFilterMenu({
   const [teamQuery, setTeamQuery] = useState("");
   const dialogRef = useRef<HTMLElement>(null);
   const sports = navigation.filter((entry) => entry.filterType === "sport");
-  const competitions = navigation.filter((entry) => entry.filterType === "competition");
+  const leagues = navigation.filter((entry) => entry.filterType === "competition" && entry.competitionKindId === "league");
+  const competitions = navigation.filter((entry) => entry.filterType === "competition" && entry.competitionKindId !== "league");
   const teams = navigation.filter((entry) => entry.filterType === "team");
   const visibleTeams = useMemo(() => {
     const query = teamQuery.trim().toLocaleLowerCase();
     return query
       ? teams.filter((team) => team.displayName.toLocaleLowerCase().includes(query))
-      : teams;
+      : teams.filter((team) => team.isFollowed);
   }, [teamQuery, teams]);
 
   useEffect(() => {
@@ -93,7 +95,10 @@ export function NewsFilterMenu({
               <span><strong>Team</strong><small>Temporarily narrow eligible News to one Team</small></span><AppIcon name="chevron-right" />
             </button>
             <button type="button" onClick={() => setPanel("competition")}>
-              <span><strong>Competition</strong><small>Temporarily view one competition</small></span><AppIcon name="chevron-right" />
+              <span><strong>Competition</strong><small>Temporarily view one cup, championship, or tournament</small></span><AppIcon name="chevron-right" />
+            </button>
+            <button type="button" onClick={() => setPanel("league")}>
+              <span><strong>League</strong><small>Temporarily view one league</small></span><AppIcon name="chevron-right" />
             </button>
             <button type="button" onClick={() => setPanel("sport")}>
               <span><strong>Sport</strong><small>Temporarily combine eligible News in one Sport</small></span><AppIcon name="chevron-right" />
@@ -114,13 +119,14 @@ export function NewsFilterMenu({
               <span>Find a Team</span>
               <input type="search" value={teamQuery} onChange={(event) => setTeamQuery(event.target.value)} />
             </label>
+            {!teamQuery.trim() ? <h3>Followed Teams</h3> : <h3>Search results</h3>}
             <div className="news-filter-menu__compact-options news-filter-menu__compact-options--list">
               {visibleTeams.map((team) => (
                 <button key={team.targetId} type="button" aria-pressed={selected(team)} onClick={() => apply(team)}>
                   <span>{team.displayName}</span>{selected(team) ? <AppIcon name="check" /> : null}
                 </button>
               ))}
-              {!visibleTeams.length ? <p>No Team matches that search.</p> : null}
+              {!visibleTeams.length ? <p>{teamQuery.trim() ? "No Team matches that search." : "No followed Teams yet. Search to find a Team."}</p> : null}
             </div>
           </div>
         ) : null}
@@ -136,6 +142,26 @@ export function NewsFilterMenu({
                     {entries.map((competition) => (
                       <button key={competition.targetId} type="button" aria-pressed={selected(competition)} onClick={() => apply(competition)}>
                         {competition.displayName}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null;
+            })}
+          </div>
+        ) : null}
+
+        {panel === "league" ? (
+          <div className="news-filter-groups">
+            {sports.map((sport) => {
+              const entries = leagues.filter((league) => league.sportId === sport.targetId);
+              return entries.length ? (
+                <section key={sport.targetId} aria-labelledby={`league-group-${sport.targetId}`}>
+                  <h3 id={`league-group-${sport.targetId}`}>{sport.displayName}</h3>
+                  <div className="news-filter-menu__compact-options">
+                    {entries.map((league) => (
+                      <button key={league.targetId} type="button" aria-pressed={selected(league)} onClick={() => apply(league)}>
+                        {league.displayName}
                       </button>
                     ))}
                   </div>

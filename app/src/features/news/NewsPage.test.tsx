@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   loadNewsIdentityProfile: vi.fn(),
   loadNewsNavigation: vi.fn(),
   loadPersonalNewsFeed: vi.fn(),
+  loadDiscussionTeaser: vi.fn(),
   muteNewsFollow: vi.fn(),
   recordNewsOutboundOpen: vi.fn(),
   searchNewsFollowTargets: vi.fn(),
@@ -38,6 +39,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../account/AuthContext", () => ({
   useAuth: () => mocks.auth,
+}));
+
+vi.mock("../notifications/InboxControl", () => ({
+  InboxControl: () => mocks.auth.user ? <button type="button" aria-label="Inbox">Inbox</button> : null,
 }));
 
 vi.mock("../../state/TeamContext", () => ({
@@ -81,15 +86,19 @@ vi.mock("./newsRepository", () => ({
   unmuteNewsFollow: mocks.unmuteNewsFollow,
 }));
 
+vi.mock("../community/communityRepository", () => ({
+  loadDiscussionTeaser: mocks.loadDiscussionTeaser,
+}));
+
 import { NewsIdentityProfilePage } from "./NewsIdentityProfilePage";
 import { NewsPage } from "./NewsPage";
 import { clearNewsDemoState } from "./newsDemoState";
 
 const navigation: readonly NewsNavigationEntry[] = [
-  { filterType: "sport", targetId: "hockey", displayName: "Hockey", sportId: "hockey" },
-  { filterType: "competition", targetId: "hockey-nhl", displayName: "NHL", sportId: "hockey" },
-  { filterType: "team", targetId: "hockey-000027", displayName: "Edmonton Oilers", sportId: "hockey" },
-  { filterType: "team", targetId: "hockey-000028", displayName: "Calgary Flames", sportId: "hockey" },
+  { filterType: "sport", targetId: "hockey", displayName: "Hockey", sportId: "hockey", competitionKindId: null, isFollowed: false },
+  { filterType: "competition", targetId: "hockey-nhl", displayName: "National Hockey League", sportId: "hockey", competitionKindId: "league", isFollowed: false },
+  { filterType: "team", targetId: "hockey-000027", displayName: "Edmonton Oilers", sportId: "hockey", competitionKindId: null, isFollowed: true },
+  { filterType: "team", targetId: "hockey-000028", displayName: "Calgary Flames", sportId: "hockey", competitionKindId: null, isFollowed: false },
 ];
 
 const authorTarget: NewsFollowTarget = {
@@ -173,6 +182,19 @@ describe("Phase 4 News frontend", () => {
     mocks.loadNewsNavigation.mockResolvedValue(navigation);
     mocks.loadMyNewsFollowing.mockResolvedValue(following);
     mocks.loadMyNewsZeroFollowExample.mockResolvedValue(null);
+    mocks.loadDiscussionTeaser.mockResolvedValue({
+      available: true,
+      requiresAuth: false,
+      viewerCanAccess: true,
+      newsItemId: "news-written",
+      contextKind: "team",
+      contextDisplayKind: "Team",
+      contextId: "hockey-000027",
+      contextName: "Edmonton Oilers",
+      discussionId: null,
+      commentCount: 0,
+      article: null,
+    });
     mocks.loadPersonalNewsFeed.mockResolvedValue([writtenItem, podcastItem]);
     mocks.loadNewsDemoUniverse.mockResolvedValue([]);
     mocks.loadNewsDemoFeed.mockResolvedValue([]);
@@ -206,6 +228,7 @@ describe("Phase 4 News frontend", () => {
     expect(screen.queryByText(/views/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Discussion/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/New England moved through/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inbox" })).toBeInTheDocument();
   });
 
   it("starts signed-in News from the authenticated fan's selected-Team context", async () => {
@@ -243,22 +266,37 @@ describe("Phase 4 News frontend", () => {
     expect(await screen.findByText("Publisher link copied.")).toBeInTheDocument();
   });
 
-  it("applies a real temporary Competition filter without mutating global Team state", async () => {
+  it("presents league-kind Competitions under League without changing canonical filter behavior", async () => {
     const user = userEvent.setup();
     renderNews();
     const trigger = await screen.findByRole("button", { name: /Filter News/ });
     await waitFor(() => expect(trigger).toBeEnabled());
     await user.click(trigger);
-    await user.click(screen.getByRole("button", { name: /^Competition/ }));
-    await user.click(screen.getByRole("button", { name: "NHL" }));
+    await user.click(screen.getByRole("button", { name: /^League/ }));
+    await user.click(screen.getByRole("button", { name: "National Hockey League" }));
 
     await waitFor(() => expect(mocks.loadPersonalNewsFeed).toHaveBeenLastCalledWith({
       kind: "competition",
       targetId: "hockey-nhl",
-      displayName: "NHL",
+      displayName: "National Hockey League",
     }));
-    expect(screen.getByText("NHL", { selector: ".news-header__title p" })).toBeInTheDocument();
+    expect(screen.getByText("National Hockey League", { selector: ".news-header__title p" })).toBeInTheDocument();
     expect(mocks.selectTeam).not.toHaveBeenCalled();
+  });
+
+  it("shows followed Teams by default and uses search for the full Team catalog", async () => {
+    const user = userEvent.setup();
+    renderNews();
+    const trigger = await screen.findByRole("button", { name: /Filter News/ });
+    await waitFor(() => expect(trigger).toBeEnabled());
+    await user.click(trigger);
+    await user.click(screen.getByRole("button", { name: /^Team/ }));
+
+    expect(screen.getByRole("heading", { name: "Followed Teams" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edmonton Oilers" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Calgary Flames" })).not.toBeInTheDocument();
+    await user.type(screen.getByRole("searchbox", { name: "Find a Team" }), "Calgary");
+    expect(screen.getByRole("button", { name: "Calgary Flames" })).toBeInTheDocument();
   });
 
   it("contains filter keyboard focus and restores the trigger on Escape", async () => {
@@ -406,6 +444,14 @@ describe("Phase 4 News frontend", () => {
     expect(await screen.findByLabelText("Zero-follow News example")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: writtenItem.headline })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: `Dismiss ${writtenItem.headline}` })).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.loadDiscussionTeaser).toHaveBeenCalledWith(
+      writtenItem.id,
+      { kind: "team", targetId: "hockey-nhl-edmonton-oilers" },
+    ));
+    expect(screen.getByRole("link", { name: /Open Edmonton Oilers Discussion/ })).toHaveAttribute(
+      "href",
+      "/news/discussions/news-written?context=team&target=hockey-nhl-edmonton-oilers",
+    );
   });
 
   it("renders canonical contributor profiles and keeps profile Items outside per-feed Dismiss", async () => {

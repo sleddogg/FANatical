@@ -15,6 +15,7 @@ import { useThemePreference } from "../../data/themePreference";
 import { useTeamContext } from "../../state/TeamContext";
 import { ThemeSettings } from "./ThemeSettings";
 import { ProfilePrivacySettings } from "./ProfilePrivacySettings";
+import { HiddenFansSettings } from "../community/HiddenFansSettings";
 
 let localSportSequence = 0;
 
@@ -31,6 +32,7 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
   const [mediaEditor, setMediaEditor] = useState<"avatar" | "visual" | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Readonly<{ handle?: string; displayName?: string }>>({});
   const { images } = useProfileVisual();
   const { avatar } = useProfileAvatar();
   const { side: savedNavigationSide, setSide: saveNavigationSide } = useNavigationSide();
@@ -45,6 +47,8 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
   const homeCustomizationDirtyRef = useRef(false);
   const themePreferenceDirtyRef = useRef(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const handleInputRef = useRef<HTMLInputElement>(null);
+  const displayNameInputRef = useRef<HTMLInputElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -125,8 +129,31 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
     setThemePreference(next);
   };
 
+  const clearFieldError = (field: "handle" | "displayName") => {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next: { handle?: string; displayName?: string } = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const nextFieldErrors: { handle?: string; displayName?: string } = {};
+    const normalizedHandle = draft.handle.trim();
+    if (normalizedHandle && !/^[A-Za-z0-9][A-Za-z0-9_]{1,18}[A-Za-z0-9]$/.test(normalizedHandle)) {
+      nextFieldErrors.handle = "Use 3–20 letters, numbers, or underscores, beginning and ending with a letter or number.";
+    }
+    if (!draft.displayName.trim()) nextFieldErrors.displayName = "Enter a display name before saving.";
+    setFieldErrors(nextFieldErrors);
+    if (nextFieldErrors.handle || nextFieldErrors.displayName) {
+      setError("Review the highlighted Profile identity field and try again.");
+      window.requestAnimationFrame(() => {
+        (nextFieldErrors.handle ? handleInputRef.current : displayNameInputRef.current)?.focus();
+      });
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -158,10 +185,11 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
           </div>
           <button ref={closeButtonRef} className="profile-icon-button" type="button" aria-label="Close profile editor" onClick={onClose}><AppIcon name="x-mark" /></button>
         </header>
-        {mediaEditor === "visual" ? <div className="profile-visual-manager"><button type="button" onClick={() => setMediaEditor(null)}><AppIcon name="arrow-left" /> Back to Profile settings</button><ProfileVisualSettings /></div> : mediaEditor === "avatar" ? <div className="profile-avatar-manager"><ProfileAvatarEditor onDone={() => setMediaEditor(null)} onCancel={() => setMediaEditor(null)} /></div> : <form onSubmit={(event) => void submit(event)}>
+        {mediaEditor === "visual" ? <div className="profile-visual-manager"><button type="button" onClick={() => setMediaEditor(null)}><AppIcon name="arrow-left" /> Back to Profile settings</button><ProfileVisualSettings /></div> : mediaEditor === "avatar" ? <div className="profile-avatar-manager"><ProfileAvatarEditor onDone={() => setMediaEditor(null)} onCancel={() => setMediaEditor(null)} /></div> : <form noValidate onSubmit={(event) => void submit(event)}>
           <fieldset>
             <legend>Profile identity</legend>
-            <label>Display name<input required value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} /></label>
+            <label>Fanatical Name<input ref={handleInputRef} minLength={3} maxLength={20} pattern="[A-Za-z0-9][A-Za-z0-9_]{1,18}[A-Za-z0-9]" aria-invalid={Boolean(fieldErrors.handle)} aria-describedby={fieldErrors.handle ? "profile-handle-error" : undefined} value={draft.handle} onChange={(event) => { setDraft((current) => ({ ...current, handle: event.target.value })); clearFieldError("handle"); }} /><small>Your public Community identity. Leave blank to release it. Changing or releasing it does not move your history.</small>{fieldErrors.handle ? <small id="profile-handle-error" className="profile-edit-dialog__field-error">{fieldErrors.handle}</small> : null}</label>
+            <label>Display name<input ref={displayNameInputRef} required aria-invalid={Boolean(fieldErrors.displayName)} aria-describedby={fieldErrors.displayName ? "profile-display-name-error" : undefined} value={draft.displayName} onChange={(event) => { setDraft((current) => ({ ...current, displayName: event.target.value })); clearFieldError("displayName"); }} />{fieldErrors.displayName ? <small id="profile-display-name-error" className="profile-edit-dialog__field-error">{fieldErrors.displayName}</small> : null}</label>
             <label>Tagline<input maxLength={100} value={draft.tagline} onChange={(event) => setDraft((current) => ({ ...current, tagline: event.target.value }))} /></label>
             <div className="profile-featured-picker" role="radiogroup" aria-labelledby="profile-featured-picker-title">
               <strong id="profile-featured-picker-title">Featured FANfoto Category</strong>
@@ -193,7 +221,14 @@ export function ProfileEditDialog({ profile, onSave, onClose, accountBacked = fa
               <p>Choose which side of the Home profile visual holds the floating feature navigation.</p>
             </div>
           </fieldset>
-          <ProfilePrivacySettings value={draft.visibility} disabled={!accountBacked} onChange={(visibility) => setDraft((current) => ({ ...current, visibility }))} />
+          <ProfilePrivacySettings
+            value={draft.visibility}
+            disabled={!accountBacked}
+            {...(draft.personalFieldVisibility ? { personalFieldVisibility: draft.personalFieldVisibility } : {})}
+            onChange={(visibility) => setDraft((current) => ({ ...current, visibility }))}
+            onPersonalFieldChange={(field, visible) => setDraft((current) => ({ ...current, personalFieldVisibility: { ...current.personalFieldVisibility, [field]: visible } }))}
+          />
+          <HiddenFansSettings disabled={!accountBacked} />
           <ThemeSettings value={themePreference} favoriteTeam={followedTeams[0]} currentTeam={selectedTeam} onChange={changeThemePreference} />
           <HomeCustomizationSettings profile={draft} value={homeCustomization} navigationSide={navigationSide} onChange={changeHomeCustomization} />
           <fieldset>

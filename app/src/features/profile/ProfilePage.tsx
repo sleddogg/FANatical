@@ -187,16 +187,22 @@ function ProfileTabContent({ tab, profile, photos, moments, followedTeams, onOpe
   return <section className="profile-details profile-details--moments" aria-labelledby="profile-moments-title"><header className="profile-moments-header"><h2 id="profile-moments-title">Moments <span>· The stories behind the score</span></h2><button type="button" onClick={onAddMoment}><AppIcon name="plus" /> Add Moment</button></header><div className="profile-moment-list">{moments.map((moment) => { const photo = moment.fanPhotoId ? photoById.get(moment.fanPhotoId) : undefined; return <article className="profile-moment-card" key={moment.id}>{photo ? <button className="profile-moment-card__thumbnail" type="button" aria-label={`Open connected FANfoto: ${photo.title}`} onClick={() => onOpenPhoto(photo)}><img src={photo.images[0]?.url} alt={photo.images[0]?.alt ?? ""} /></button> : <div className="profile-moment-card__thumbnail profile-moment-card__thumbnail--empty" aria-hidden="true">F</div>}<button className="profile-moment-card__story" type="button" aria-label={`Open Moment: ${moment.title}`} onClick={() => onOpenMoment(moment.id)}><span>{moment.type}</span><h3>{moment.title}</h3><time dateTime={moment.dateOccurred}>{formatMomentDate(moment.dateOccurred)}</time><p>{moment.story}</p>{moment.location || moment.eventContext ? <small>{[moment.location, moment.eventContext].filter(Boolean).join(" · ")}</small> : null}</button></article>; })}</div></section>;
 }
 
-export function ProfilePage() {
+function ProfileScreen() {
   const { configured, loading: authLoading, user, signOut } = useAuth();
   const prototypeMode = import.meta.env.DEV && !configured;
+  const visibleProfileTabs = prototypeMode
+    ? profileTabs
+    : profileTabs.filter((tab) => tab.id === "bio" || tab.id === "fan-identity" || tab.id === "sports-played");
   const { ready, revision } = useAccountBootstrap();
   const navigate = useNavigate();
   const location = useLocation();
   const fanbase = useFanbaseContext();
   const { selectedTeam, followedTeams, addFollowedTeam } = useTeamContext();
   const { fanPhotos } = fanbase;
-  const sportsStats = useMemo(() => sportsStatsUser(demoUser.id, buildSportsStatsSnapshot()), []);
+  const sportsStats = useMemo(
+    () => prototypeMode ? sportsStatsUser(demoUser.id, buildSportsStatsSnapshot()) : null,
+    [prototypeMode],
+  );
   const selectedCompetition = resolveFanbaseCompetition(selectedTeam);
   const selectedFanScore = sportsStats ? fanScoreForUser(sportsStats, selectedCompetition.teamKey) : null;
   const displayProfileStats = profileStats.map((stat) => stat.label === "Fan Score"
@@ -219,8 +225,12 @@ export function ProfilePage() {
   const [accountActionBusy, setAccountActionBusy] = useState(false);
   const [accountActionError, setAccountActionError] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [profileSavedMessage, setProfileSavedMessage] = useState("");
   const isOwner = !configured || Boolean(user);
-  const ownerPhotos = useMemo(() => fanPhotos.filter((photo) => photo.owner.id === demoUser.id), [fanPhotos]);
+  const ownerPhotos = useMemo(
+    () => prototypeMode ? fanPhotos.filter((photo) => photo.owner.id === demoUser.id) : [],
+    [fanPhotos, prototypeMode],
+  );
   const [photoOrder, setPhotoOrder] = useState<PhotoOrder>(() => buildInitialPhotoOrder(ownerPhotos));
 
   useEffect(() => {
@@ -333,6 +343,7 @@ export function ProfilePage() {
       await saveOwnedProfile(user.id, ownedProfile, storedProfile?.visibility ?? initialProfile.visibility);
     }
     setProfile(ownedProfile);
+    setProfileSavedMessage("Profile saved.");
   };
 
   const signOutHere = async () => {
@@ -397,7 +408,7 @@ export function ProfilePage() {
       <header className="profile-topbar">
         <button className="profile-back-button" type="button" onClick={goBack}><AppIcon name="arrow-left" /><span>Back</span></button>
         <div><span className="eyebrow">Profile</span><h1>{profile.displayName}</h1><p>{profile.tagline}</p></div>
-        {authLoading ? <span aria-hidden="true" /> : isOwner ? <button className="profile-edit-button" type="button" onClick={() => setEditing(true)} aria-label="Edit profile"><AppIcon name="pencil-square" /><span>Edit</span></button> : <button className="profile-edit-button" type="button" onClick={() => setAccountDialogMode("sign-in")} aria-label="Sign in to FANatical"><AppIcon name="arrow-right" /><span>Sign In</span></button>}
+        {authLoading ? <span aria-hidden="true" /> : isOwner ? <button className="profile-edit-button" type="button" onClick={() => { setProfileSavedMessage(""); setEditing(true); }} aria-label="Edit profile"><AppIcon name="pencil-square" /><span>Edit</span></button> : <button className="profile-edit-button" type="button" onClick={() => setAccountDialogMode("sign-in")} aria-label="Sign in to FANatical"><AppIcon name="arrow-right" /><span>Sign In</span></button>}
       </header>
 
       {configured ? (
@@ -434,17 +445,18 @@ export function ProfilePage() {
 
       {accountActionError ? <p className="profile-account-error" role="alert">Account action needs attention: {accountActionError}</p> : null}
       {profileError ? <p className="profile-account-error" role="alert">Profile sync needs attention: {profileError}</p> : null}
+      {profileSavedMessage ? <p className="profile-account-message" role="status">{profileSavedMessage}</p> : null}
 
-      <ProfilePhotoShowcase photos={orderedOwnerPhotos} featuredCategory={profile.featuredFanPhotoCategory} onOpenCategory={setOpenPhotoCategory} />
+      {prototypeMode ? <ProfilePhotoShowcase photos={orderedOwnerPhotos} featuredCategory={profile.featuredFanPhotoCategory} onOpenCategory={setOpenPhotoCategory} /> : null}
 
-      <section className="profile-stats-section" aria-labelledby="profile-stats-title">
+      {prototypeMode ? <section className="profile-stats-section" aria-labelledby="profile-stats-title">
         <header className="profile-section-heading"><div><h2 id="profile-stats-title">At a glance</h2></div></header>
         <StatDashboard label="Profile at a glance" primary={displayProfileStats.slice(0, 2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? <AppIcon name="information-circle" /> }))} secondary={displayProfileStats.slice(2).map((stat) => ({ ...stat, icon: profileStatIcons[stat.label] ?? <AppIcon name="information-circle" />, ...((stat.label === "Fan Score" || stat.label === "Sport IQ") ? { to: "/profile/stats" } : {}) }))} />
-      </section>
+      </section> : null}
 
       <section className="profile-tab-section">
         <div className="profile-tabs" role="tablist" aria-label="Profile sections">
-          {profileTabs.map((tab) => <button key={tab.id} id={`profile-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="profile-tab-panel" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
+          {visibleProfileTabs.map((tab) => <button key={tab.id} id={`profile-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls="profile-tab-panel" onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}
         </div>
         <div id="profile-tab-panel" role="tabpanel" aria-labelledby={`profile-tab-${activeTab}`} tabIndex={0}>
           <ProfileTabContent tab={activeTab} profile={profile} photos={ownerPhotos} moments={sortedMoments} followedTeams={followedTeams} onOpenPhoto={setOpenPhoto} onOpenMoment={setOpenMomentId} onAddMoment={() => setMomentCreateOpen(true)} onAddTeam={() => setAddTeamOpen(true)} />
@@ -458,4 +470,9 @@ export function ProfilePage() {
       {openPhoto ? <FanPhotoViewer photo={openPhoto} openedFromRatingQueue={false} onClose={() => setOpenPhoto(null)} /> : null}
     </div>
   );
+}
+
+export function ProfilePage() {
+  const { user } = useAuth();
+  return <ProfileScreen key={user?.id ?? "signed-out"} />;
 }

@@ -7,6 +7,9 @@ import { requireLoopbackSupabaseApiUrl } from "./local-supabase-safety.mjs";
 import {
   ensureLocalAcceptanceDataset,
   localAcceptanceFan,
+  localPhase5AcceptanceAccounts,
+  localPhase5AcceptanceFixtureMetadataKey,
+  localPhase5AcceptanceFixtureVersion,
 } from "./local-acceptance-fixtures.mjs";
 
 const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -115,6 +118,10 @@ function requireUuid(value) {
   return value;
 }
 
+function escapeSqlString(value) {
+  return String(value).replaceAll("'", "''");
+}
+
 function removeTemporaryFixtureAuthority(userIdValue) {
   const userId = requireUuid(userIdValue);
   runLocalSql(`do $fixture$ begin delete from public.staff_roles where user_id = '${userId}'::uuid; if exists (select 1 from public.staff_roles where user_id = '${userId}'::uuid) then raise exception 'Temporary fixture authority was not removed'; end if; end $fixture$;`);
@@ -193,6 +200,154 @@ async function ensureLocalAcceptanceFan(status, options = {}) {
   }
 }
 
+async function callRpc(client, name, arguments_, label) {
+  const result = await client.rpc(name, arguments_);
+  if (result.error) throw new Error(`${label}: ${result.error.message}`);
+  return result.data;
+}
+
+async function configurePhase5FanBaseline({
+  account,
+  apiUrl,
+  publicKey,
+  userId,
+}) {
+  const client = localClient(apiUrl, publicKey);
+  const anonymous = localClient(apiUrl, publicKey);
+  const signedIn = await client.auth.signInWithPassword({
+    email: account.email,
+    password: account.password,
+  });
+  if (signedIn.error || signedIn.data.user?.id !== userId) {
+    throw new Error(`Could not authenticate ${account.displayName} for local Phase 5A setup${signedIn.error ? `: ${signedIn.error.message}` : "."}`);
+  }
+
+  try {
+    await callRpc(client, "set_my_fanatical_name", {
+      fanatical_name_value: account.fanaticalName,
+    }, `Could not set ${account.displayName}'s Fanatical Name`);
+    await callRpc(client, "set_my_profile_privacy", {
+      visibility_value: account.visibility,
+      personal_field_visibility_value: {},
+    }, `Could not set ${account.displayName}'s profile privacy`);
+    await callRpc(client, "replace_my_followed_teams", {
+      team_ids: [...account.followedTeamIds],
+    }, `Could not set ${account.displayName}'s followed Teams`);
+
+    const universe = await callRpc(
+      anonymous,
+      "get_news_demo_universe",
+      {},
+      `Could not load the governed Demo identities for ${account.displayName}`,
+    );
+    const currentFollowing = await callRpc(
+      client,
+      "get_my_news_following",
+      {},
+      `Could not inspect ${account.displayName}'s existing News Following`,
+    );
+    for (const identity of universe ?? []) {
+      const existing = currentFollowing?.find((follow) => (
+        follow.target_type === identity.target_type && follow.target_id === identity.target_id
+      ));
+      const existingFollowId = existing?.follow_ids?.[0];
+      if (existingFollowId) {
+        await callRpc(client, "set_my_news_follow_scopes", {
+          follow_id_value: existingFollowId,
+          sport_scope_ids_value: [],
+          team_scope_ids_value: [],
+        }, `Could not normalize ${account.displayName}'s local News follow scopes`);
+        await callRpc(client, "unmute_my_news_follow", {
+          follow_id_value: existingFollowId,
+        }, `Could not normalize ${account.displayName}'s local News follow mute state`);
+      } else {
+        await callRpc(client, "follow_news_identity", {
+          target_type_value: identity.target_type,
+          target_public_id_value: identity.target_id,
+          sport_scope_ids_value: [],
+          team_scope_ids_value: [],
+        }, `Could not initialize ${account.displayName}'s News Following`);
+      }
+    }
+  } finally {
+    const signedOut = await client.auth.signOut();
+    if (signedOut.error) {
+      throw new Error(`Could not close ${account.displayName}'s local setup session: ${signedOut.error.message}`);
+    }
+  }
+}
+
+function ensurePhase5ModeratorAuthority(account, userIdValue) {
+  const userId = requireUuid(userIdValue);
+  const actorKey = escapeSqlString(account.operationalActorKey);
+  const displayName = escapeSqlString(account.displayName);
+  runLocalSql(`do $fixture$ begin insert into public.staff_roles(user_id, role, permissions, is_active) values ('${userId}'::uuid, 'admin', array['community_moderate']::text[], true) on conflict (user_id) do update set role = 'admin', permissions = array['community_moderate']::text[], is_active = true; insert into public.catalog_actors(actor_key, actor_type, auth_user_id, display_name, active) values ('${actorKey}', 'service', '${userId}'::uuid, '${displayName}', true) on conflict (actor_key) do update set actor_type = 'service', auth_user_id = excluded.auth_user_id, display_name = excluded.display_name, active = true; end $fixture$;`);
+}
+
+async function ensurePhase5AcceptanceAccounts(status, { resetBaseline = false } = {}) {
+  const apiUrl = requireLoopbackSupabaseApiUrl(status.get("API_URL"));
+  const publicKey = status.get("PUBLISHABLE_KEY") ?? status.get("ANON_KEY");
+  const serviceKey = status.get("SECRET_KEY") ?? status.get("SERVICE_ROLE_KEY");
+  if (!publicKey || !serviceKey) {
+    throw new Error("Local Supabase did not report the keys needed for Phase 5A acceptance accounts.");
+  }
+
+  const admin = localClient(apiUrl, serviceKey);
+  const listed = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (listed.error) throw new Error(`Could not inspect the local Phase 5A accounts: ${listed.error.message}`);
+  const usersByEmail = new Map(
+    listed.data.users
+      .filter((candidate) => candidate.email)
+      .map((candidate) => [candidate.email.toLowerCase(), candidate]),
+  );
+
+  for (const account of localPhase5AcceptanceAccounts) {
+    let existing = usersByEmail.get(account.email.toLowerCase());
+    if (resetBaseline && existing) {
+      const removed = await admin.auth.admin.deleteUser(existing.id);
+      if (removed.error) throw new Error(`Could not reset ${account.displayName}: ${removed.error.message}`);
+      existing = undefined;
+    }
+
+    const prepared = existing
+      ? await admin.auth.admin.updateUserById(existing.id, {
+          password: account.password,
+          email_confirm: true,
+          ban_duration: "none",
+          user_metadata: { display_name: account.displayName },
+        })
+      : await admin.auth.admin.createUser({
+          email: account.email,
+          password: account.password,
+          email_confirm: true,
+          user_metadata: { display_name: account.displayName },
+        });
+    if (prepared.error) {
+      throw new Error(`Could not prepare ${account.displayName}: ${prepared.error.message}`);
+    }
+
+    const userId = prepared.data.user.id;
+    const requiresBaseline = prepared.data.user.app_metadata?.[localPhase5AcceptanceFixtureMetadataKey]
+      !== localPhase5AcceptanceFixtureVersion;
+    if (account.operationalActorKey) {
+      ensurePhase5ModeratorAuthority(account, userId);
+    } else if (requiresBaseline || resetBaseline) {
+      await configurePhase5FanBaseline({ account, apiUrl, publicKey, userId });
+      const marked = await admin.auth.admin.updateUserById(userId, {
+        app_metadata: {
+          ...prepared.data.user.app_metadata,
+          [localPhase5AcceptanceFixtureMetadataKey]: localPhase5AcceptanceFixtureVersion,
+        },
+      });
+      if (marked.error) {
+        throw new Error(`Could not mark ${account.displayName}'s completed local Phase 5A baseline: ${marked.error.message}`);
+      }
+    }
+  }
+
+  console.log("Phase 5A acceptance accounts are ready: Brad, Test Fan, and Moderator.");
+}
+
 function runSqlTests() {
   const testsDirectory = resolve(repositoryDirectory, "supabase/tests");
   const testFiles = readdirSync(testsDirectory)
@@ -228,6 +383,7 @@ try {
     runSupabase(["start"]);
     const status = refreshLocalEnvironment();
     await ensureLocalAcceptanceFan(status);
+    await ensurePhase5AcceptanceAccounts(status);
     printSafeStatus(status);
   } else if (action === "stop") {
     runSupabase(["stop"]);
@@ -236,6 +392,7 @@ try {
     runSupabase(["db", "reset", "--local"]);
     const status = refreshLocalEnvironment();
     await ensureLocalAcceptanceFan(status, { resetBaseline: true });
+    await ensurePhase5AcceptanceAccounts(status, { resetBaseline: true });
     printSafeStatus(status);
     console.log("The local database was rebuilt from every repository migration.");
   } else if (action === "status") {

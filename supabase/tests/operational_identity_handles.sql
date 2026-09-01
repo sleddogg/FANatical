@@ -88,6 +88,10 @@ values
     false
   );
 
+update public.profiles
+set handle = 'ProofFan'
+where user_id = '84000000-0000-0000-0000-000000000003';
+
 select pg_temp.assert_true(
   (
     select count(*) = 4
@@ -155,19 +159,23 @@ select pg_temp.assert_true(
   'the canonical fan population must exclude both active and inactive operational identities'
 );
 
-select set_config('request.jwt.claim.sub', '', true);
-set local role anon;
+select set_config(
+  'request.jwt.claim.sub',
+  '84000000-0000-0000-0000-000000000003',
+  true
+);
+set local role authenticated;
 select pg_temp.assert_true(
-  public.get_profile_for_viewer('84000000-0000-0000-0000-000000000001') is null,
-  'an active agent profile must not appear through the fan-facing profile boundary'
+  public.get_member_profile_by_fanatical_name('ProofAgent') is null,
+  'an active agent profile must not appear through the signed-in fan profile boundary'
 );
 select pg_temp.assert_true(
-  public.get_profile_for_viewer('84000000-0000-0000-0000-000000000002') is null,
-  'an inactive service profile must not appear through the fan-facing profile boundary'
+  public.get_member_profile_by_fanatical_name('ProofService') is null,
+  'an inactive service profile must not appear through the signed-in fan profile boundary'
 );
 select pg_temp.assert_true(
-  public.get_profile_for_viewer('84000000-0000-0000-0000-000000000003') is not null,
-  'an ordinary public fan profile must remain visible'
+  public.get_member_profile_by_fanatical_name('ProofFan') is not null,
+  'an ordinary fan profile must remain addressable to itself'
 );
 reset role;
 

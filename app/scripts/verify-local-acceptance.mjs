@@ -5,6 +5,9 @@ import { createClient } from "@supabase/supabase-js";
 import {
   localAcceptanceDataset,
   localAcceptanceFan,
+  localPhase5AcceptanceAccounts,
+  localPhase5AcceptanceFixtureMetadataKey,
+  localPhase5AcceptanceFixtureVersion,
 } from "./local-acceptance-fixtures.mjs";
 import { requireLoopbackSupabaseApiUrl } from "./local-supabase-safety.mjs";
 
@@ -166,10 +169,10 @@ function expectedSnapshot() {
     publisher: 1,
     approved_publishers: 1,
     approved_publisher_scopes: 1,
-    identity_cases: 2,
-    identity_decisions: 2,
-    staff_identity_decisions: 2,
-    organizations: 1,
+    identity_cases: 3,
+    identity_decisions: 3,
+    staff_identity_decisions: 3,
+    organizations: 2,
     shows: 1,
     evidence: 15,
     items: 3,
@@ -186,8 +189,8 @@ function expectedSnapshot() {
     previews: 3,
     preview_policies: 3,
     pending_preview_policies: 3,
-    followability_versions: 2,
-    current_followability: 2,
+    followability_versions: 3,
+    current_followability: 3,
     demo_versions: 1,
     current_demo_versions: 1,
     demo_members: 2,
@@ -195,6 +198,109 @@ function expectedSnapshot() {
     fixture_actors: 1,
     fixture_operator_staff_roles: 0,
   };
+}
+
+function phase5AccountSnapshot() {
+  const accountEmails = localPhase5AcceptanceAccounts
+    .map((account) => `'${account.email.replaceAll("'", "''")}'`)
+    .join(",");
+  const output = runLocalSql(`
+    with acceptance_users as (
+      select id, lower(email) as email
+      from auth.users
+      where lower(email) in (${accountEmails})
+    ), brad as (
+      select id from acceptance_users where email = 'brad@fanatical.invalid'
+    ), test_fan as (
+      select id from acceptance_users where email = 'testfan@fanatical.invalid'
+    ), moderator as (
+      select id from acceptance_users where email = 'moderator@fanatical.invalid'
+    )
+    select json_build_object(
+      'accounts', (select count(*) from acceptance_users),
+      'initialized_fans', (
+        select count(*)
+        from auth.users auth_user
+        where auth_user.id in ((select id from brad), (select id from test_fan))
+          and auth_user.raw_app_meta_data ->> '${localPhase5AcceptanceFixtureMetadataKey.replaceAll("'", "''")}'
+            = '${localPhase5AcceptanceFixtureVersion.replaceAll("'", "''")}'
+      ),
+      'brad_handle', (select profile.handle from public.profiles profile where profile.user_id = (select id from brad)),
+      'brad_visibility', (select profile.visibility from public.profiles profile where profile.user_id = (select id from brad)),
+      'brad_personal_fields', (select profile.personal_field_visibility from public.profiles profile where profile.user_id = (select id from brad)),
+      'test_handle', (select profile.handle from public.profiles profile where profile.user_id = (select id from test_fan)),
+      'test_visibility', (select profile.visibility from public.profiles profile where profile.user_id = (select id from test_fan)),
+      'test_personal_fields', (select profile.personal_field_visibility from public.profiles profile where profile.user_id = (select id from test_fan)),
+      'fan_team_follows', (select count(*) from public.user_followed_teams followed where followed.user_id in ((select id from brad), (select id from test_fan)) and followed.team_id = 'hockey-000027'),
+      'fan_news_follows', (select count(*) from public.user_news_identity_follows followed where followed.user_id in ((select id from brad), (select id from test_fan)) and followed.is_current),
+      'moderator_handle', (select profile.handle from public.profiles profile where profile.user_id = (select id from moderator)),
+      'moderator_visibility', (select profile.visibility from public.profiles profile where profile.user_id = (select id from moderator)),
+      'moderator_role', (select role.role from public.staff_roles role where role.user_id = (select id from moderator) and role.is_active),
+      'moderator_permissions', (select role.permissions from public.staff_roles role where role.user_id = (select id from moderator) and role.is_active),
+      'moderator_service_actor', (select count(*) from public.catalog_actors actor where actor.auth_user_id = (select id from moderator) and actor.actor_key = 'local_phase5a_moderator' and actor.actor_type = 'service' and actor.active),
+      'moderator_fan_population', (select count(*) from private.fan_profile_population population where population.user_id = (select id from moderator)),
+      'acceptance_comments', (select count(*) from public.community_comments comment where comment.author_user_id in (select id from acceptance_users)),
+      'acceptance_hides', (select count(*) from public.community_hide_intents intent where intent.hider_id in (select id from acceptance_users) or intent.hidden_id in (select id from acceptance_users)),
+      'acceptance_requests', (select count(*) from public.user_news_follow_requests request where request.user_id in (select id from acceptance_users))
+    );
+  `);
+  return JSON.parse(output);
+}
+
+function expectedPhase5AccountSnapshot() {
+  return {
+    accounts: 3,
+    initialized_fans: 2,
+    brad_handle: "Brad",
+    brad_visibility: "members_visible",
+    brad_personal_fields: {},
+    test_handle: "TestFan",
+    test_visibility: "private",
+    test_personal_fields: {},
+    fan_team_follows: 2,
+    fan_news_follows: 4,
+    moderator_handle: "",
+    moderator_visibility: "private",
+    moderator_role: "admin",
+    moderator_permissions: ["community_moderate"],
+    moderator_service_actor: 1,
+    moderator_fan_population: 0,
+    acceptance_comments: 0,
+    acceptance_hides: 0,
+    acceptance_requests: 0,
+  };
+}
+
+async function verifyPhase5AccountAccess(status) {
+  const apiUrl = requireLoopbackSupabaseApiUrl(status.get("API_URL"));
+  const publicKey = status.get("PUBLISHABLE_KEY") ?? status.get("ANON_KEY");
+  if (!publicKey) throw new Error("Local Supabase did not report its browser-safe key.");
+
+  for (const account of localPhase5AcceptanceAccounts) {
+    const client = localClient(apiUrl, publicKey);
+    const signedIn = await client.auth.signInWithPassword({
+      email: account.email,
+      password: account.password,
+    });
+    if (signedIn.error || signedIn.data.user?.email !== account.email) {
+      throw new Error(`${account.displayName} sign-in failed${signedIn.error ? `: ${signedIn.error.message}` : "."}`);
+    }
+
+    if (account.operationalActorKey) {
+      await rpc(client, "get_community_moderation_queue", {});
+      await rpc(client, "get_news_follow_request_queue", {});
+    } else {
+      const following = await rpc(client, "get_my_news_following", {});
+      assert(following.length === 2, `${account.displayName} does not have the two governed acceptance News follows.`);
+      const profile = await rpc(client, "get_member_profile_by_fanatical_name", {
+        fanatical_name_value: account.fanaticalName,
+      });
+      assert(profile?.fanatical_name === account.fanaticalName, `${account.displayName}'s fan-safe profile is unavailable.`);
+    }
+
+    const signedOut = await client.auth.signOut();
+    if (signedOut.error) throw new Error(`Could not sign out ${account.displayName}: ${signedOut.error.message}`);
+  }
 }
 
 async function anonymousBaseline(status) {
@@ -208,7 +314,7 @@ async function anonymousBaseline(status) {
   );
   assertJson(
     universe.map(({ target_type, display_name, ordinal }) => ({ target_type, display_name, ordinal })),
-    localAcceptanceDataset.identities.map((identity, index) => ({
+    localAcceptanceDataset.demoIdentities.map((identity, index) => ({
       target_type: identity.type,
       display_name: identity.displayName,
       ordinal: index + 1,
@@ -272,6 +378,12 @@ async function main() {
   let status = localStatus();
   const baseline = await anonymousBaseline(status);
   assertJson(fixtureSnapshot(), expectedSnapshot(), "The reset fixture row counts are not exact.");
+  assertJson(
+    phase5AccountSnapshot(),
+    expectedPhase5AccountSnapshot(),
+    "The Phase 5A Brad/Test/Moderator baseline is not exact.",
+  );
+  await verifyPhase5AccountAccess(status);
 
   const before = await signIn(status);
   const followed = await rpc(before.client, "follow_news_identity", {
@@ -286,6 +398,46 @@ async function main() {
   await before.client.auth.signOut();
   const sharedBeforeRestart = fixtureSnapshot();
 
+  const bradAccount = localPhase5AcceptanceAccounts.find((account) => account.key === "brad");
+  if (!bradAccount) throw new Error("The Brad acceptance account definition is missing.");
+  const bradClient = localClient(
+    requireLoopbackSupabaseApiUrl(status.get("API_URL")),
+    status.get("PUBLISHABLE_KEY") ?? status.get("ANON_KEY"),
+  );
+  const bradSignIn = await bradClient.auth.signInWithPassword({
+    email: bradAccount.email,
+    password: bradAccount.password,
+  });
+  if (bradSignIn.error) throw new Error(`Brad preservation setup failed: ${bradSignIn.error.message}`);
+  await rpc(bradClient, "set_my_profile_privacy", {
+    visibility_value: "private",
+    personal_field_visibility_value: {},
+  });
+  await bradClient.auth.signOut();
+  const phase5BeforeRestart = phase5AccountSnapshot();
+  assert(phase5BeforeRestart.brad_visibility === "private", "The Brad preservation proof did not change account-owned privacy.");
+
+  const escapedFixtureMetadataKey = localPhase5AcceptanceFixtureMetadataKey.replaceAll("'", "''");
+  runLocalSql(`
+    update auth.users
+    set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) - '${escapedFixtureMetadataKey}'
+    where lower(email) = 'testfan@fanatical.invalid';
+    update public.profiles
+    set handle = '', visibility = 'members_visible'
+    where user_id = (select id from auth.users where lower(email) = 'testfan@fanatical.invalid');
+    delete from public.user_followed_teams
+    where user_id = (select id from auth.users where lower(email) = 'testfan@fanatical.invalid')
+      and team_id = 'hockey-000027';
+  `);
+  const interruptedPhase5 = phase5AccountSnapshot();
+  assert(
+    interruptedPhase5.initialized_fans === 1
+      && interruptedPhase5.test_handle === ""
+      && interruptedPhase5.test_visibility === "members_visible"
+      && interruptedPhase5.fan_team_follows === 1,
+    "The interrupted Phase 5A provisioning proof did not create an incomplete unmarked account.",
+  );
+
   assert(/^[0-9a-f-]{36}$/i.test(userId), "Dummy Fan has an invalid local Auth user ID.");
   runLocalSql(`insert into public.staff_roles(user_id, role, permissions, is_active) values ('${userId}'::uuid, 'admin', array[]::text[], true) on conflict (user_id) do update set role = 'admin', permissions = array[]::text[], is_active = true;`);
   assert(
@@ -294,10 +446,17 @@ async function main() {
   );
 
   console.log("Restarting provisioning to prove stale-authority removal, activity preservation, and shared-fixture idempotence...");
+  runBackend("stop");
   runBackend("start");
   status = localStatus();
   await anonymousBaseline(status);
   assertJson(fixtureSnapshot(), sharedBeforeRestart, "Repeated backend:start duplicated or revised shared acceptance fixtures.");
+  assertJson(
+    phase5AccountSnapshot(),
+    phase5BeforeRestart,
+    "backend:start did not preserve completed Phase 5A state while repairing the interrupted account.",
+  );
+  await verifyPhase5AccountAccess(status);
   const after = await signIn(status);
   assert(after.user.id === userId, "backend:start replaced the standing Dummy Fan account.");
   const following = await rpc(after.client, "get_my_news_following", {});
@@ -311,6 +470,12 @@ async function main() {
   status = localStatus();
   await anonymousBaseline(status);
   assertJson(fixtureSnapshot(), expectedSnapshot(), "The final clean acceptance baseline is not exact.");
+  assertJson(
+    phase5AccountSnapshot(),
+    expectedPhase5AccountSnapshot(),
+    "The final clean Phase 5A account baseline is not exact.",
+  );
+  await verifyPhase5AccountAccess(status);
   console.log("Local acceptance reset/restart proof passed.");
 }
 

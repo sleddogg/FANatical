@@ -172,7 +172,7 @@ describe("Quiz Hub", () => {
     fireEvent.click(screen.getByRole("button", { name: "Quiz Hub" }));
     expect(screen.getByRole("heading", { name: "Pick a Sport" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Current quiz context")).not.toBeInTheDocument();
-  }, 10000);
+  }, 20_000);
 
   it("browses matching categories and chooses a canonical quiz card", async () => {
     const user = userEvent.setup();

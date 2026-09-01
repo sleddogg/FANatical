@@ -77,6 +77,23 @@ a {
   text-align: center;
 }
 
+.local-build-marker {
+  position: fixed;
+  right: 0.5rem;
+  bottom: calc(var(--bottom-nav-height, 0px) + 0.5rem);
+  z-index: 9999;
+  max-width: calc(100vw - 1rem);
+  padding: 0.3rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-control-text) 30%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -464,6 +481,13 @@ a {
   gap: clamp(var(--space-1), 3vw, var(--space-5));
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.bottom-navigation__account-links {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .bottom-navigation__feature-links::-webkit-scrollbar {

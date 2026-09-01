@@ -1981,6 +1981,18 @@
   margin: calc(-1 * var(--space-2)) var(--space-5) var(--space-5);
 }
 
+.profile-edit-dialog__field-error {
+  color: #8a1c1c;
+  font-weight: 750;
+}
+
+.profile-account-message {
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  color: #155b31;
+  background: #edfff4;
+}
+
 .profile-account-error {
   width: min(calc(100% - 2 * var(--space-4)), 68rem);
   margin: var(--space-4) auto;
@@ -3291,4 +3303,63 @@
   .profile-moment__image img {
     transition: none;
   }
+}
+.profile-privacy-fields {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.profile-privacy-fields label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hidden-fans-settings ul {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hidden-fans-settings__hide {
+  display: grid;
+  gap: 0.45rem;
+  margin-block: 1rem;
+}
+
+.hidden-fans-settings__hide > div {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.hidden-fans-settings__hide input {
+  min-width: 0;
+  flex: 1;
+}
+
+.hidden-fans-settings__hide > small {
+  color: var(--color-text-muted);
+}
+
+.hidden-fans-settings li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+}
+
+.hidden-fans-settings li span {
+  display: grid;
+}
+
+.hidden-fans-settings li small {
+  color: var(--color-text-muted);
 }

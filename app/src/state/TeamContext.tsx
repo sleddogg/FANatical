@@ -10,11 +10,14 @@ import {
 } from "react";
 import {
   defaultSelectedTeamId,
+  followedTeamsFromCatalogIdentifiers,
   followedTeamsFromOfficialIds,
+  frontendOfficialTeamIdForCatalogIdentifier,
   followedTeams as seededFollowedTeams,
   loadFollowedTeams,
   savePersistedFollowedTeamIds,
 } from "../data/followedTeams";
+import { loadTeamCatalog } from "../data/teamCatalogRepository";
 import {
   localSelectedTeamPreferenceStore,
   type SelectedTeamPreferenceStore,
@@ -82,14 +85,18 @@ export function TeamProvider({
   useEffect(() => {
     if (!configured || !user || !ready) return;
     let current = true;
-    const load = () => loadAccountTeamState(user.id).then((state) => {
+    const load = () => Promise.all([loadAccountTeamState(user.id), loadTeamCatalog()]).then(([state, catalog]) => {
       if (!current) return;
-      const nextTeams = followedTeamsFromOfficialIds(state.followedTeamIds);
+      const nextTeams = followedTeamsFromCatalogIdentifiers(state.followedTeamIds, catalog);
       setStoredFollowedTeams(nextTeams);
-      if (!selectionChangedInSession.current && state.selectedTeamId) {
-        const selected = nextTeams.find((team) => team.officialTeamId === state.selectedTeamId);
-        if (selected) setStoredSelectedTeamId(selected.id);
-      }
+      setStoredSelectedTeamId((currentId) => {
+        if (selectionChangedInSession.current && nextTeams.some((team) => team.id === currentId)) {
+          return currentId;
+        }
+        const selectedFrontendId = frontendOfficialTeamIdForCatalogIdentifier(state.selectedTeamId, catalog);
+        const selected = nextTeams.find((team) => team.officialTeamId === selectedFrontendId) ?? nextTeams[0];
+        return selected?.id ?? defaultSelectedTeamId;
+      });
       setLoadedUserId(user.id);
     }).catch((error: unknown) => console.error("FANatical could not refresh followed teams.", error));
     void load();

@@ -41,7 +41,8 @@ describe("Profile owner experience", () => {
     await user.click(screen.getByRole("button", { name: "Edit profile" }));
     const dialog = screen.getByRole("dialog", { name: "Edit Profile" });
     const nameInput = within(dialog).getByLabelText("Display name");
-    expect(within(dialog).getByRole("radio", { name: "Public profile" })).toBeChecked();
+    expect(within(dialog).getByRole("radio", { name: "Members-visible" })).toBeChecked();
+    expect(within(dialog).getByRole("radio", { name: "Members-visible" })).toBeDisabled();
     expect(within(dialog).getByRole("radio", { name: "Private profile" })).toBeDisabled();
     await user.clear(nameInput);
     await user.type(nameInput, "Sleddogg");
@@ -65,6 +66,7 @@ describe("Profile owner experience", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save profile" }));
 
     expect(screen.getByRole("heading", { name: "Sleddogg", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Profile saved.");
     expect(window.localStorage.getItem(navigationSideStorageKey)).toBe("right");
     expect(screen.getByRole("button", { name: "Open Game Face Fan Photos" })).toHaveAttribute("aria-current", "true");
     await user.click(screen.getByRole("tab", { name: "Sports Played" }));
@@ -80,6 +82,20 @@ describe("Profile owner experience", () => {
     await user.click(screen.getByRole("tab", { name: "Trophy Case" }));
     expect(screen.getByRole("heading", { name: "Trophy Case" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Founding Fan" })).toBeInTheDocument();
+  });
+
+  it("identifies the exact invalid Profile identity field instead of silently refusing Save", async () => {
+    const user = userEvent.setup();
+    renderProfile();
+    await user.click(screen.getByRole("button", { name: "Edit profile" }));
+    const dialog = screen.getByRole("dialog", { name: "Edit Profile" });
+    const displayName = within(dialog).getByLabelText("Display name");
+    await user.clear(displayName);
+    await user.click(within(dialog).getByRole("button", { name: "Save profile" }));
+
+    expect(within(dialog).getByText("Enter a display name before saving.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("Review the highlighted Profile identity field");
+    expect(displayName).toHaveAttribute("aria-invalid", "true");
   });
 
   it("customizes responsive Home text and a Profile-backed Fan Card", async () => {

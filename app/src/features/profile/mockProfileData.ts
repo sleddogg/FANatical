@@ -3,9 +3,9 @@ import type { FanMoment, ProfileRecord, ProfileStat, Trophy } from "./types";
 
 export const initialProfile: ProfileRecord = {
   id: demoUser.id,
-  visibility: "public",
+  visibility: "members_visible",
   displayName: demoUser.username,
-  handle: `@${demoUser.username}`,
+  handle: demoUser.username,
   tagline: "Home teams, road trips, and every story in between.",
   featuredFanPhotoCategory: "Fan Cave",
   bio: [

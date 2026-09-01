@@ -28,7 +28,7 @@ function typeLabel(type: NewsIdentityTargetType) {
   return "Show";
 }
 
-export function NewsIdentityProfilePage({ targetType }: NewsIdentityProfilePageProps) {
+function NewsIdentityProfileScreen({ targetType }: NewsIdentityProfilePageProps) {
   const { identityId = "" } = useParams();
   const { configured, loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
@@ -138,4 +138,10 @@ export function NewsIdentityProfilePage({ targetType }: NewsIdentityProfilePageP
       ) : null}
     </div>
   );
+}
+
+export function NewsIdentityProfilePage(props: NewsIdentityProfilePageProps) {
+  const { identityId = "" } = useParams();
+  const { user } = useAuth();
+  return <NewsIdentityProfileScreen key={`${user?.id ?? "signed-out"}:${props.targetType}:${identityId}`} {...props} />;
 }

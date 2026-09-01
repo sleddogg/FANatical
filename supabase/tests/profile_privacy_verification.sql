@@ -11,6 +11,23 @@ select jsonb_build_object(
       and column_name_info.table_name = 'profiles'
       and column_name_info.column_name = 'visibility'
   ),
+  'phase5_profile_columns', (
+    select jsonb_object_agg(
+      column_name_info.column_name,
+      jsonb_build_object(
+        'data_type', column_name_info.data_type,
+        'default', column_name_info.column_default,
+        'nullable', column_name_info.is_nullable
+      )
+      order by column_name_info.column_name
+    )
+    from information_schema.columns column_name_info
+    where column_name_info.table_schema = 'public'
+      and column_name_info.table_name = 'profiles'
+      and column_name_info.column_name in (
+        'visibility', 'personal_field_visibility', 'media_namespace'
+      )
+  ),
   'legacy_is_public_exists', exists (
     select 1 from information_schema.columns column_name_info
     where column_name_info.table_schema = 'public'
@@ -47,6 +64,41 @@ select jsonb_build_object(
     ),
     'profile_visuals_distinct', not exists (
       select 1 from public.profile_visuals where source_path = display_path
+    ),
+    'active_avatar_displays', (
+      select count(*)
+      from public.profiles profile
+      join public.profile_photos photo
+        on photo.id = profile.active_profile_photo_id
+       and photo.user_id = profile.user_id
+    ),
+    'active_uuid_prefixed_avatar_displays', (
+      select count(*)
+      from public.profiles profile
+      join public.profile_photos photo
+        on photo.id = profile.active_profile_photo_id
+       and photo.user_id = profile.user_id
+      where photo.display_path like profile.user_id::text || '/%'
+    ),
+    'active_opaque_avatar_displays', (
+      select count(*)
+      from public.profiles profile
+      join public.profile_photos photo
+        on photo.id = profile.active_profile_photo_id
+       and photo.user_id = profile.user_id
+      where photo.display_path like profile.media_namespace || '/avatar/%'
+    ),
+    'naked_avatar_path_not_active_display', (
+      select count(*)
+      from public.profiles profile
+      where profile.avatar_path is not null
+        and not exists (
+          select 1
+          from public.profile_photos photo
+          where photo.id = profile.active_profile_photo_id
+            and photo.user_id = profile.user_id
+            and photo.display_path = profile.avatar_path
+        )
     )
   ),
   'expected_functions', (
@@ -60,11 +112,15 @@ select jsonb_build_object(
     join pg_catalog.pg_namespace namespace on namespace.oid = procedure.pronamespace
     where (namespace.nspname, procedure.proname) in (
       ('private', 'can_view_profile'),
+      ('private', 'profile_avatar_path_is_fan_safe'),
+      ('private', 'profile_media_path_belongs_to_user'),
       ('private', 'profile_media_path_is_visible'),
-      ('public', 'get_profile_for_viewer'),
+      ('public', 'get_member_profile_by_fanatical_name'),
       ('public', 'save_my_profile')
     )
   ),
+  'removed_uuid_profile_reader',
+    to_regprocedure('public.get_profile_for_viewer(uuid)') is null,
   'relevant_policies', (
     select jsonb_agg(jsonb_build_object(
       'schema', policy.schemaname,

@@ -21,10 +21,62 @@ error.
 
 ## Header — fill in before issuing
 
-- **State under audit:** `<builder's completed work, folder frozen since <date/time> — or a commit SHA if the work has been Saved>`
+- **State under audit:** `Builder's complete unsaved Phase 5A change set
+  relative to the Phase 4 closeout base—not only the community migration and
+  SQL suite. The audit scope includes all four Phase 5A migrations
+  (20260831203014, 20260831203022, 20260831203030, and 20260901020424), all
+  Phase 5A SQL and concurrency proofs, the full Profile/Community/Request/
+  Notifications/Admin frontend and browser-test surface, generated database
+  types, supporting local-verification scripts, and the Phase 5A authority,
+  invariant, backlog, and audit-document changes. The frozen git inventory
+  issued with this brief is the exact scope. It excludes the non-authoritative
+  reference snapshots `Fanatical build page - 2026-08-31.md` and
+  `Fanatical build page - pre-Phase 5.md`; auditors must use only the canonical
+  `Fanatical build page.md`. The implementation tree was frozen and independently
+  audited on 1 Sep 2026; the accepted documentation/backlog reconciliation is
+  complete, and the resulting tree is not yet Saved. Built from Phase 4 closeout commit
+  97f25c85ca52a3539cb203386772677d56ec4621 ("Phase 4 Complete"). Do not cite
+  the phase-4-complete tag as the base state: it points one commit earlier, at
+  46cb51ce61e793652ebf7a2d754aa868bdb98c30, and is pending correction under
+  BL-041. Replace this line with the actual commit SHA once the work is
+  Saved.`
 - **Branch:** `production-foundation`
-- **Phase under audit:** `<PHASE>`
-- **Phase exit gate:** `<EXIT GATE CRITERIA — list them here, in full>`
+- **Phase under audit:** `5A`
+- **Audit outcome:** `PASS WITH NON-BLOCKING FINDINGS. No Phase 5A implementation
+  blocker remained. The accepted closeout findings were reconciled into the
+  canonical authority, invariant and backlog documents; they do not require a
+  second independent audit.`
+- **Phase exit gate:**
+
+  > Fanatical Name and profile-privacy boundaries hold under real roles;
+  > contextual News-Item discussions are unique per Item/context with no
+  > duplicate roots under concurrency and no row created by an empty read;
+  > Team access requires a matching Team follow, while the expressly temporary
+  > signed-in Competition/League and Sport access remains until those direct
+  > follow types and inherited-access routing are built under Phase 5B;
+  > comments, Hide, and reports/moderation/restrictions work as specified,
+  > including preserved correction history; Requests dedupe repeat submissions
+  > of the same normalized candidate correctly, resolve only against a current
+  > followable target, and never auto-Follow; typed-name versus pasted-URL
+  > convergence for the same underlying identity remains explicitly deferred
+  > under BL-042;
+  > final Request outcomes and direct replies produce idempotent
+  > notifications; anonymous, owner, runtime, reviewer, and public RLS
+  > boundaries are all proven; Poll and rating schema/tests remain out of
+  > scope for this phase.
+  >
+  > Source: `FANATICAL_NEWS_IMPLEMENTATION_PLAN.md`, Phase 5A row (§8) and the
+  > SQL/RLS testing sequence (§7).
+
+- **Known local-versus-hosted status:** `BL-020 and BL-035 are closed decisions,
+  not local or hosted activation blockers. NorthStarFan is an intentional
+  pre-launch test persona; its legacy display path is withheld from other fans
+  by the generic-avatar fallback and will be cleared rather than migrated.
+  BL-043 requires Brad, TestFan, NorthStarFan, and their fan-owned test data/media
+  to be purged before the first real beta/public fan. The four Phase 5A
+  migrations remain unhosted; linked-ledger comparison, explicit apply approval,
+  hosted RLS/RPC/privacy verification, frontend promotion, and live smoke remain
+  separate hosted closeout work.`
 
 The exit gate lives in this header and nowhere else in this file, so that a later
 phase cannot accidentally inherit an earlier phase's criteria. An auditor issued

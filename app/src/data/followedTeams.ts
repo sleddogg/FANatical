@@ -1,5 +1,6 @@
 import type { FollowedTeam, TeamId } from "../domain/team";
 import { findOfficialLeague, findOfficialSportById, findOfficialTeam, type OfficialTeamId } from "./officialSportsDatabase";
+import { findCatalogTeam, type TeamCatalogSnapshot } from "./teamCatalogRepository";
 
 export const followedTeamsStorageKey = "fanatical.followed-team-ids.v1";
 
@@ -57,6 +58,27 @@ export function officialTeamToFollowedTeam(teamId: OfficialTeamId): FollowedTeam
 export function followedTeamsFromOfficialIds(teamIds: readonly OfficialTeamId[]): readonly FollowedTeam[] {
   const seededByOfficialId = new Map<OfficialTeamId, FollowedTeam>(followedTeams.map((team) => [team.officialTeamId, team]));
   return [...new Set(teamIds)].map((teamId) => seededByOfficialId.get(teamId) ?? officialTeamToFollowedTeam(teamId)).filter((team): team is FollowedTeam => team !== null);
+}
+
+export function frontendOfficialTeamIdForCatalogIdentifier(
+  identifier: string | null | undefined,
+  snapshot: TeamCatalogSnapshot,
+): OfficialTeamId | null {
+  if (!identifier) return null;
+  const catalogTeam = findCatalogTeam(snapshot, identifier);
+  const frontendIdentifier = catalogTeam?.legacyFrontendTeamId ?? identifier;
+  const frontendTeam = findOfficialTeam(frontendIdentifier);
+  return frontendTeam ? frontendIdentifier as OfficialTeamId : null;
+}
+
+export function followedTeamsFromCatalogIdentifiers(
+  identifiers: readonly string[],
+  snapshot: TeamCatalogSnapshot,
+): readonly FollowedTeam[] {
+  const frontendIdentifiers = identifiers
+    .map((identifier) => frontendOfficialTeamIdForCatalogIdentifier(identifier, snapshot))
+    .filter((identifier): identifier is OfficialTeamId => identifier !== null);
+  return followedTeamsFromOfficialIds(frontendIdentifiers);
 }
 
 export function loadPersistedFollowedTeamIds(): readonly OfficialTeamId[] {

@@ -196,8 +196,9 @@ export async function uploadRemoteProfileVisual(userId: string, record: ProfileV
     if (insert.error) throw new Error(insert.error.message);
     inserted = true;
 
+    const { sourceBlob: _sourceBlob, displayBlob: _displayBlob, ...persistedRecord } = record;
     return await activateVisual({
-      ...record,
+      ...persistedRecord,
       id,
       sourceMediaType,
       sourcePath,

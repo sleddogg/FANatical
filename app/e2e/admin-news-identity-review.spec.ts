@@ -78,9 +78,11 @@ test("authorized staff can open and refresh the News identity review workspace",
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page.getByRole("heading", { name: "News identity review" })).toBeVisible();
-  await expect(page.getByText("No identity cases need attention.")).toBeVisible();
-  await page.getByRole("button", { name: "Refresh" }).click();
-  await expect(page.getByText("No identity cases need attention.")).toBeVisible();
+  await expect(page.getByRole("article", { name: "FANatical Local Demo Desk" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "FANatical Local Demo Podcast" })).toBeVisible();
+  await expect(page.getByRole("article", { name: "FANatical Local Request Candidate" })).toBeVisible();
+  await page.getByRole("region", { name: "News identity review" }).getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByRole("article", { name: "FANatical Local Request Candidate" })).toBeVisible();
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

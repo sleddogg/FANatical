@@ -9,6 +9,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../lib/supabase/client", () => ({
   isSupabaseConfigured: true,
+  supabaseBackendEnvironment: {
+    kind: "hosted",
+    url: "https://example.supabase.co",
+    warning: null,
+  },
   supabase: {
     auth: {
       getSession: mocks.getSession,

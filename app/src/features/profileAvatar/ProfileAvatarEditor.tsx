@@ -52,8 +52,8 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
   };
 
   const upload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
     draftChanged.current = true;
     setBusy(true);
@@ -63,6 +63,10 @@ export function ProfileAvatarEditor({ onDone, onCancel }: { readonly onDone: () 
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The selected profile photo could not be prepared.");
     } finally {
+      // Mobile camera/photo providers may invalidate their temporary file when
+      // the input is cleared. Keep it attached until decoding is complete,
+      // then clear it so choosing the same file again still fires change.
+      input.value = "";
       setBusy(false);
     }
   };

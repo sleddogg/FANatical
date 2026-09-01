@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { followedTeamsFromCatalogIdentifiers, frontendOfficialTeamIdForCatalogIdentifier } from "./followedTeams";
 import { findCatalogTeam, teamCatalogSnapshotFromRows } from "./teamCatalogRepository";
 
 describe("team catalog repository compatibility projection", () => {
@@ -38,6 +39,10 @@ describe("team catalog repository compatibility projection", () => {
     });
     expect(findCatalogTeam(snapshot, "hockey-000027")?.displayName).toBe("Edmonton Oilers");
     expect(findCatalogTeam(snapshot, "hockey-nhl-edmonton-oilers")?.canonicalTeamId).toBe("hockey-000027");
+    expect(frontendOfficialTeamIdForCatalogIdentifier("hockey-000027", snapshot)).toBe("hockey-nhl-edmonton-oilers");
+    expect(followedTeamsFromCatalogIdentifiers(["hockey-000027", "hockey-nhl-edmonton-oilers"], snapshot)).toEqual([
+      expect.objectContaining({ name: "Edmonton Oilers", officialTeamId: "hockey-nhl-edmonton-oilers" }),
+    ]);
   });
 
   it("does not expose partially populated palettes", () => {

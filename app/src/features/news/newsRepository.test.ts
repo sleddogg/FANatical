@@ -108,8 +108,10 @@ describe("Phase 4 News repository", () => {
         data: [{
           filter_type: "competition",
           target_id: "hockey-nhl",
-          display_name: "NHL",
+          display_name: "National Hockey League",
           sport_id: "hockey",
+          competition_kind_id: "league",
+          is_followed: false,
         }],
         error: null,
       });
@@ -125,8 +127,10 @@ describe("Phase 4 News repository", () => {
     expect(result.at(-1)).toEqual({
       filterType: "competition",
       targetId: "hockey-nhl",
-      displayName: "NHL",
+      displayName: "National Hockey League",
       sportId: "hockey",
+      competitionKindId: "league",
+      isFollowed: false,
     });
   });
 });

@@ -37,3 +37,11 @@ export function parseStaffAccess(record: StaffRoleRecord | null): StaffAccess | 
 export function formatStaffRole(role: StaffRole) {
   return role.split("_").map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`).join(" ");
 }
+
+export function hasExactStaffPermission(access: StaffAccess, permission: string) {
+  return access.permissions.includes(permission);
+}
+
+export function canResolveNewsRequests(access: StaffAccess) {
+  return access.role === "admin" || access.role === "staff" || access.role === "content_admin";
+}

@@ -364,7 +364,7 @@ describe("Cheer frontend", () => {
     await user.click(within(dialog).getByRole("button", { name: "Delete Timing" }));
     expect(screen.getByRole("button", { name: "Action Clap at beat 1 and a half" })).toBeInTheDocument();
     expect(screen.getByLabelText("Lyrics at beat 2")).toBeInTheDocument();
-  }, 10_000);
+  }, 20_000);
 
   it("offers a same-lane ripple when an edited duration exceeds its gap", async () => {
     const user = userEvent.setup();

@@ -59,6 +59,10 @@ Do not assume the user is a programmer. Explain approvals or decisions in plain 
 
 ### Backend / Migration Completion
 
+- Every new migration created after the Phase 5A migration set must use an
+  exact 14-digit `YYYYMMDDHHMMSS` version prefix. Do not use a shorter
+  date-only version that could sort before an existing Phase 5A migration, and
+  do not rename existing migrations.
 - Before any hosted migration apply, the first step is a read-only linked migration-ledger comparison. Confirm exactly what hosted has applied and what local files are pending. If the ledgers differ in any way other than hosted being simply behind local, stop before applying anything and report the discrepancy.
 - If a feature creates or depends on a Supabase migration, compare local migrations with the linked hosted project before reporting completion.
 - If the required migration is pending remotely, stop and request approval to apply it through the normal Supabase migration workflow.

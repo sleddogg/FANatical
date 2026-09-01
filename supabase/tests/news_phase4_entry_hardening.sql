@@ -524,8 +524,8 @@ select public.admin_set_news_demo_universe(
 reset role;
 
 select pg_temp.assert_true(
-  (select count(*) = 61 from private.news_domain_mutation_registry()),
-  'BL-027 must cover every current News table including all eight Phase 4 tables'
+  (select count(*) = 64 from private.news_domain_mutation_registry()),
+  'BL-027 must retain all Phase 4 tables and register all three Phase 5A Request tables'
 );
 
 select set_config(
@@ -1492,6 +1492,11 @@ select pg_temp.assert_true(
     select count(*) = 4
     from public.user_news_identity_follows
     where is_current
+      and user_id in (
+        '90000000-0000-0000-0000-000000000001',
+        '90000000-0000-0000-0000-000000000002',
+        '90000000-0000-0000-0000-000000000003'
+      )
   ),
   'Demo follow/filter choices must write no durable account follow state'
 );

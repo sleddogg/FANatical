@@ -1,0 +1,113 @@
+.inbox-control {
+  position: relative;
+  display: grid;
+  width: var(--control-size);
+  min-width: var(--control-size);
+  height: var(--control-size);
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: inherit;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.inbox-control__badge {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.15rem;
+  min-width: 1.2rem;
+  padding: 0.1rem 0.25rem;
+  border: 0.12rem solid var(--color-surface, #fff);
+  border-radius: 999px;
+  color: white;
+  background: #bd1e2d;
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.inbox-layer {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+}
+
+.inbox-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(15 23 42 / 58%);
+}
+
+.inbox-dialog {
+  position: absolute;
+  right: 1rem;
+  top: 5rem;
+  display: grid;
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100svh - var(--bottom-navigation-height) - 2rem));
+  gap: 1rem;
+  padding: 1rem;
+  overflow: auto;
+  border-radius: 1rem;
+  color: var(--color-text, #172033);
+  background: var(--color-surface, #fff);
+  box-shadow: 0 1rem 3rem rgb(15 23 42 / 28%);
+}
+
+.inbox-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inbox-dialog h2,
+.inbox-dialog h3,
+.inbox-dialog p {
+  margin: 0;
+}
+
+.inbox-dialog > header > button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-surface-muted, #f3f4f6);
+}
+
+.inbox-dialog section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.inbox-dialog ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inbox-dialog li,
+.inbox-dialog li a {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem;
+  border-radius: 0.65rem;
+  color: inherit;
+  background: var(--color-surface-muted, #f4f5f7);
+  text-decoration: none;
+}
+
+.inbox-dialog time {
+  color: var(--color-text-muted, #667085);
+  font-size: 0.78rem;
+}
+
+.inbox-dialog__moderation {
+  padding-top: 0.8rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+}

@@ -20,6 +20,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
   const [draft, setDraft] = useState<ProfileVisualImageRecord | undefined>(record);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
   const dragPoint = useRef<{ x: number; y: number } | null>(null);
   const draftChanged = useRef(false);
   const previewUrl = useProfileVisualUrl(draft?.displayBlob, draft?.displayUrl);
@@ -32,6 +33,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
 
   const updateCrop = (next: ProfileVisualCrop) => {
     draftChanged.current = true;
+    setHasChanges(true);
     setDraft((current) => current ? { ...current, crop: clampProfileVisualCrop(next) } : current);
   };
 
@@ -40,6 +42,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
     event.target.value = "";
     if (!file) return;
     draftChanged.current = true;
+    setHasChanges(true);
     setBusy(true);
     setError("");
     try {
@@ -53,6 +56,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
 
   const selectSavedPhoto = (photo: ProfileVisualImageRecord) => {
     draftChanged.current = true;
+    setHasChanges(true);
     setError("");
     setDraft(photo);
   };
@@ -76,6 +80,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
     try {
       const saved = await saveImage(draft);
       draftChanged.current = false;
+      setHasChanges(false);
       setDraft(saved);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The image could not be saved.");
@@ -86,6 +91,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
 
   const cancel = () => {
     draftChanged.current = false;
+    setHasChanges(false);
     setError("");
     setDraft(record);
   };
@@ -103,6 +109,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
       const nextActive = await removeImage(variant, photo.id);
       if (draft?.id === photo.id) {
         draftChanged.current = false;
+        setHasChanges(false);
         setDraft(nextActive);
       }
     } catch (reason) {
@@ -136,7 +143,7 @@ function ProfileVisualEditor({ variant, record, photos }: {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const changed = Boolean(draft && (
+  const changed = hasChanges && Boolean(draft && (
     draft.sourceBlob
     || draft.id !== record?.id
     || !record

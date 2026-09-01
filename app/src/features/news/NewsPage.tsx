@@ -3,9 +3,12 @@ import { Link } from "react-router-dom";
 import { AppIcon, type AppIconName } from "../../components/AppIcon";
 import { TeamBadge } from "../../components/TeamBadge";
 import { useAuth } from "../account/AuthContext";
+import { InboxControl } from "../notifications/InboxControl";
 import { useAppTheme } from "../../state/ThemeContext";
 import { useTeamContext } from "../../state/TeamContext";
 import { NewsCard } from "./NewsCard";
+import { discussionOriginForFilter } from "../community/discussionRouting";
+import type { DiscussionOrigin } from "../community/types";
 import { NewsFilterMenu } from "./NewsFilterMenu";
 import { AddToFeedDialog } from "./SourceManagerDialog";
 import {
@@ -97,11 +100,13 @@ function RealZeroFollowExample({
   onAdd,
   onOutboundOpen,
   onShare,
+  discussionOrigin,
 }: {
   readonly item: FanSafeNewsItem;
   readonly onAdd: () => void;
   readonly onOutboundOpen: (selected: FanSafeNewsItem) => void;
   readonly onShare: (selected: FanSafeNewsItem) => void;
+  readonly discussionOrigin: DiscussionOrigin | null;
 }) {
   return (
     <section className="news-real-example" aria-label="Zero-follow News example">
@@ -110,17 +115,18 @@ function RealZeroFollowExample({
         <p>This real official-Team Item is an onboarding example. It creates no follow or feed eligibility.</p>
         <button className="news-primary-button" type="button" onClick={onAdd}><AppIcon name="plus" /> Add to Feed</button>
       </div>
-      <NewsCard item={item} onOutboundOpen={onOutboundOpen} onShare={onShare} />
+      <NewsCard item={item} onOutboundOpen={onOutboundOpen} onShare={onShare} discussionOrigin={discussionOrigin} />
     </section>
   );
 }
 
-export function NewsPage() {
+function NewsScreen() {
   const { configured, loading: authLoading, user } = useAuth();
   const { selectedTeam } = useTeamContext();
   const theme = useAppTheme();
   const signedIn = Boolean(user);
   const authUserId = user?.id ?? null;
+  const newsOwnerKey = authUserId ?? "signed-out";
   const selectedTeamPublicId = selectedTeam.officialTeamId;
   const [filterSelection, setFilterSelection] = useState<NewsFilterSelection>(() => ({
     userId: authUserId,
@@ -135,13 +141,19 @@ export function NewsPage() {
   const filter = filterSelection.userId !== authUserId || (signedIn && filterSelection.followsTeamContext)
     ? contextFilter
     : filterSelection.value;
+  const newsLoadKey = `${newsOwnerKey}:${filter.kind}:${filter.kind === "all" ? "" : filter.targetId}`;
   const [navigation, setNavigation] = useState<readonly NewsNavigationEntry[]>([]);
-  const [following, setFollowing] = useState<readonly NewsFollowingEntry[]>([]);
+  const [followingState, setFollowingState] = useState<{
+    ownerId: string | null;
+    value: readonly NewsFollowingEntry[];
+  }>({ ownerId: null, value: [] });
+  const following = followingState.ownerId === authUserId ? followingState.value : [];
   const [demoUniverse, setDemoUniverse] = useState<readonly NewsFollowTarget[]>([]);
   const [demoSelections, setDemoSelections] = useState<readonly NewsDemoSelection[]>([]);
   const [items, setItems] = useState<readonly FanSafeNewsItem[]>([]);
   const [exampleItem, setExampleItem] = useState<FanSafeNewsItem | null>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [loadedNewsOwnerKey, setLoadedNewsOwnerKey] = useState("");
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -190,11 +202,12 @@ export function NewsPage() {
     const load = async () => {
       if (!current) return;
       setLoadState("loading");
+      setLoadedNewsOwnerKey("");
       setError("");
       if (user) {
         const nextFollowing = await loadMyNewsFollowing();
         if (!current) return;
-        setFollowing(nextFollowing);
+        setFollowingState({ ownerId: authUserId, value: nextFollowing });
         setDemoUniverse([]);
         setDemoSelections([]);
         const nextExample = !nextFollowing.length && selectedTeamPublicId
@@ -209,7 +222,7 @@ export function NewsPage() {
         const universe = await loadNewsDemoUniverse();
         if (!current) return;
         const selections = loadNewsDemoSelections(universe);
-        setFollowing([]);
+        setFollowingState({ ownerId: null, value: [] });
         setExampleItem(null);
         setDemoUniverse(universe);
         setDemoSelections(selections);
@@ -217,16 +230,18 @@ export function NewsPage() {
         if (!current) return;
         setItems(nextItems);
       }
+      setLoadedNewsOwnerKey(newsLoadKey);
       setLoadState("ready");
     };
     void Promise.resolve().then(load).catch((reason: unknown) => {
       if (!current) return;
       setItems([]);
+      setLoadedNewsOwnerKey(newsLoadKey);
       setLoadState("error");
       setError(reason instanceof Error ? reason.message : "News could not be loaded.");
     });
     return () => { current = false; };
-  }, [authLoading, configured, filter, revision, selectedTeamPublicId, user]);
+  }, [authLoading, authUserId, configured, filter, newsLoadKey, revision, selectedTeamPublicId, user]);
 
   const refreshAccountNews = useCallback(async () => {
     setRevision((current) => current + 1);
@@ -323,8 +338,11 @@ export function NewsPage() {
   const filterIcon = filter.kind === "sport"
     ? sportIcons[filter.targetId.toLowerCase()] ?? "newspaper"
     : null;
+  const discussionOrigin = discussionOriginForFilter(filter);
   const filterUsesSelectedTeam = filter.kind === "team" && filter.targetId === selectedTeamPublicId;
-  const visibleLoadState: LoadState = authLoading ? "loading" : configured ? loadState : "error";
+  const visibleLoadState: LoadState = authLoading || loadedNewsOwnerKey !== newsLoadKey
+    ? "loading"
+    : configured ? loadState : "error";
   const visibleError = configured ? error : "News is unavailable because the FANatical data service is not configured.";
   const showZeroFollow = signedIn && visibleLoadState === "ready" && following.length === 0;
   const showFilterZero = signedIn && visibleLoadState === "ready" && following.length > 0 && items.length === 0;
@@ -352,9 +370,12 @@ export function NewsPage() {
           <h1>News</h1>
           <p>{filter.displayName}</p>
         </div>
-        <button ref={addToFeedTriggerRef} className="news-add-feed" type="button" aria-expanded={addToFeedOpen} aria-controls="add-to-feed" onClick={() => setAddToFeedOpen(true)}>
-          <AppIcon name="plus" /><span>Add to Feed</span>
-        </button>
+        <div className="news-header__actions">
+          <InboxControl key={user?.id ?? "signed-out"} />
+          <button ref={addToFeedTriggerRef} className="news-add-feed" type="button" aria-expanded={addToFeedOpen} aria-controls="add-to-feed" onClick={() => setAddToFeedOpen(true)}>
+            <AppIcon name="plus" /><span>Add to Feed</span>
+          </button>
+        </div>
       </header>
 
       {!signedIn && !authLoading && configured ? (
@@ -382,6 +403,7 @@ export function NewsPage() {
               onAdd={() => setAddToFeedOpen(true)}
               onOutboundOpen={outboundOpen}
               onShare={(selected) => { void share(selected); }}
+              discussionOrigin={discussionOrigin}
             />
           ) : null}
           {showZeroFollow && !exampleItem ? <ZeroFollowExample teamName={selectedTeam.name} onAdd={() => setAddToFeedOpen(true)} /> : null}
@@ -409,6 +431,7 @@ export function NewsPage() {
                   item={item}
                   onOutboundOpen={outboundOpen}
                   onShare={(selected) => { void share(selected); }}
+                  discussionOrigin={discussionOrigin}
                   {...(signedIn ? { onDismiss: (selected: FanSafeNewsItem) => { void dismiss(selected); } } : {})}
                 />
               ))}
@@ -436,6 +459,7 @@ export function NewsPage() {
 
       {addToFeedOpen ? (
         <AddToFeedDialog
+          key={newsOwnerKey}
           signedIn={signedIn}
           following={following}
           demoUniverse={demoUniverse}
@@ -450,4 +474,9 @@ export function NewsPage() {
       ) : null}
     </div>
   );
+}
+
+export function NewsPage() {
+  const { user } = useAuth();
+  return <NewsScreen key={user?.id ?? "signed-out"} />;
 }

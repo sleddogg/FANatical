@@ -1,13 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { TeamId } from "../../domain/team";
 import { findFollowedTeam } from "../../data/followedTeams";
-import {
-  articleDiscussionScopeForItem,
-  articleDiscussionScopeMatchesTeam,
-} from "./articleDiscussionScope";
-import { articleDiscussionNewsItems, getArticleDiscussionSource } from "./mockArticleDiscussionData";
 import { CommunityThreadView } from "./CommunityThreadView";
-import { ArticleDiscussionCard } from "./ArticleDiscussionCard";
 import { FanPhotosArea } from "./FanPhotosArea";
 import { LockerRoomTopicCard } from "./LockerRoomTopicCard";
 import { PollsArea } from "./PollsArea";
@@ -18,6 +13,9 @@ import { getGameThreadStatus, getThreadCommentCount, useFanbaseContext } from ".
 import { formatEventDate, formatFanbaseTime, totalReactions } from "./fanbaseFormatting";
 import type { FanbaseAreaId, FanPhotoCategory } from "./types";
 import { AppIcon } from "../../components/AppIcon";
+import { loadTeamNewsDiscussions } from "../community/communityRepository";
+import { communityDiscussionPath } from "../community/discussionRouting";
+import type { TeamNewsDiscussionSummary } from "../community/types";
 
 type FanbaseAreaViewProps = {
   readonly area: FanbaseAreaId;
@@ -35,74 +33,46 @@ function EmptyArea({ children }: { children: ReactNode }) {
   return <div className="fanbase-empty surface"><AppIcon name="information-circle" /><p>{children}</p></div>;
 }
 
-function ArticleCommentsArea({ teamId, itemId, onOpenItem }: Omit<FanbaseAreaViewProps, "area">) {
-  const fanbase = useFanbaseContext();
-  const selectedNewsItem = itemId ? articleDiscussionNewsItems.find((item) => item.id === itemId) : undefined;
-  const articleThreads = fanbase.threads
-    .filter((thread) => {
-      if (thread.kind !== "article") return false;
-      const item = articleDiscussionNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
-      if (!item) return false;
-      const scope = thread.discussionScope ?? articleDiscussionScopeForItem(item);
-      return articleDiscussionScopeMatchesTeam(scope, teamId);
-    })
-    .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+function ArticleCommentsArea({ teamId }: Omit<FanbaseAreaViewProps, "area">) {
+  const [discussions, setDiscussions] = useState<readonly TeamNewsDiscussionSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  if (selectedNewsItem) {
-    const source = getArticleDiscussionSource(selectedNewsItem);
-    const thread = fanbase.getArticleThread(selectedNewsItem.id);
-    const discussionScope = thread?.discussionScope ?? articleDiscussionScopeForItem(selectedNewsItem);
-    return (
-      <>
-        <ArticleDiscussionCard
-          item={selectedNewsItem}
-          source={source}
-          thread={thread}
-          onReact={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)}
-          onReport={() => thread && fanbase.reportThread(thread.id)}
-        />
-        <CommunityThreadView
-          thread={thread}
-          title={selectedNewsItem.headline}
-          context={`${source?.name ?? "News"} discussion`}
-          body={selectedNewsItem.summary}
-          emptyMessage="No one has started this Article Discussion yet. Your first comment will create it."
-          compactTopicMode
-          onSubmitComment={(body, parentId) => {
-            if (thread) {
-              fanbase.addComment(thread.id, body, parentId);
-            } else {
-              fanbase.addArticleComment(selectedNewsItem.id, discussionScope, body, parentId);
-            }
-          }}
-          onReactToThread={(reaction) => thread && fanbase.reactToThread(thread.id, reaction)}
-          onReactToComment={(commentId, reaction) => thread && fanbase.reactToComment(thread.id, commentId, reaction)}
-          onReportThread={() => thread && fanbase.reportThread(thread.id)}
-          onReportComment={(commentId) => thread && fanbase.reportComment(thread.id, commentId)}
-        />
-      </>
-    );
-  }
+  useEffect(() => {
+    let current = true;
+    setLoading(true);
+    setError("");
+    setDiscussions([]);
+    void loadTeamNewsDiscussions(teamId).then((next) => {
+      if (current) setDiscussions(next);
+    }).catch((reason: unknown) => {
+      if (current) setError(reason instanceof Error ? reason.message : "Article Discussions could not be loaded.");
+    }).finally(() => {
+      if (current) setLoading(false);
+    });
+    return () => { current = false; };
+  }, [teamId]);
 
+  if (loading) return <p role="status">Loading Article Discussions…</p>;
+  if (error) return <div className="fanbase-empty surface" role="alert"><AppIcon name="exclamation-triangle" /><p>{error}</p></div>;
   return (
-    <>
-      <div className="fanbase-list">
-        {articleThreads.length ? articleThreads.map((thread) => {
-          const item = articleDiscussionNewsItems.find((newsItem) => newsItem.id === thread.newsItemId);
-          if (!item) {
-            return null;
-          }
-          const source = getArticleDiscussionSource(item);
-          return (
-            <button className="fanbase-entry-card" key={thread.id} type="button" onClick={() => onOpenItem(item.id)}>
-              <span className="news-source-avatar" aria-hidden="true">{source?.initials ?? "N"}</span>
-              <span className="fanbase-entry-card__copy"><small>{source?.name ?? "News"}</small><strong>{item.headline}</strong><span>{getThreadCommentCount(thread)} comments · {totalReactions(thread.reactions)} reactions · {formatFanbaseTime(thread.createdAt)}</span></span>
-              <AppIcon name="chevron-right" />
-            </button>
-          );
-        }) : <EmptyArea>No Article Discussions have started for this team yet.</EmptyArea>}
-      </div>
-    </>
+    <div className="fanbase-list">
+      {discussions.length ? discussions.map((discussion) => (
+        <Link
+          className="fanbase-entry-card"
+          key={discussion.discussionId}
+          to={communityDiscussionPath(discussion.newsItemId, { kind: "team", targetId: discussion.contextId })}
+        >
+          <span className="news-source-avatar" aria-hidden="true">{discussion.article.publisherName.slice(0, 1).toLocaleUpperCase()}</span>
+          <span className="fanbase-entry-card__copy">
+            <small>{discussion.article.publisherName}</small>
+            <strong>{discussion.article.headline}</strong>
+            <span>{discussion.commentCount} {discussion.commentCount === 1 ? "comment" : "comments"} · {formatFanbaseTime(discussion.article.publishedAt)}</span>
+          </span>
+          <AppIcon name="chevron-right" />
+        </Link>
+      )) : <EmptyArea>No Article Discussions have started for this team yet.</EmptyArea>}
+    </div>
   );
 }
 

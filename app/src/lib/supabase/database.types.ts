@@ -2457,6 +2457,594 @@ export type Database = {
           },
         ]
       }
+      community_comment_versions: {
+        Row: {
+          body: string | null
+          change_kind: string
+          changed_at: string
+          changed_by_user_id: string
+          comment_id: string
+          id: string
+          version_number: number
+        }
+        Insert: {
+          body?: string | null
+          change_kind: string
+          changed_at?: string
+          changed_by_user_id: string
+          comment_id: string
+          id?: string
+          version_number: number
+        }
+        Update: {
+          body?: string | null
+          change_kind?: string
+          changed_at?: string
+          changed_by_user_id?: string
+          comment_id?: string
+          id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comment_versions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_comments: {
+        Row: {
+          author_user_id: string
+          body: string | null
+          comment_id: string
+          created_at: string
+          discussion_id: string
+          edited_at: string | null
+          id: string
+          parent_comment_id: string | null
+          status: string
+          tombstoned_at: string | null
+        }
+        Insert: {
+          author_user_id: string
+          body?: string | null
+          comment_id?: string
+          created_at?: string
+          discussion_id: string
+          edited_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          status?: string
+          tombstoned_at?: string | null
+        }
+        Update: {
+          author_user_id?: string
+          body?: string | null
+          comment_id?: string
+          created_at?: string
+          discussion_id?: string
+          edited_at?: string | null
+          id?: string
+          parent_comment_id?: string | null
+          status?: string
+          tombstoned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_author_user_id_fkey"
+            columns: ["author_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "community_comments_discussion_id_fkey"
+            columns: ["discussion_id"]
+            isOneToOne: false
+            referencedRelation: "community_discussions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_comments_parent_comment_id_discussion_id_fkey"
+            columns: ["parent_comment_id", "discussion_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id", "discussion_id"]
+          },
+        ]
+      }
+      community_discussions: {
+        Row: {
+          comment_count: number
+          competition_id: string | null
+          context_kind: string
+          created_at: string
+          created_by_user_id: string
+          discussion_id: string
+          id: string
+          news_item_id: string
+          sport_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          comment_count?: number
+          competition_id?: string | null
+          context_kind: string
+          created_at?: string
+          created_by_user_id: string
+          discussion_id?: string
+          id?: string
+          news_item_id: string
+          sport_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          comment_count?: number
+          competition_id?: string | null
+          context_kind?: string
+          created_at?: string
+          created_by_user_id?: string
+          discussion_id?: string
+          id?: string
+          news_item_id?: string
+          sport_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_discussions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competition_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "community_discussions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_awaiting_publication_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_published_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_news_item_id_fkey"
+            columns: ["news_item_id"]
+            isOneToOne: false
+            referencedRelation: "news_ready_item_read_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_sport_id_fkey"
+            columns: ["sport_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_sports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_discussions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_catalog_read_model"
+            referencedColumns: ["internal_id"]
+          },
+          {
+            foreignKeyName: "community_discussions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team_readiness"
+            referencedColumns: ["internal_id"]
+          },
+        ]
+      }
+      community_hide_intents: {
+        Row: {
+          created_at: string
+          hidden_id: string
+          hide_intent_id: string
+          hider_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden_id: string
+          hide_intent_id?: string
+          hider_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden_id?: string
+          hide_intent_id?: string
+          hider_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_hide_intents_hidden_id_fkey"
+            columns: ["hidden_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "community_hide_intents_hider_id_fkey"
+            columns: ["hider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      community_moderation_actions: {
+        Row: {
+          action_id: string
+          action_type: string
+          comment_id: string
+          created_at: string
+          id: string
+          reason: string
+          report_id: string
+          restriction_id: string | null
+          staff_user_id: string
+          target_user_id: string
+        }
+        Insert: {
+          action_id?: string
+          action_type: string
+          comment_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          report_id: string
+          restriction_id?: string | null
+          staff_user_id: string
+          target_user_id: string
+        }
+        Update: {
+          action_id?: string
+          action_type?: string
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          report_id?: string
+          restriction_id?: string | null
+          staff_user_id?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_moderation_actions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_actions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "community_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_actions_restriction_id_fkey"
+            columns: ["restriction_id"]
+            isOneToOne: false
+            referencedRelation: "community_posting_restrictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_actions_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      community_moderation_notices: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          moderation_action_id: string | null
+          notice_id: string
+          notice_type: string
+          read_at: string | null
+          restriction_lift_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          moderation_action_id?: string | null
+          notice_id?: string
+          notice_type: string
+          read_at?: string | null
+          restriction_lift_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          moderation_action_id?: string | null
+          notice_id?: string
+          notice_type?: string
+          read_at?: string | null
+          restriction_lift_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_moderation_notices_moderation_action_id_fkey"
+            columns: ["moderation_action_id"]
+            isOneToOne: false
+            referencedRelation: "community_moderation_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_notices_restriction_lift_id_fkey"
+            columns: ["restriction_lift_id"]
+            isOneToOne: true
+            referencedRelation: "community_posting_restriction_lifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_notices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      community_notifications: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          notification_id: string
+          notification_type: string
+          read_at: string | null
+          reply_comment_id: string | null
+          requester_relation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          notification_id?: string
+          notification_type: string
+          read_at?: string | null
+          reply_comment_id?: string | null
+          requester_relation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          notification_id?: string
+          notification_type?: string
+          read_at?: string | null
+          reply_comment_id?: string | null
+          requester_relation_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_notifications_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "community_notifications_reply_comment_id_fkey"
+            columns: ["reply_comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_notifications_requester_relation_fk"
+            columns: ["requester_relation_id"]
+            isOneToOne: false
+            referencedRelation: "user_news_follow_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      community_posting_restriction_lifts: {
+        Row: {
+          id: string
+          lift_id: string
+          lifted_at: string
+          lifted_by_staff_user_id: string
+          reason: string
+          restriction_id: string
+        }
+        Insert: {
+          id?: string
+          lift_id?: string
+          lifted_at?: string
+          lifted_by_staff_user_id: string
+          reason: string
+          restriction_id: string
+        }
+        Update: {
+          id?: string
+          lift_id?: string
+          lifted_at?: string
+          lifted_by_staff_user_id?: string
+          reason?: string
+          restriction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posting_restriction_lifts_restriction_id_fkey"
+            columns: ["restriction_id"]
+            isOneToOne: true
+            referencedRelation: "community_posting_restrictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posting_restrictions: {
+        Row: {
+          applied_by_staff_user_id: string
+          created_at: string
+          ends_at: string
+          id: string
+          ordinal: number
+          originating_report_id: string | null
+          reason: string
+          restriction_id: string
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_by_staff_user_id: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          ordinal: number
+          originating_report_id?: string | null
+          reason: string
+          restriction_id?: string
+          starts_at: string
+          user_id: string
+        }
+        Update: {
+          applied_by_staff_user_id?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          ordinal?: number
+          originating_report_id?: string | null
+          reason?: string
+          restriction_id?: string
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posting_restrictions_originating_report_id_fkey"
+            columns: ["originating_report_id"]
+            isOneToOne: false
+            referencedRelation: "community_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_posting_restrictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      community_reports: {
+        Row: {
+          comment_id: string
+          created_at: string
+          explanation: string | null
+          id: string
+          reason: string
+          report_id: string
+          reported_body: string
+          reported_edited_at: string | null
+          reported_version_number: number
+          reporting_user_id: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          reason: string
+          report_id?: string
+          reported_body: string
+          reported_edited_at?: string | null
+          reported_version_number: number
+          reporting_user_id: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          reason?: string
+          report_id?: string
+          reported_body?: string
+          reported_edited_at?: string | null
+          reported_version_number?: number
+          reporting_user_id?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_reports_reporting_user_id_fkey"
+            columns: ["reporting_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       competition_alias_versions: {
         Row: {
           alias: string
@@ -4730,6 +5318,147 @@ export type Database = {
             columns: ["supersedes_version_id"]
             isOneToOne: false
             referencedRelation: "news_demo_configuration_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_follow_request_resolution_decisions: {
+        Row: {
+          decided_at: string
+          decided_by_user_id: string
+          id: string
+          outcome: string
+          reason: string
+          request_target_id: string
+          resolved_organizational_contributor_id: string | null
+          resolved_person_id: string | null
+          resolved_show_id: string | null
+          resolved_target_type: string | null
+        }
+        Insert: {
+          decided_at?: string
+          decided_by_user_id: string
+          id?: string
+          outcome: string
+          reason: string
+          request_target_id: string
+          resolved_organizational_contributor_id?: string | null
+          resolved_person_id?: string | null
+          resolved_show_id?: string | null
+          resolved_target_type?: string | null
+        }
+        Update: {
+          decided_at?: string
+          decided_by_user_id?: string
+          id?: string
+          outcome?: string
+          reason?: string
+          request_target_id?: string
+          resolved_organizational_contributor_id?: string | null
+          resolved_person_id?: string | null
+          resolved_show_id?: string | null
+          resolved_target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_follow_request_resolutio_resolved_organizational_cont_fkey"
+            columns: ["resolved_organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_follow_request_resolution_decision_resolved_person_id_fkey"
+            columns: ["resolved_person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_follow_request_resolution_decisions_request_target_id_fkey"
+            columns: ["request_target_id"]
+            isOneToOne: true
+            referencedRelation: "news_follow_request_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_follow_request_resolution_decisions_resolved_show_id_fkey"
+            columns: ["resolved_show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_follow_request_targets: {
+        Row: {
+          created_at: string
+          display_input: string
+          id: string
+          input_kind: string
+          normalized_input: string
+          request_target_id: string
+          resolution_state: string
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          resolved_organizational_contributor_id: string | null
+          resolved_person_id: string | null
+          resolved_show_id: string | null
+          resolved_target_type: string | null
+          staff_reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_input: string
+          id?: string
+          input_kind: string
+          normalized_input: string
+          request_target_id?: string
+          resolution_state?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          resolved_organizational_contributor_id?: string | null
+          resolved_person_id?: string | null
+          resolved_show_id?: string | null
+          resolved_target_type?: string | null
+          staff_reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_input?: string
+          id?: string
+          input_kind?: string
+          normalized_input?: string
+          request_target_id?: string
+          resolution_state?: string
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          resolved_organizational_contributor_id?: string | null
+          resolved_person_id?: string | null
+          resolved_show_id?: string | null
+          resolved_target_type?: string | null
+          staff_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_follow_request_targets_resolved_organizational_contri_fkey"
+            columns: ["resolved_organizational_contributor_id"]
+            isOneToOne: false
+            referencedRelation: "news_organizational_contributors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_follow_request_targets_resolved_person_id_fkey"
+            columns: ["resolved_person_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_follow_request_targets_resolved_show_id_fkey"
+            columns: ["resolved_show_id"]
+            isOneToOne: false
+            referencedRelation: "podcast_shows"
             referencedColumns: ["id"]
           },
         ]
@@ -8262,7 +8991,9 @@ export type Database = {
           handle: string
           height: string | null
           jersey_number: string | null
+          media_namespace: string
           nickname: string | null
+          personal_field_visibility: Json
           personalization: Json
           primary_profile_text: string | null
           profile_text_position: Json
@@ -8286,7 +9017,9 @@ export type Database = {
           handle?: string
           height?: string | null
           jersey_number?: string | null
+          media_namespace?: string
           nickname?: string | null
+          personal_field_visibility?: Json
           personalization?: Json
           primary_profile_text?: string | null
           profile_text_position?: Json
@@ -8310,7 +9043,9 @@ export type Database = {
           handle?: string
           height?: string | null
           jersey_number?: string | null
+          media_namespace?: string
           nickname?: string | null
+          personal_field_visibility?: Json
           personalization?: Json
           primary_profile_text?: string | null
           profile_text_position?: Json
@@ -11463,6 +12198,51 @@ export type Database = {
           },
         ]
       }
+      user_news_follow_requests: {
+        Row: {
+          created_at: string
+          id: string
+          input_kind: string
+          raw_input: string
+          request_id: string
+          request_target_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          input_kind: string
+          raw_input: string
+          request_id?: string
+          request_target_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          input_kind?: string
+          raw_input?: string
+          request_id?: string
+          request_target_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_news_follow_requests_request_target_id_fkey"
+            columns: ["request_target_id"]
+            isOneToOne: false
+            referencedRelation: "news_follow_request_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_news_follow_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_news_follow_scopes: {
         Row: {
           created_at: string
@@ -12894,6 +13674,18 @@ export type Database = {
         }
         Returns: string
       }
+      admin_lift_community_posting_restriction: {
+        Args: { reason_value: string; restriction_public_id_value: string }
+        Returns: Json
+      }
+      admin_moderate_community_report: {
+        Args: {
+          action_value: string
+          reason_value: string
+          report_public_id_value: string
+        }
+        Returns: Json
+      }
       admin_open_news_attribution_review_case: {
         Args: {
           byline_mention_id_value: string
@@ -13112,6 +13904,16 @@ export type Database = {
           target_identity_type_value: string
         }
         Returns: string
+      }
+      admin_resolve_news_follow_request: {
+        Args: {
+          follow_target_public_id_value: string
+          follow_target_type_value: string
+          outcome_value: string
+          reason_value: string
+          request_target_public_id_value: string
+        }
+        Returns: Json
       }
       admin_review_information_lineage: {
         Args: {
@@ -13395,6 +14197,10 @@ export type Database = {
         Args: { data_type_value: string; source_uuid: string }
         Returns: string
       }
+      delete_my_community_comment: {
+        Args: { comment_public_id_value: string }
+        Returns: Json
+      }
       dismiss_news_item: {
         Args: { news_item_public_id_value: string }
         Returns: undefined
@@ -13402,6 +14208,10 @@ export type Database = {
       dispatch_pending_team_color_bootstrap_revalidations: {
         Args: never
         Returns: number
+      }
+      edit_my_community_comment: {
+        Args: { body_value: string; comment_public_id_value: string }
+        Returns: Json
       }
       emit_agent_work_wake: {
         Args: {
@@ -13557,6 +14367,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_active_community_posting_restrictions: { Args: never; Returns: Json }
       get_agent_work_wakes: {
         Args: { limit_value: number; queue_name_value?: string }
         Returns: {
@@ -13568,10 +14379,22 @@ export type Database = {
           work_item_id: string
         }[]
       }
+      get_community_discussion: {
+        Args: { discussion_public_id_value: string }
+        Returns: Json
+      }
+      get_community_moderation_queue: { Args: never; Returns: Json }
+      get_member_profile_by_fanatical_name: {
+        Args: { fanatical_name_value: string }
+        Returns: Json
+      }
       get_my_catalog_verification_work: {
         Args: { lease_token_value: string; verification_work_item_uuid: string }
         Returns: Json
       }
+      get_my_community_moderation_notices: { Args: never; Returns: Json }
+      get_my_community_notifications: { Args: never; Returns: Json }
+      get_my_hidden_fans: { Args: never; Returns: Json }
       get_my_information_lineage_resolution_work: {
         Args: { lease_token_value: string; work_item_uuid: string }
         Returns: Json
@@ -13607,6 +14430,7 @@ export type Database = {
           summary: string
         }[]
       }
+      get_my_news_follow_requests: { Args: never; Returns: Json }
       get_my_news_following: {
         Args: never
         Returns: {
@@ -13690,6 +14514,15 @@ export type Database = {
           target_type: string
         }[]
       }
+      get_news_discussion_teaser: {
+        Args: {
+          news_item_public_id_value: string
+          origin_context_kind_value?: string
+          origin_context_public_id_value?: string
+        }
+        Returns: Json
+      }
+      get_news_follow_request_queue: { Args: never; Returns: Json }
       get_news_identity_items: {
         Args: {
           cursor_news_item_id_value?: string
@@ -13732,8 +14565,10 @@ export type Database = {
       get_news_navigation: {
         Args: never
         Returns: {
+          competition_kind_id: string
           display_name: string
           filter_type: string
+          is_followed: boolean
           sport_id: string
           target_id: string
         }[]
@@ -13748,10 +14583,6 @@ export type Database = {
           opened_by_decision_id: string
           state: string
         }[]
-      }
-      get_profile_for_viewer: {
-        Args: { profile_user_id: string }
-        Returns: Json
       }
       get_team_color_source_candidate_review_queue: {
         Args: never
@@ -13770,6 +14601,10 @@ export type Database = {
           team_name: string
           work_item_id: string
         }[]
+      }
+      get_team_news_discussions: {
+        Args: { team_public_id_value: string }
+        Returns: Json
       }
       get_team_record: { Args: { team_identifier: string }; Returns: Json }
       has_catalog_capability: {
@@ -13794,6 +14629,22 @@ export type Database = {
         Args: { requested_team_id: string; required_capability: string }
         Returns: boolean
       }
+      hide_community_comment_author: {
+        Args: { comment_public_id_value: string }
+        Returns: Json
+      }
+      hide_community_user: {
+        Args: { fanatical_name_value: string }
+        Returns: Json
+      }
+      mark_my_community_moderation_notices_read: {
+        Args: { notice_public_ids: string[] }
+        Returns: number
+      }
+      mark_my_community_notifications_read: {
+        Args: { notification_public_ids: string[] }
+        Returns: number
+      }
       mute_my_news_follow: {
         Args: { duration_value: string; follow_id_value: string }
         Returns: string
@@ -13806,6 +14657,19 @@ export type Database = {
       }
       normalized_source_url_parts: {
         Args: { url_value: string }
+        Returns: Json
+      }
+      post_existing_community_discussion_comment: {
+        Args: { body_value: string; discussion_public_id_value: string }
+        Returns: Json
+      }
+      post_news_discussion_comment: {
+        Args: {
+          body_value: string
+          context_kind_value: string
+          context_public_id_value: string
+          news_item_public_id_value: string
+        }
         Returns: Json
       }
       process_catalog_verification_result: {
@@ -13936,6 +14800,14 @@ export type Database = {
         Args: { team_ids: string[] }
         Returns: undefined
       }
+      reply_to_community_comment: {
+        Args: {
+          body_value: string
+          discussion_public_id_value: string
+          parent_comment_public_id_value: string
+        }
+        Returns: Json
+      }
       report_catalog_verification_failure: {
         Args: {
           category_value: string
@@ -13944,6 +14816,14 @@ export type Database = {
           verification_work_item_uuid: string
         }
         Returns: string
+      }
+      report_community_comment: {
+        Args: {
+          comment_public_id_value: string
+          explanation_value?: string
+          reason_value: string
+        }
+        Returns: Json
       }
       report_information_lineage_resolution_failure: {
         Args: {
@@ -14108,6 +14988,10 @@ export type Database = {
           target_type: string
         }[]
       }
+      set_my_fanatical_name: {
+        Args: { fanatical_name_value: string }
+        Returns: Json
+      }
       set_my_news_follow_scopes: {
         Args: {
           follow_id_value: string
@@ -14115,6 +14999,13 @@ export type Database = {
           team_scope_ids_value?: string[]
         }
         Returns: undefined
+      }
+      set_my_profile_privacy: {
+        Args: {
+          personal_field_visibility_value?: Json
+          visibility_value: string
+        }
+        Returns: Json
       }
       source_qualification_lineage_is_ready: {
         Args: { work_item_uuid: string }
@@ -14166,6 +15057,10 @@ export type Database = {
           work_item_uuid: string
         }
         Returns: string
+      }
+      submit_news_follow_request: {
+        Args: { input_kind_value: string; raw_input_value: string }
+        Returns: Json
       }
       submit_source_qualification_result: {
         Args: {
@@ -14298,6 +15193,14 @@ export type Database = {
       unfollow_news_identity: {
         Args: { follow_id_value: string }
         Returns: undefined
+      }
+      unhide_community_intent: {
+        Args: { hide_intent_public_id_value: string }
+        Returns: Json
+      }
+      unhide_community_user: {
+        Args: { fanatical_name_value: string }
+        Returns: Json
       }
       unmute_my_news_follow: {
         Args: { follow_id_value: string }

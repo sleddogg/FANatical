@@ -1,8 +1,13 @@
-The News system is in implementation. Phases 1–3 established the Competition,
-identity, and canonical content foundations. Phase 4 begins with authority and
-backend entry hardening before any fan-facing feed UI. The route remains an
-additive Supabase domain, a separate later Cloudflare News Worker, and incremental
-conversion of the existing React prototype.
+The News system is in implementation. Phases 1–4 established the Competition,
+identity, canonical-content, governed fan-feed, and production React News
+foundations. Phase 4 is complete at
+`97f25c85ca52a3539cb203386772677d56ec4621`; the Phase 5A contextual discussion,
+fan-profile/privacy, moderation, Requests, and small in-app inbox slice is
+implemented locally and has passed independent closeout with no implementation
+blockers. Hosted activation remains pending. The route remains an additive
+Supabase domain, a separate later
+Cloudflare News Worker, and incremental conversion of the existing React
+prototype.
 
 ## Pre-implementation review
 
@@ -13,7 +18,10 @@ There is no unresolvable contradiction inside the newest settled architecture. C
 `Fanatical build page.md` is the reconciled product authority. Where older prose
 in this implementation plan differs, the build page and invariant register win.
 
-The older lazy-discussion rule can coexist with “one canonical discussion per News Item”: materialize the row atomically on the first comment or poll, with a database uniqueness constraint guaranteeing one logical discussion.
+The lazy-discussion rule is context-qualified: materialize at most one discussion
+per News Item plus valid Team, Competition, or Sport context atomically with the
+first comment. Opening an empty Discussion inserts nothing. Partial uniqueness
+constraints prevent duplicate roots within each context.
 
 ### Required product decisions still missing
 
@@ -25,8 +33,9 @@ These do not block Competition, identity, content, or parser foundations, but th
    is removed rather than promoted into product authority.
 3. **Poll governance.** Creation, lifecycle, moderation, voting, and option
    limits remain later work.
-4. **Notification surface.** Missing-identity requests, fulfilment, and
-   notifications remain Phase 5 or later.
+4. **Later notification channels.** Phase 5A approves only the account-owned
+   in-app inbox/counter for direct replies and final Request outcomes. Email,
+   push, browser, and digests remain later work.
 
 Wire services, official Team newsrooms, and other genuine organizational
 contributors follow the same explicit individual-follow rule as every other
@@ -34,13 +43,21 @@ identity. There is no separate wire exclusion and no official-Team preference.
 Mute is approved only on an existing followed human Author, organizational
 contributor, or Show for 7 or 30 days from database `statement_timestamp()`.
 
-### Technical decisions to approve
+### Ratified implementation choices
 
-I recommend approving these before their respective migrations:
+The completed/current migrations use these approved choices:
 
 - Use a shared `catalog_people` identity foundation plus a News Author profile, rather than treating Auth `profiles` as journalists or creating permanently News-only people.
 - Treat existing `trusted_sources` as canonical publisher/publication-brand identities. Use `source_independence_groups` for common control; do not introduce a duplicate News publisher registry.
-- Add a small reusable Community foundation for discussions/comments/polls, but activate only the News-discussion slice. Do not convert all prototype FANbase features in this project.
+- Add the narrowly reusable Phase 5A Community foundation for contextual News
+  discussions, comments, Hide, reports/moderation, restrictions, and the small
+  inbox. Do not add Poll/reaction/rating placeholders or convert unrelated
+  prototype FANbase features.
+
+### Technical decisions still to approve
+
+Approve these before their respective runtime work begins:
+
 - Start with one separate `fanatical-news-runtime` Worker containing isolated scheduled, queue, and email handlers. Give it a dedicated ordinary Supabase Auth service identity with narrow `news.*` capabilities—never a service-role key. Put any future browser worker behind a separate identity and deployment.
 - Store hashes, response metadata, extracted facts, and bounded evidence in Supabase. Do not retain full third-party article bodies or raw newsletter bodies by default. Any larger diagnostic snapshot store and its retention policy require privacy/legal approval.
 
@@ -99,9 +116,10 @@ conversion now replaces those conditions: `NewsPage.tsx` reads through
 representative publisher destination without copied bodies or fake counts;
 `NewsItemOverlay.tsx`, `newsFiltering.ts`, and `mockNewsData.ts` are removed;
 filters use canonical Sport/Competition/Team navigation; and Add to Feed manages
-individual Authors, organizational contributors, and Shows. The deferred
-FANbase Article Discussion fixture remains explicitly local to `features/fanbase`
-rather than importing a production News mock contract.
+individual Authors, organizational contributors, and Shows. Phase 5A initially
+kept the FANbase Article Discussion fixture isolated; the manual-acceptance
+correction now replaces that one surface with the production Team discussion
+read path while preserving unrelated FANbase prototypes.
 
 ### Global identity and Community
 
@@ -267,27 +285,92 @@ sorts by original publication time with a stable ID tie-breaker. Publisher News
 policy and wire status are not eligibility. Do not materialize one feed row per
 user.
 
-Missing-identity requests, fulfilment, and notifications remain Migration 7 /
-Phase 5 work. They do not appear as placeholder Phase 4 controls.
+Missing-identity Requests and their final in-app notifications were correctly
+excluded from Phase 4 and are implemented locally in Migration 7 / Phase 5A.
 
 Legacy account Team IDs should be resolved through `catalog_team_identifiers` inside the feed boundary. A destructive account migration is unnecessary for the first News slice.
 
-## Migration 7 — Community and engagement
+## Migration 7 — Phase 5A contextual Community, Requests, and profile safety
 
-Add a minimal reusable Community foundation:
+Migration 6 is implemented through `202608290008`. Conceptual Migration 7 is
+implemented locally as four reviewable physical migrations:
 
-- `community_discussions`, with a unique nullable `news_item_id`.
-- `community_comments`, including parent-comment relationship and moderation state.
-- `community_comment_reactions` and `community_reports`.
-- `community_polls`, with `discussion_id` but no uniqueness constraint.
-- `community_poll_options`.
-- `community_poll_votes` or immutable vote events, according to the approved voting rule.
-- `news_rating_events`: immutable rating, revision, or withdrawal events with a previous-event chain.
-- `news_reaction_events`: after the reaction rule is approved.
+- `20260831203014_phase5a_fan_identity_privacy.sql`;
+- `20260831203022_phase5a_community_foundation.sql`;
+- `20260831203030_phase5a_news_requests.sql`;
+- `20260901020424_phase5a_manual_acceptance_corrections.sql`.
 
-`get_or_create_news_discussion(news_item_id)` should be an atomic upsert. The first comment or poll can materialize it; concurrent attempts still produce one row.
+They are pending hosted review/approval and together add only the approved
+Phase 5A foundation:
 
-Do not create rating-value constraints until the rating scale is approved.
+- update `profiles.handle` validation to the ratified 3–20 Fanatical Name and
+  preserve the existing namespace lock, reservation registry, normalized unique
+  index, unclaimed state, and rollback-compatible legacy columns;
+- default new profiles to Private, make Members-visible an explicit owner value,
+  conservatively map the old unconsented `public` default to Private, revoke the
+  anonymous UUID viewer, and add signed-in current-name/profile-attribution
+  allowlisted readers with per-field opt-ins;
+- retain UUID-prefixed owner source/original media while giving each profile an
+  immutable opaque display namespace; fan-safe avatar payloads accept only the
+  active registered derivative in that namespace and never expose the Auth UUID;
+- `community_discussions` with a stable public ID, News Item FK,
+  `context_kind`, exactly one typed Team/Competition/Sport FK, a durable node
+  count, an exclusive-context CHECK, and one partial unique index per context;
+- `community_comments` with Auth owner UUID, same-discussion self-parent
+  integrity, current body/status/timestamps, and arbitrary logical depth;
+- append-only internal `community_comment_versions`;
+- directed `community_hide_intents`, `community_reports`, append-only
+  `community_moderation_actions`, database-timed
+  `community_posting_restrictions`, and separate
+  `community_moderation_notices`;
+- shared `news_follow_request_targets` plus per-fan
+  `user_news_follow_requests`, with preserved raw evidence, conservative dedupe,
+  terminal request-domain outcomes, and current Phase 4 followability links;
+- typed, idempotent `community_notifications` for direct replies and the two
+  terminal Request outcomes only.
+
+The manual-acceptance correction migration reuses those canonical records. It
+aligns active Sport discussion routing with feed roll-up, exposes governed
+Competition kind/followed-Team navigation metadata, preserves tombstone
+attribution, makes per-fan comment reporting idempotent, adds append-only active
+restriction lifts with exactly one separate restoration notice per lift,
+provides the Team FANbase discussion reader, and supplies the fan-safe article
+reference used by both News and FANbase discussion routes.
+
+Every browser mutation of the new Community and Request domain tables uses
+bounded SECURITY DEFINER RPCs with an empty `search_path`, explicit grants,
+fan-population checks, shared reciprocal-Hide/community-posting predicates, and
+real-role tests. Those base mutable tables have RLS enabled and no direct browser
+mutation path. Existing owner profile-media writes remain governed separately by
+owner RLS and private-Storage policies.
+
+The first-comment RPC validates the current public News classification, acquires
+the canonical Item-plus-context identity, resolves or creates the discussion and
+inserts the comment in one transaction. Reads never call it. Existing discussions
+remain durable after later classification correction and are reachable by stable
+discussion ID without being newly routed from a removed classification.
+Brad ratified the preserved discussion as read-only on 31 Aug 2026: new roots
+and replies are rejected, while eligible owner edits/deletes and moderation
+remain available.
+
+Read-only hosted inventory on 31 Aug 2026 found one Public `NorthStarFan` profile
+with prototype persona fields and one active UUID-prefixed avatar display
+derivative. Subsequent settled decisions designate NorthStarFan as the third
+pre-launch acceptance persona and close BL-020; no persona scrub or Brad-only
+lookup exception is required for controlled hosted testing. The fan-safe reader
+already rejects the legacy display path and returns the generic avatar, so
+BL-035 is also closed as an activation blocker: do not migrate that test avatar,
+clear/remove it, and remove all remaining Brad/TestFan/NorthStarFan fan-owned
+test data/media through the governed BL-043 purge before the first real
+beta/public fan is onboarded. No hosted write is part of the local handoff.
+
+Extend the News mutation registry before creating request-domain `news_*` or
+`user_news_*` tables. Add a parallel mechanically enumerated Community mutation
+registry covering every mutable `community_*` table, including the inbox and
+moderation-notice tables, and assert both at migration/test completion.
+
+Do not add reactions, ratings, scores, Polls, mention tables, Group sharing, or
+empty Phase 5B placeholders.
 
 ## Deliberate non-tables
 
@@ -379,7 +462,10 @@ Cloudflare documents that `global_fetch_strictly_public` forces global fetches t
 - Add a local-only Auth service actor and gitignored Worker secrets.
 - Add `dev:news`, `test:news-runtime`, and eventually `deploy:news` scripts.
 - Do not run `deploy:news`, create Queues/Cron/Email routes, or apply hosted migrations without explicit approval.
-- Before completion, compare local migrations with the linked Supabase project, obtain approval for pending migrations, apply them normally, and verify RLS/RPCs/constraints in the hosted project.
+- Before hosted rollout completion, compare local migrations with the linked
+  Supabase project, obtain approval for pending migrations, apply them normally,
+  and verify RLS/RPCs/constraints in the hosted project. A reviewed local Phase 5A
+  handoff stops before that approval and does not apply hosted changes.
 
 # 4. Content-processing sequence
 
@@ -397,8 +483,13 @@ Cloudflare documents that `global_fetch_strictly_public` forces global fetches t
 12. **Canonical assignment:** assign manifestation to the correct underlying work and select or retain the sticky representative destination.
 13. **Publication:** create a published News Item version.
 14. **Fan eligibility:** computed at feed read time, not stored during ingestion.
-15. **Community:** provide the canonical discussion identity; materialize on first comment or poll.
-16. **Request fulfillment:** resolution of a requested Author/Show creates an idempotent notification for every requesting fan.
+15. **Community:** route an Item through its explicit Team/Competition/Sport News
+    context, using effective feed roll-up for an explicit Sport, or through the
+    unique direct Competition/Sport fallback; read without insertion and
+    atomically materialize only that context's discussion with the first comment.
+16. **Request resolution:** transition each shared target's Pending requester
+    relationships to Available or Unable to add idempotently; use current Phase 4
+    followability, never auto-Follow, and create one final notification/requester.
 17. **Gap Detection:** compare only configured overlapping sensors and preserve the exact failing stage.
 
 Every fetch, Resolution, byline, classification, dedupe, policy, publication, notification, and gap stage can independently complete, retry, become terminal, or create review work.
@@ -410,12 +501,15 @@ Every fetch, Resolution, byline, classification, dedupe, policy, publication, no
 3. Initialize temporary News state from the global selected Team’s canonical mapping. Remove every `selectTeam()` call from News.
 4. Keep filters in component/URL state only. Filtering another Team or Competition must not alter `TeamContext`.
 5. Rebuild `NewsFilterMenu` from the row-based navigation RPC around the
-   approved temporary All/Sport/Competition/Team selections, using canonical
-   Competition IDs.
+   approved temporary All/Sport/League/Competition/Team selections. League is
+   the governed `league` Competition kind; both presentation categories keep
+   canonical Competition IDs. Default Team browsing shows followed Teams and a
+   find-a-Team input rather than the complete catalog.
 6. Replace the prototype source-management surface with **Add to Feed**:
    - Add: shared navigation plus direct Author/Show search.
    - Following: human Authors, organizational contributors, and Shows only.
-   - How It Works: explain explicit individual eligibility.
+   - Requests: raw URL/name evidence and Pending/Available/Unable-to-add state.
+   - A small help `?`: explain explicit individual eligibility and Request behavior.
    - Search uses relevance with alphabetical ties; unsearched browsing is alphabetical.
    - Preserve future selectable Highest Rated and Most Followed sorts without
      computing ratings or cross-fan follower totals in Phase 4.
@@ -428,20 +522,27 @@ Every fetch, Resolution, byline, classification, dedupe, policy, publication, no
    - Direct public representative URL for headline/image/read action.
    - No local article body and no fake view count.
 8. Remove `NewsItemOverlay` from normal written/podcast opening. Delete its obsolete styles once no route depends on it.
-9. Remove Article Discussion's production import of the News mock catalog and
-   remove its obsolete `?item=...` overlay link. A canonical News
-   discussion-context repository remains Phase 5 work.
+9. Add a governed Community repository, contextual News discussion route, stable
+   direct-discussion route, comment tree, composer, teaser count, and Team FANbase
+   list that links to the same durable Item-plus-Team threads. Pass the originating
+   News filter explicitly; never use selected Team, favorites, tags, follows,
+   `articleDiscussionScope`, localStorage inference, or the prior FANbase article
+   fixture as canonical state. Preserve unrelated FANbase prototype areas.
 10. Add `/news/authors/:id`, `/news/organizations/:id`, and `/news/shows/:id`
     routes.
 11. Add real Web Share/clipboard behavior.
 12. Record outbound opens best-effort without delaying or blocking direct publisher navigation.
 13. Add signed-out Demo Mode and keep its state isolated from account bootstrap.
-14. Add ratings/reactions/poll controls only after their product decisions.
-15. Remove `mockNewsData` and every production News prototype contract. Keep the
-    explicitly deferred Article Discussion fixture and its types local to
-    FANbase; test-only News fixtures stay inside their tests.
+14. Add Fanatical Name claim/change, the signed-in current-name member profile
+    route, Private/Members-visible and per-field privacy controls, Hide Settings,
+    the account inbox/counter, and an exact-permission Admin moderation panel.
+15. Remove `mockNewsData` and every production News prototype contract. Replace
+    FANbase Article Discussions with the real Team-context reader while keeping
+    unrelated prototypes local; test-only News fixtures stay inside their tests.
 16. Preserve the current card layout, focus traps, app theme, reduced motion, and existing mobile breakpoints. When Current Team theme is active, the global selected Team should remain the app theme even while News temporarily filters elsewhere.
-17. Add Golf and Tennis visual fallbacks through the existing `AppIcon` system without touching the intentionally untracked image files.
+17. Add Golf and Tennis visual fallbacks through the existing `AppIcon` system without touching repository image assets.
+18. Keep ratings, reactions, Polls, mentions, and Group sharing deferred; Phase 5A
+    creates no controls or placeholder tables for them.
 
 # 6. Bootstrap sequence
 
@@ -505,9 +606,12 @@ Test:
 - Publisher identity never becoming a normal follow target.
 - Explicit organizational-contributor eligibility with no official-Team preference.
 - Strict chronological order.
-- Request notification idempotency.
-- Discussion uniqueness under concurrency and multiple polls.
-- Immutable rating history after the scale is approved.
+- Request dedupe, shared candidates, terminal notification idempotency, current
+  followability, and no auto-Follow.
+- Contextual Discussion uniqueness under concurrent first comments, empty-read
+  non-creation, exclusive context FKs, and preserved correction history.
+- Poll and rating proofs belong only to a separately approved later phase; Phase
+  5A creates neither schema nor placeholder tests for them.
 - Anonymous, owner, runtime, reviewer, and public RLS boundaries.
 
 ## Pure TypeScript
@@ -554,8 +658,18 @@ Rewrite current News tests to assert:
 - Author/Show profile routes.
 - Written and podcast card variants.
 - Image failure → Sport fallback.
-- Discussion context and unique creation.
-- Multiple polls and ratings after approval.
+- Team, Competition, Sport, and no-origin Discussion routing with no inferred Team.
+- Empty-read non-creation and one Item-plus-context discussion under concurrent
+  first comments.
+- Arbitrary reply depth, visual rebasing/collapse, edit window, tombstone,
+  reciprocal Hide, durable contextual counts, and cross-user denials.
+- Fanatical Name format/taken/reclaim races, current-name attribution,
+  Private/Members-visible payload allowlists, and operational-actor exclusion.
+- Request target/requester dedupe, idempotent terminal outcomes, current
+  followability, no auto-Follow, and exactly-one notifications.
+- Exact `community_moderate` authority, catalog-wildcard denial, database-time
+  restriction cadence, append-only history, and separate moderation notices.
+- Anonymous community/profile denial and account-transition inbox neutrality.
 - Keyboard focus containment/restoration.
 - Loading, empty, error, and signed-out states.
 - No horizontal overflow at the existing phone, tablet, laptop, and desktop viewports.
@@ -571,7 +685,8 @@ Every phase should run local database reset/tests, backend verification, targete
 | 2                                        | Publisher reuse, people, Authors, organizations, Shows, affiliations, Admin review skeleton                           | Same-name, historical affiliation, and organization cases pass                 |
 | 3                                        | Core News Items/manifestations/classification/dedupe plus manually inserted controlled records                        | A real-shaped chronological feed works without monitoring                      |
 | 4                                        | Production News repository and UI conversion: feed, filters, Add to Feed, profiles, direct opens, Demo Mode           | Responsive/accessibility review and no global Team mutation                    |
-| 5                                        | Requests, in-app fulfillment records, canonical News discussion, and News polls/ratings only where rules are approved | Request and Community uniqueness tests pass                                    |
+| 5A                                       | Fanatical Name/profile privacy, contextual News discussions, comments/Hide, reports/moderation/restrictions, Requests, direct-reply/final-request inbox | Real-role, concurrency, component, targeted browser, registry, and manual acceptance evidence pass |
+| 5B                                       | Later mentions/discovery and only separately approved reactions, ratings, Polls, scores, or Group sharing | Fresh authority/backlog review and feature-specific governance                 |
 | 6                                        | Work ledger integration and dedicated Worker shell; Feed adapter supports written RSS/Atom and podcast RSS            | Duplicate/recovery/security tests and local end-to-end path pass               |
 | 7                                        | Resolution, byline, classification, dedupe, publication, and reviewer workflows over real canary content              | Ambiguous cases stop safely; no full bodies are retained                       |
 | 8                                        | Sitemap, Web Page, API, and Newsletter adapters added incrementally                                                   | Publisher safety and endpoint-specific review after each method                |
@@ -593,6 +708,14 @@ After Phase 1 contracts stabilize, pure parsers, Admin presentation, and React c
 - **Review backlog:** do not activate broad monitoring until the Admin review path exists and unresolved items stay out of feeds.
 - **Publication-time anomalies:** retain both source publication time and first observation history; route implausible/conflicting times to policy review without inventing a threshold.
 - **Cloudflare/Supabase credentials:** ordinary service principal, narrow capabilities, Cloudflare secrets only, and log-redaction tests.
-- **Hosted drift:** completion requires linked migration comparison and hosted RLS/RPC verification, not merely local SQL files.
+- **Hosted drift:** hosted rollout completion requires linked migration comparison
+  and hosted RLS/RPC verification, not merely local SQL files. Local handoff must
+  state the pending hosted migrations and blockers without applying them.
 
-The recommended first implementation slice is Phase 0 followed by the canonical Competition migration.
+Phase 5A's local implementation and independent closeout are complete. The next
+step is the separately approved hosted activation sequence; it is not another
+local implementation or audit pass. The former BL-020 and BL-035 hosted-blocker
+questions are settled, and BL-043 governs the later pre-beta test-account purge.
+Phase 5B or later scope requires a fresh authority and backlog review after the
+Phase 5A hosted closeout; Phase 0 and the Competition foundation are historical
+completed work.

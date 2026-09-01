@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppIcon } from "../../components/AppIcon";
 import { trapDialogFocus } from "./dialogKeyboard";
 import {
@@ -9,6 +9,11 @@ import {
   unfollowNewsTarget,
   unmuteNewsFollow,
 } from "./newsRepository";
+import {
+  loadMyNewsFollowRequests,
+  submitNewsFollowRequest,
+  type NewsFollowRequest,
+} from "./newsRequestRepository";
 import type {
   NewsDemoSelection,
   NewsFollowingEntry,
@@ -16,7 +21,7 @@ import type {
   NewsNavigationEntry,
 } from "./types";
 
-type AddToFeedTab = "add" | "following" | "how-to";
+type AddToFeedTab = "add" | "following" | "requests";
 
 type AddToFeedDialogProps = {
   readonly signedIn: boolean;
@@ -148,6 +153,12 @@ export function AddToFeedDialog({
   const [loadingResults, setLoadingResults] = useState(signedIn);
   const [busyKey, setBusyKey] = useState("");
   const [error, setError] = useState("");
+  const [requests, setRequests] = useState<readonly NewsFollowRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestKind, setRequestKind] = useState<"url" | "name">("name");
+  const [requestInput, setRequestInput] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
+  const requestEpochRef = useRef(0);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const followedKeys = useMemo(() => new Set(following.map(targetKey)), [following]);
@@ -168,6 +179,8 @@ export function AddToFeedDialog({
     };
   }, [onClose]);
 
+  useEffect(() => () => { requestEpochRef.current += 1; }, []);
+
   useEffect(() => {
     if (!signedIn) return;
     let current = true;
@@ -186,6 +199,29 @@ export function AddToFeedDialog({
     });
     return () => { current = false; };
   }, [discoveryTeamId, signedIn, teamDiscovery]);
+
+  const refreshRequests = useCallback(async () => {
+    const epoch = ++requestEpochRef.current;
+    if (!signedIn) {
+      setRequests([]);
+      setRequestsLoading(false);
+      return;
+    }
+    setRequestsLoading(true);
+    try {
+      const next = await loadMyNewsFollowRequests();
+      if (epoch === requestEpochRef.current) setRequests(next);
+    } finally {
+      if (epoch === requestEpochRef.current) setRequestsLoading(false);
+    }
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (activeTab !== "requests" || !signedIn) return;
+    void refreshRequests().catch((reason: unknown) => {
+      setError(reason instanceof Error ? reason.message : "Requests could not be loaded.");
+    });
+  }, [activeTab, refreshRequests, signedIn]);
 
   const runSearch = async () => {
     setLoadingResults(true);
@@ -231,16 +267,25 @@ export function AddToFeedDialog({
             <span className="eyebrow">Your News</span>
             <h2 id="add-to-feed-title">Add to Feed</h2>
           </div>
-          <button ref={closeButtonRef} className="news-icon-button" type="button" aria-label="Close Add to Feed" onClick={onClose}><AppIcon name="x-mark" /></button>
+          <div className="source-manager__header-actions">
+            <button className="news-icon-button" type="button" aria-label="How Add to Feed works" aria-expanded={helpOpen} onClick={() => setHelpOpen((current) => !current)}>?</button>
+            <button ref={closeButtonRef} className="news-icon-button" type="button" aria-label="Close Add to Feed" onClick={onClose}><AppIcon name="x-mark" /></button>
+          </div>
         </header>
 
+        {helpOpen ? <aside className="source-manager__help" aria-label="How Add to Feed works"><strong>How it works</strong><p>Follow Authors, genuine organizational contributors, or Shows. Optional Sport and Team scopes match with OR. Temporary page filters never change your account follows.</p></aside> : null}
+
         <div className="source-manager__tabs" role="tablist" aria-label="Add to Feed sections">
-          {([[
-            "add", "Add to Feed",
+          {(signedIn ? [[
+            "add", "Add",
           ], [
             "following", "Following",
           ], [
-            "how-to", "How It Works",
+            "requests", "Requests",
+          ]] as const : [[
+            "add", "Add",
+          ], [
+            "following", "Following",
           ]] as const).map(([id, label]) => (
             <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={activeTab === id ? "source-manager__tab source-manager__tab--active" : "source-manager__tab"} onClick={() => setActiveTab(id)}>
               {label}
@@ -304,6 +349,25 @@ export function AddToFeedDialog({
                   {!addResults.length ? <p className="news-empty-panel">No eligible identity matches this view.</p> : null}
                 </div>
               ) : null}
+              {signedIn ? (
+                <form className="source-request-form" onSubmit={(event) => {
+                  event.preventDefault();
+                  setBusyKey("request");
+                  setError("");
+                  void submitNewsFollowRequest(requestKind, requestInput).then(async () => {
+                    setRequestInput("");
+                    await refreshRequests();
+                    setActiveTab("requests");
+                  }).catch((reason: unknown) => {
+                    setError(reason instanceof Error ? reason.message : "Request could not be submitted.");
+                  }).finally(() => setBusyKey(""));
+                }}>
+                  <div><h3>Can’t find it?</h3><p>Request a contributor or Show by pasted URL or typed name. Requests do not automatically Follow anything.</p></div>
+                  <label>Request type<select value={requestKind} onChange={(event) => setRequestKind(event.target.value as "url" | "name")}><option value="name">Typed name</option><option value="url">Pasted URL</option></select></label>
+                  <label>{requestKind === "url" ? "Public URL" : "Name"}<input type={requestKind === "url" ? "url" : "text"} value={requestInput} required onChange={(event) => setRequestInput(event.target.value)} /></label>
+                  <button className="news-primary-button" type="submit" disabled={Boolean(busyKey)}>{busyKey === "request" ? "Submitting…" : "Submit Request"}</button>
+                </form>
+              ) : null}
             </section>
           ) : null}
 
@@ -364,12 +428,22 @@ export function AddToFeedDialog({
             </section>
           ) : null}
 
-          {activeTab === "how-to" ? (
-            <section className="source-manager__panel source-how-to" role="tabpanel">
-              <div><strong>1</strong><span><h3>Choose an identity</h3><p>Follow an individual Author, organizational contributor, or Show—not a publisher or Team.</p></span></div>
-              <div><strong>2</strong><span><h3>Set optional coverage</h3><p>Signed-in fans may leave coverage at All or choose several Sport and Team scopes. Selected scopes match with OR.</p></span></div>
-              <div><strong>3</strong><span><h3>Keep the feed chronological</h3><p>Temporary page filters narrow already-eligible Items and never change your global selected Team.</p></span></div>
-              {!signedIn ? <p className="source-how-to__note">Demo mode — sign in to save your feed.</p> : null}
+          {activeTab === "requests" ? (
+            <section className="source-manager__panel" role="tabpanel">
+              <div className="source-manager__intro"><h3>Requests</h3><p>Pending requests notify nobody. Final outcomes notify you once and never auto-Follow.</p></div>
+              {!signedIn ? <p className="news-empty-panel">Sign in to submit and track Requests.</p> : null}
+              {requestsLoading ? <p role="status">Loading Requests…</p> : null}
+              {!requestsLoading && signedIn ? <div className="source-request-list">{requests.map((request) => (
+                <article key={request.id} className="source-request-card">
+                  <div><span className={`source-request-state source-request-state--${request.state.toLowerCase().replaceAll(" ", "-")}`}>{request.state}</span><h3>{request.rawInput}</h3><small>Requested {new Date(request.requestedAt).toLocaleDateString()}</small></div>
+                  {request.reason ? <p>{request.reason}</p> : null}
+                  {request.state === "Available" && request.followTarget ? (
+                    <button className="news-primary-button" type="button" disabled={!request.canFollow || request.isFollowing || Boolean(busyKey)} onClick={() => void runAccountAction(`request:${request.id}`, () => followNewsTarget(request.followTarget!)).then(() => refreshRequests())}>
+                      {request.isFollowing ? "Following" : request.canFollow ? `Follow ${request.followTarget.displayName}` : "Currently unavailable"}
+                    </button>
+                  ) : null}
+                </article>
+              ))}{!requests.length ? <p className="news-empty-panel">No Requests yet.</p> : null}</div> : null}
             </section>
           ) : null}
         </div>

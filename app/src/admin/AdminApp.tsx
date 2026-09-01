@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthProvider, useAuth } from "../features/account/AuthContext";
 import { supabase } from "../lib/supabase/client";
-import { formatStaffRole, parseStaffAccess, type StaffAccess } from "./adminAccess";
+import { canResolveNewsRequests, formatStaffRole, hasExactStaffPermission, parseStaffAccess, type StaffAccess } from "./adminAccess";
 import { NewsIdentityReviewPanel } from "./NewsIdentityReviewPanel";
+import { CommunityModerationPanel, NewsRequestResolutionPanel } from "./Phase5AdminPanels";
 
 type AccessState =
   | Readonly<{ status: "loading" }>
@@ -103,13 +104,23 @@ function AdminGate() {
     };
   }, [authLoading, user]);
 
-  if (authLoading || (user && accessState.status === "loading")) {
+  const accessBelongsToUser = Boolean(
+    user
+      && accessState.status === "granted"
+      && accessState.access.userId === user.id,
+  );
+
+  if (
+    authLoading
+    || (user && accessState.status === "loading")
+    || (user && accessState.status === "granted" && !accessBelongsToUser)
+  ) {
     return <main className="admin-status" id="main-content"><p>Verifying staff access…</p></main>;
   }
 
   if (!user) return <AdminSignIn />;
 
-  if (accessState.status !== "granted") {
+  if (accessState.status !== "granted" || !accessBelongsToUser) {
     return (
       <main className="admin-status" id="main-content">
         <section className="admin-auth__panel">
@@ -124,7 +135,7 @@ function AdminGate() {
   }
 
   return (
-    <div className="admin-shell">
+    <div className="admin-shell" key={user.id}>
       <header className="admin-header">
         <div>
           <p className="admin-kicker">Private operations</p>
@@ -142,6 +153,8 @@ function AdminGate() {
           <p>Review tools remain behind database-enforced staff role and permission checks.</p>
         </section>
         <NewsIdentityReviewPanel />
+        {canResolveNewsRequests(accessState.access) ? <NewsRequestResolutionPanel /> : null}
+        {hasExactStaffPermission(accessState.access, "community_moderate") ? <CommunityModerationPanel /> : null}
         <section className="admin-grid" aria-label="Planned admin areas">
           {adminAreas.map(([title, description]) => (
             <article className="admin-card" key={title}>

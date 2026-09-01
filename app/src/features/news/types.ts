@@ -68,6 +68,8 @@ export type NewsNavigationEntry = Readonly<{
   targetId: string;
   displayName: string;
   sportId: string;
+  competitionKindId: "league" | "cup" | "championship" | "tournament" | "tour" | "series" | "other" | null;
+  isFollowed: boolean;
 }>;
 
 export type NewsIdentityProfile = NewsFollowTarget;

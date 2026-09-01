@@ -2,7 +2,7 @@
 
 **FANatical Master Build Spec — Tracker / Status Map**
 
-Current status: core feature-system cleanup is complete; Core Platform/App Structure and final backend architecture remain the main pre-implementation review items.
+Current status: Phase 4 News is complete at `97f25c85ca52a3539cb203386772677d56ec4621`. Phase 5A contextual News discussion, fan identity/profile privacy, moderation, Requests, the small in-app inbox, and the manual-acceptance corrections are implemented locally in migrations `20260831203014`, `20260831203022`, `20260831203030`, and `20260901020424`. The independent closeout audit passed with no implementation blockers, and its accepted non-blocking documentation/backlog findings have been reconciled. The local Phase 5A tree is ready to be Saved; hosted activation remains separate, and those four migrations are not hosted. BL-020 and BL-035 are resolved decisions, not activation blockers: `NorthStarFan` is an intentional pre-launch test persona, and its one legacy UUID-prefixed display derivative is already withheld from other fans in favor of the generic avatar. The legacy display is to be cleared rather than migrated, and Brad, TestFan, NorthStarFan, and their fan-owned test data/media must be purged under BL-043 before the first real beta/public fan is onboarded.
 
 Legend  
  ✓ \= component is mostly complete / keep and clean  
@@ -66,8 +66,8 @@ Components
 * ✓ Feed, Sitemap, Web Page, Newsletter, and opportunistic API monitoring methods
 * ✓ Public written journalism and podcast episodes in v1
 * ✓ Publisher-site article destination
-* ✓ Canonical News Item-to-FANbase discussion connection
-* ✓ In-app notification when a requested News identity becomes available
+* ✓ Context-qualified News Item-to-FANbase discussion authority
+* ✓ Final request-resolution and direct-reply in-app notification authority
 * ✓ Reversible, evidence-preserving deduplication
 * — Signed-out News behavior
 * — Exact News rating, reaction, and poll behavior
@@ -179,7 +179,7 @@ Components
 * 	✓ Visitor 	view 	  
 * 	✓ Rating 	system concept 	  
 * 	✓ Ranking 	badge concept 	  
-* 	— Public 	vs private profile rules	  
+* — Later visibility/profile-access rules beyond Phase 5A
 * 	— Profile 	editing rules  
 * 	— Rating 	/ ranking math  
 * 	— Trophy 	unlock rules  
@@ -465,10 +465,13 @@ customization. Signed-out Profile is blank onboarding apart from its existing
 Home. While authentication is unresolved, account surfaces remain neutral and
 must not flash a previous fan or prototype persona.
 
-**BL-020 note:** the static North Star / NorthStarFan prototype persona no longer
-reaches anonymous Home or Profile surfaces. This presentation correction does
-not alter the hosted `NorthStarFan` profile row; that row remains governed by
-BL-020 and its existing trigger.
+**Designated pre-launch test persona:** `NorthStarFan` intentionally remains a
+third acceptance account alongside Brad and TestFan. It may resolve and interact
+with those accounts during controlled pre-launch testing; its prototype persona
+does not require a separate scrub or Brad-only reader exception before Phase 5A
+hosted testing. This decision closes BL-020. BL-043 instead requires a governed
+purge of all three designated test accounts and their fan-owned test data/media
+before the first real beta/public fan is onboarded.
 
 **Local browser state is not an offline cache.** Initial authentication
 resolution clears account-derived browser presentation and re-derives it from
@@ -711,7 +714,15 @@ Global Team context supports:
 
 Global Team context does not create a News follow or make official Team, organizational, wire, or other journalism automatically eligible.
 
-Temporary filters may include Sport, Competition, Team, and All Followed News.
+Temporary filters may include Sport, League, Competition, Team, and All Followed
+News. League and Competition are presentation categories over the canonical
+Competition model: rows whose governed Competition kind is `league` appear under
+League, while every other governed Competition kind appears under Competition.
+Both use the same canonical Competition identity and discussion context.
+
+The Team chooser begins with a find-a-Team input and the signed-in fan's followed
+Teams. The normal unopened view does not dump the global catalog; searching may
+surface matching Teams from the complete canonical catalog.
 
 ## **6. Signed-out Demo Mode and Zero-Follow EXAMPLE Onboarding**
 
@@ -812,22 +823,29 @@ feed eligibility.
 
 ### Requests
 
-Missing-identity requests, request persistence, fulfilment, and notifications are
-later News work and are not part of Phase 4. The eventual product behavior remains:
+Phase 5A adds durable missing-identity Requests to Add to Feed. A request begins
+from either a pasted public URL or a typed name, and preserves that raw evidence.
+Many fans may share one normalized request target/candidate, while each fan owns
+one requester relationship to that target and cannot submit that relationship
+twice.
 
-If an identity is not found:
+Request resolution is:
 
-**Not found**
-→ **Submit Request**
+**Pending** → **Available** | **Unable to add**
 
-The request retains the requesting fan and the request-to-candidate relationship.
+`Available` means the existing Phase 4 authority says that identity is currently
+followable. It does not auto-Follow. The fan must choose Follow explicitly.
+`Unable to add` carries a short staff reason. Each terminal outcome creates
+exactly one typed in-app notification for each requester; Pending creates none.
+If an Available target later becomes unfollowable, the completed request is not
+reopened or re-notified and Follow is not offered. Current actionability always
+comes from current followability rather than the historical outcome alone.
 
-When Resolution later makes the requested identity available:
+The Add-to-Feed surface has **Add**, **Following**, and **Requests** tabs. Its
+explanation moves to a small help `?`. Request resolution remains request-domain
+state and does not add a News identity-decision action.
 
-* update the request status in Add to Feed and Requests
-* create an idempotent in-app notification for that fan
-
-Email, browser, and push notification delivery are not part of the current News requirement.
+Email, browser, push, and digest delivery are outside Phase 5A.
 
 Manage Feed allows fans to inspect and change their explicit follows and coverage scopes.
 
@@ -858,7 +876,7 @@ A normal News Item Card includes available:
 
 The action row may expose:
 
-* Discussion
+* Contextual Discussion and its durable contextual comment count
 * Share
 * Dismiss for a signed-in fan, with immediate Undo
 * Polls when implemented
@@ -892,7 +910,7 @@ validation under BL-030.
 
 FANatical-owned destinations include:
 
-* canonical Discussion
+* context-qualified canonical Discussions
 * Polls
 * Ratings
 * Reactions
@@ -1137,22 +1155,110 @@ FANatical cannot know a publisher's total article readership and must not displa
 
 FANatical may record outbound article opens that FANatical itself generates. Call them **opens**, not publisher views or readers.
 
-## **21. Canonical Discussion, Polls, Ratings, and Reactions**
+## **21. Phase 5A Contextual Discussions and Community Safety**
 
-Each canonical News Item has one canonical FANatical discussion. The database relationship must prevent duplicate canonical discussions.
+There is at most one canonical FANatical discussion per canonical News Item per
+valid public News context. Phase 5A public contexts are Team, Competition/League,
+and Sport. There is no General or All discussion, no public context chooser, and
+no public action that shares an Item into another FANbase.
 
-A discussion may contain multiple Polls.
+The Discussion action follows the active Team, Competition/League, or Sport News
+filter when the Item is eligible in that active filter. Team and
+Competition/League require the corresponding current direct classification. An
+active Sport context uses the same effective roll-up as Sport feed eligibility:
+a current direct Sport, Competition, Competition Edition, or Team classification
+under that Sport routes to the Sport discussion. Without a usable origin, routing
+falls back to exactly one current direct Competition classification, then exactly
+one current direct Sport classification. It never infers Team from tags,
+favorites, follows, or global Team context. If neither fallback is unique,
+Discussion is unavailable.
 
-Article Ratings are retained as individual events so later Author ratings, awards, rankings, and abuse controls can be derived without losing history.
+The permanent discussion-access rule is a matching fan follow for the resolved
+context across Team, Competition/League, and Sport. A News Item classification
+or temporary News filter is not a follow and never grants access by itself.
+Phase 5A currently enforces the rule for Team discussions because Team following
+exists. Competition/League and Sport discussions remain temporarily available
+to signed-in ordinary fans because those direct follow types do not exist yet;
+that is a transitional implementation state, not a different permanent rule.
+Phase 5B must add the missing direct follow paths and decide only which
+parent/child follows confer inherited access and how inherited access affects
+routing. It must not reopen the uniform matching-follow requirement.
 
-The following require product approval before their implementation phase:
+Opening or reading an empty Discussion creates no row. The first comment
+atomically resolves or creates the Item-plus-context discussion and inserts the
+comment; database constraints and partial uniqueness prevent duplicate roots
+under concurrency. Classification corrections change future routing only. They
+never move, rewrite, or delete existing interaction. An old discussion remains
+reachable and readable by its durable link, but a removed classification no
+longer creates a new route or permits new comments or replies there. Eligible
+owner edits/deletes and moderation remain available for preserved interaction,
+subject to the same fan-wide Community suspension and ordinary lifecycle rules.
+Brad ratified this read-only preserved-discussion behavior on 31 Aug 2026.
 
-* rating scale
-* rating revision and withdrawal behavior
-* News reaction set
-* Poll creation, voting, and moderation rules
+Comments store the permanent hidden Auth owner ID and resolve the current
+Fanatical Name and permitted avatar at read time. Replies have unlimited logical
+depth, roughly two visual indentation levels before rebasing, collapsed branches
+by default, a chevron and durable descendant count, and accessible lineage that
+does not depend on color. Owners may edit for seven days according to database
+time; edited text is marked and internal revision history is retained without a
+public history viewer. Author deletion is an irreversible `Comment deleted`
+tombstone; replies survive. Contextual counts include every durable comment node,
+including tombstones, and are never personalized by Hide.
 
-These deferred engagement details do not block Competition, identity, News Item, feed, monitoring, UI conversion, Resolution, or runtime foundations.
+Hide uses one directed owner intent and reciprocal effect: either `(A,B)` or
+`(B,A)` separates both fans. Each fan can remove only their own intent. While
+separated, active content is `Content unavailable`; neither may directly reply
+to or view the other's profile, and no direct-interaction notification is
+created or shown. Hide, and Block when that later feature is implemented, masks
+attribution as `Hidden fan` without replacing durable content state. A durable
+tombstone still controls the body: hidden plus author-deleted renders
+`Hidden fan` / `Comment deleted`; Unhide restores the current Fanatical
+Name/avatar while `Comment deleted` remains. `Unavailable author` never results
+merely from Hide/Block and tombstone overlap. Other fans and replies remain
+unaffected. The same database predicate governs all relevant reads and writes.
+Thread and Settings both expose Hide/Unhide.
+
+Reports are separate from Hide and accept Spam, Harassment, Hate, or Threats plus
+an optional explanation. One fan may report a durable comment at most once; after
+success that fan sees **Reported** rather than another active Report action.
+Staff moderation requires the exact `community_moderate` permission from
+`staff_roles`; catalog capabilities and a catalog wildcard grant no community
+moderation authority. Staff may dismiss, tombstone/remove, apply a
+community-posting restriction, or immediately lift an active restriction. A lift
+is a new append-only reversal record: it never updates or deletes the original
+restriction. Restriction duration is computed from the fan's append-only prior
+restriction history using database time: first seven days, second seven, third
+fourteen, and later fourteen. An active restriction is a fan-wide Community
+suspension, not discussion-, context-, thread-, comment-, Team-, Competition-,
+or Sport-specific state. Community remains readable, but all ordinary
+participation is read-only for that fan across every context: Phase 5A blocks new
+comments, replies, edits, and deletes. Hide/Unhide and Report remain available as
+safety/protection actions rather than ordinary participation. Expiry or an early
+lift immediately restores the ordinary underlying permissions, including the
+existing seven-day database-time edit window; no comment receives a separate
+permanent lock. Existing report evidence, tombstones, moderation history,
+restriction history, and lift history remain preserved and append-only. Every
+successful lift creates exactly one retry-safe system/moderation notice for the
+affected fan rather than a social inbox notification.
+
+The same fan-wide suspension boundary governs later Community participation when
+those features are implemented. Reactions, Quote, interaction-producing
+mentions, new discussions, Group Chat posting, Poll creation/voting, and similar
+actions must all reject participation while the fan is suspended rather than
+inventing feature-, thread-, or comment-specific restriction state.
+
+Phase 5A explicitly excludes structured mentions, comment or article reactions,
+ratings, journalist scores, Polls, Group discussion/share, and wholesale FANbase
+prototype conversion. Those systems receive no empty placeholder tables in this
+phase.
+
+**Phase boundary:** Phase 5A implements only the current discussion, profile,
+moderation, Request, and small-inbox foundation explicitly described above.
+Settled sorting, reactions, Quote, structured Mentions, Block, Discussion
+Activity, Friends/Groups, ratings, Journalist Score, and other expanded
+Community behavior remain Phase 5B or later unless this authority explicitly
+states that a specific behavior is already implemented. Their presence in this
+Build Page does not authorize implementing them in Phase 5A.
 
 ## **22. Publisher Identity and Factual Trust**
 
@@ -1233,7 +1339,6 @@ Include deliberately difficult cases such as cross-competition writers, independ
 
 The following are intentionally deferred and are not blockers to the approved foundation phases:
 
-* exact article rating scale
 * rating revision and withdrawal behavior
 * exact News reaction set
 * detailed Poll creation, voting, and moderation rules
@@ -1300,7 +1405,11 @@ The current visual direction is a clean six-card layout:
 
 **Article Comments**
 
-Discussion threads created from and connected to News Items. Each News Item can have only one connected Article Comments thread inside FANbase.
+Discussion threads created from and connected to News Items. A News Item may have
+one Article Comments thread for each valid Team, Competition, or Sport context,
+with no duplicate root inside the same context. A Team FANbase lists that Team's
+real contextual News discussions and links to the same durable Item-plus-Team
+thread used by News; it does not create a prototype or duplicate discussion.
 
 **Locker Room**
 
@@ -1441,7 +1550,9 @@ FANbase defaults to the currently selected global team. The Filter button only s
 
 **Article Comments Rule**
 
-Each News Item can have only one connected Article Comments thread. Article Comments stay connected to the original News Item.
+Each News Item can have at most one connected Article Comments thread per valid
+Team, Competition, or Sport context. Article Comments stay connected to both the
+original News Item and the context in which fans interacted.
 
 **Locker Room Rule**
 
@@ -3039,6 +3150,56 @@ Detailed view for Game Face, Fan Cave, Memorabilia, or other fan photo content.
 **Profile Edit / Settings**  
 Owner-only editing and account/profile controls.
 
+### **Phase 5A identity and privacy boundary**
+
+The public fan identity is the **Fanatical Name**, stored in the existing
+`profiles.handle`. It is the only community name/route identifier; legacy
+`display_name` and `fanatical_name` remain rollback-compatible profile fields but
+do not identify comment ownership. Permanent ownership is the hidden Supabase
+Auth UUID and is never returned or shown to fans.
+
+A claimed Fanatical Name is 3–20 ASCII letters, numbers, or underscores, with no
+leading or trailing underscore. Existing exact reservations and the
+`fanatical_` prefix reservation remain. Ownership is case-insensitive while the
+entered casing is preserved. A fan must claim a name before posting or replying.
+Rename releases the old name immediately; there is no cooldown, alias, redirect,
+rename-frequency limit, or history transfer. A later claimant of the old label
+inherits none of its prior owner's records.
+
+New and unconfigured profiles default **Private**. **Members-visible** is an
+explicit owner selection and is readable only by signed-in ordinary fans. The
+old default `public` state is not evidence of owner consent and is treated as
+Private until the owner explicitly selects Members-visible. There is no
+anonymous profile reader.
+
+The Phase 5A member-safe profile payload is server allowlisted. All permitted
+readers may receive current Fanatical Name, display avatar derivative, and the
+fact that the profile is Private. A separated fan receives no profile. A
+Members-visible profile may additionally return non-identifier display name and
+tagline. Existing optional Bio fields—given name, nickname, birthplace, height,
+weight, and jersey number—are absent unless the owner enables that exact field;
+each defaults hidden. The legacy `fanatical_name` Bio field is never returned as
+identity. Email, phone, exact date of birth, Auth UUID, internal owner IDs, and
+authentication/security data are never fan-facing and must be absent from the
+server payload rather than hidden in React.
+
+Comment attribution remains available even when the author's profile is Private:
+signed-in non-separated fans may receive only the current Fanatical Name and
+display-avatar derivative needed for the comment. This exception does not expose
+the profile, optional fields, media library, banner, source objects, or original
+uploads.
+
+Owner source/original profile media may retain its Auth-UUID path because only the
+owner can receive it. A fan-facing avatar display derivative must instead use the
+owner's immutable random `fan-media-…` namespace, and fan-safe payloads and signed
+URLs must not expose an Auth UUID. A legacy UUID-prefixed active display remains
+owner-only and renders as the generic avatar to other fans. Hosted inventory found
+one such active display on the designated `NorthStarFan` test account. The
+settled decision is not to migrate that test avatar into the opaque namespace:
+clear the legacy display, retain the generic fallback, and remove any remaining
+test media in the BL-043 pre-beta purge. The proved fallback closes BL-035 as an
+activation blocker.
+
 ---
 
 ## **3\. UI Components**
@@ -3144,21 +3305,13 @@ User can open settings
 ### **Visitor Profile Flow**
 
 User opens another fan’s Profile  
-User sees public profile information  
-User sees public stats  
-User sees public Fan Photos, Moments, and Trophy Case items where allowed  
-User can interact positively with allowed fan photos  
+The route resolves the fan's current Fanatical Name, never an Auth UUID
+Signed-out visitor is asked to sign in and receives no profile payload
+Signed-in visitor sees only the Phase 5A server-allowlisted payload
+Private returns only current Fanatical Name, permitted avatar attribution, and Private state
+Reciprocal Hide returns no profile payload
+Members-visible profiles show only allowed and owner-opted fields
 User cannot edit anything
-
-Positive interactions may include:
-
-* rating  
-* like  
-* love  
-* fire  
-* comment  
-* ranking support  
-* badge/status recognition
 
 ---
 
@@ -3221,7 +3374,8 @@ Profile connects directly to FANbase because user photos, rankings, comments, an
 
 Fan Photos appear in FANbase by default unless privacy or visibility settings block them.
 
-Public Profile should not expose private account settings.
+Fan-facing Profile must not expose private account settings or protected account
+data. Phase 5A profile access is signed-in-only and server-allowlisted.
 
 Permanent fan identity rule: The stable internal account/user ID is the fan's permanent identity. It is never derived from or replaced by a handle or display name, never changes, and is never displayed. Trophies, follows, comments, tags, history, and everything else a fan owns remain attached to that permanent identity.
 
@@ -3229,7 +3383,7 @@ Handle rule: The handle is a mutable public label attached to the permanent fan 
 
 Display name rule: The display name is a separate mutable profile field. It is not unique and is never an identifier.
 
-Rename and reassignment rule: Renaming `@brad` to `@bradley` does not change the fan or any ownership. If a released handle is later claimed by someone else, the new holder receives only that public label and inherits no mentions, trophies, follows, comments, or history. Handle-release mechanics remain deferred.
+Rename and reassignment rule: Renaming `@brad` to `@bradley` does not change the fan or any ownership and immediately releases `brad`. There is no cooldown, alias, redirect, rename-frequency limit, or historical-handle binding. If a released handle is later claimed by someone else, the new holder receives only that public label and inherits no mentions, trophies, follows, comments, or history.
 
 Operational identity rule: Auth users mapped by `catalog_actors` as agents or services are operational identities, not fans. Their permanent Auth/catalog identity remains intact for permissions, audit history, verification decisions, and provenance even if shared bootstrap requires a technical profile row. Such a row never owns a public fan handle and is excluded from fan-facing profile discovery, tagging autocomplete, leaderboards, and equivalent fan-only surfaces. Each canonical operational `actor_key` is automatically reserved in the fan handle namespace; no second operational naming field is derived for that purpose.
 
@@ -3249,12 +3403,11 @@ Core profile data:
 * optional tagline  
 * favorite teams  
 * favorite sports  
-* profile visibility  
+* profile visibility — Private by default or explicitly Members-visible
 * created time
 
-Bio 👤 fields may include:
+Bio 👤 fields may include owner-controlled non-identity profile details:
 
-* FANatical name  
 * given name  
 * nickname  
 * birthplace  
@@ -3433,8 +3586,7 @@ Profile images and fan photos need size limits, compression, and placeholders.
 * exact Profile Header layout  
 * exact Fan Photos carousel/card behavior  
 * whether users choose displayed Fan Photos or system selects them automatically  
-* exact public vs private profile fields  
-* whether given name is public, private, or optional  
+* later profile fields beyond the Phase 5A server allowlist
 * exact Stats Panel fields  
 * exact trophy types  
 * exact trophy unlock rules  
@@ -3446,8 +3598,7 @@ Profile images and fan photos need size limits, compression, and placeholders.
 * whether users can comment on Moments  
 * whether visitors can rate all Fan Photo categories  
 * upload limits and image requirements  
-* profile visibility options
-* username claim UI for claiming or changing the handle
+* later visibility options beyond Private and Members-visible
 
 # Rewards/Ads/Revenue
 
@@ -4029,7 +4180,11 @@ Handles slower work such as image processing, moderation scans, notifications, b
 Controls user content, reports, spam, abuse, photo review, and community safety.
 
 **Notifications**  
-Handles limited, intentional alerts. The currently approved News notification is an in-app alert when Resolution makes a fan-requested News identity available; broader News notification channels and triggers require separate approval.
+Handles limited, intentional alerts. Phase 5A adds a small account-owned in-app
+inbox/counter for direct replies and each final Request outcome (`Available` or
+`Unable to add`). Entries are typed and idempotent. Hide prevents the direct
+interaction and its notification. Broader channels and triggers require separate
+approval.
 
 **Admin Tools**  
 Internal controls for reviewing reports, managing the News catalog and Resolution work, approving quizzes, managing cheers, handling users, and checking app health
@@ -4128,9 +4283,11 @@ Notification sends only when useful
 
 Notifications should be limited and intentional.
 
-Currently approved News notification use case:
+Currently approved Phase 5A notification use cases:
 
-* requested Author, podcast Show, or organizational contributor becomes available through Resolution; notify the requesting fan in-app
+* a direct reply to the fan's comment, provided the two fans are not separated by Hide
+* a requested Author, podcast Show, or organizational contributor becomes Available; notify that requester exactly once in-app
+* a request is resolved as Unable to add; notify that requester exactly once in-app
 
 Other approved application notification use cases may include:
 
@@ -4167,6 +4324,15 @@ Admin reviews reports, News catalog/Resolution work, quizzes, photos, cheers, or
 Admin reviews reports, News catalog/Resolution work, quizzes, photos, cheers, or user issues.
 
 Admin approves or rejects content where pre-review applies, and can hide, flag, remove, or escalate user content through moderation where appropriate.
+
+Phase 5A community report actions require the explicit `community_moderate`
+permission in `staff_roles`. A role label, catalog capability, or catalog `*`
+wildcard is not sufficient. Available actions are dismiss report, tombstone/remove
+the reported comment, and apply the approved database-timed, fan-wide Community
+suspension stored in the posting-restriction history. Staff with that same exact
+permission may lift an active suspension through an append-only reversal without
+changing its original history. The fan
+receives a separate moderation notice.
 
 System records admin action history
 
@@ -4333,9 +4499,13 @@ The app should encourage photo viewing, rating, ranking, and reacting more than 
 
 Notifications are limited and intentional.
 
-The current News requirement is the in-app request-resolution notification. Breaking-News, email, browser, and push delivery are not approved by this News authority.
+The current Phase 5A requirement is the small in-app inbox for direct replies and
+the two final request-resolution outcomes. Breaking-News, email, browser, push,
+and digest delivery are not approved by this authority.
 
-Routine comments, reactions, ratings, and ranking movement do not create default notifications.
+Routine discussion comments, reactions, ratings, and ranking movement do not
+create default notifications. Only a direct reply creates the Phase 5A social
+notification, and reciprocal Hide suppresses it.
 
 Users can choose more notification types later if settings support it.
 
@@ -4437,7 +4607,9 @@ Moderation statuses:
 Data: canonical News Items and manifestations, News identities, follows, classifications, discussions, and FANatical-generated outbound opens
 Scale: high reads with durable ingestion and comparatively lower direct fan-write volume
 Backend move: query/cache chronological eligible feeds and monitor configured endpoints through durable work
-Notification scope: in-app request-resolution notification only unless later News notification behavior is separately approved
+Notification scope: typed/idempotent in-app direct-reply and final-request
+notifications only, plus separate moderation notices, unless later behavior is
+separately approved
 
 **Quiz**  
 Data: questions, answers, scores, attempts  

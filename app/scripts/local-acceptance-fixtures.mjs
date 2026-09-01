@@ -8,6 +8,40 @@ export const localAcceptanceFan = Object.freeze({
   displayName: "Dummy Fan",
 });
 
+export const localPhase5AcceptanceFixtureMetadataKey = "fanatical_phase5a_fixture";
+export const localPhase5AcceptanceFixtureVersion = "phase5a-local-v2";
+
+export const localPhase5AcceptanceAccounts = Object.freeze([
+  Object.freeze({
+    key: "brad",
+    email: "brad@fanatical.invalid",
+    password: "BradPhase5A!2026",
+    displayName: "Brad",
+    fanaticalName: "Brad",
+    visibility: "members_visible",
+    followedTeamIds: Object.freeze(["hockey-000027"]),
+  }),
+  Object.freeze({
+    key: "test-fan",
+    email: "testfan@fanatical.invalid",
+    password: "TestFanPhase5A!2026",
+    displayName: "Test Fan",
+    fanaticalName: "TestFan",
+    visibility: "private",
+    followedTeamIds: Object.freeze(["hockey-000027"]),
+  }),
+  Object.freeze({
+    key: "moderator",
+    email: "moderator@fanatical.invalid",
+    password: "ModeratorPhase5A!2026",
+    displayName: "Phase 5A Moderator",
+    fanaticalName: "",
+    visibility: "private",
+    followedTeamIds: Object.freeze([]),
+    operationalActorKey: "local_phase5a_moderator",
+  }),
+]);
+
 const fixtureMarker = "fanatical-local-acceptance-v1";
 const publisher = Object.freeze({
   sourceId: "fanatical-local-demo-publisher",
@@ -31,7 +65,19 @@ export const localAcceptanceIdentities = Object.freeze([
     displayName: "FANatical Local Demo Podcast",
     profileUrl: `${publisher.baseUrl}shows/demo-podcast`,
   }),
+  Object.freeze({
+    key: "request-candidate",
+    type: "organization",
+    displayName: "FANatical Local Request Candidate",
+    profileUrl: `${publisher.baseUrl}contributors/request-candidate`,
+    demo: false,
+  }),
 ]);
+
+export const localAcceptanceRequestCandidate = Object.freeze({
+  inputKind: "name",
+  displayInput: "FANatical Local Request Candidate",
+});
 
 export const localAcceptanceItems = Object.freeze([
   Object.freeze({
@@ -76,6 +122,8 @@ export const localAcceptanceDataset = Object.freeze({
   marker: fixtureMarker,
   publisher,
   identities: localAcceptanceIdentities,
+  demoIdentities: Object.freeze(localAcceptanceIdentities.filter((identity) => identity.demo !== false)),
+  requestCandidate: localAcceptanceRequestCandidate,
   items: localAcceptanceItems,
 });
 
@@ -597,9 +645,10 @@ async function ensureFollowability(staff, identity) {
 }
 
 async function ensureDemoUniverse(anonymous, staff, identities) {
+  const demoIdentities = identities.filter((identity) => identity.demo !== false);
   const current = await rpc(anonymous, "get_news_demo_universe", {}, "Could not inspect the anonymous local Demo universe");
-  const matches = current.length === identities.length && current.every((member, index) => {
-    const identity = identities[index];
+  const matches = current.length === demoIdentities.length && current.every((member, index) => {
+    const identity = demoIdentities[index];
     return member.ordinal === index + 1
       && member.target_type === identity.type
       && member.target_id === identity.publicId
@@ -607,7 +656,7 @@ async function ensureDemoUniverse(anonymous, staff, identities) {
   });
   if (matches) return;
   await rpc(staff, "admin_set_news_demo_universe", {
-    targets_value: identities.map((identity) => ({
+    targets_value: demoIdentities.map((identity) => ({
       target_type: identity.type,
       target_id: identity.publicId,
     })),

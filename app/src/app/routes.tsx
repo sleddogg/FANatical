@@ -7,6 +7,8 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 import { NewsPage } from "../features/news/NewsPage";
 import { NewsIdentityProfilePage } from "../features/news/NewsIdentityProfilePage";
+import { CommunityDiscussionPage, DirectCommunityDiscussionPage } from "../features/community/CommunityDiscussionPage";
+import { MemberProfilePage } from "../features/community/MemberProfilePage";
 import { FanbasePage } from "../features/fanbase/FanbasePage";
 import { QuizPage } from "../features/quiz/QuizPage";
 import { ProfilePage } from "../features/profile/ProfilePage";
@@ -57,6 +59,18 @@ export const appRoutes: RouteObject[] = [
           {
             path: "news/shows/:identityId",
             element: <NewsIdentityProfilePage targetType="show" />,
+          },
+          {
+            path: "news/discussions/:newsItemId",
+            element: <CommunityDiscussionPage />,
+          },
+          {
+            path: "community/discussions/:discussionId",
+            element: <DirectCommunityDiscussionPage />,
+          },
+          {
+            path: "fans/:fanaticalName",
+            element: <MemberProfilePage />,
           },
           {
             path: "fanbase",

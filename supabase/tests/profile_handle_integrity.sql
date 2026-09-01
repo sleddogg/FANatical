@@ -136,10 +136,10 @@ select pg_temp.assert_true(
 );
 
 update public.profiles
-set handle = 'Brad'
+set handle = 'IntegrityBrad'
 where user_id = '83000000-0000-0000-0000-000000000001';
 select pg_temp.assert_true(
-  (select handle = 'Brad' from public.profiles where user_id = '83000000-0000-0000-0000-000000000001'),
+  (select handle = 'IntegrityBrad' from public.profiles where user_id = '83000000-0000-0000-0000-000000000001'),
   'a valid mixed-case handle must retain its entered display casing'
 );
 
@@ -162,9 +162,9 @@ where user_id = '83000000-0000-0000-0000-000000000002';
 
 select pg_temp.assert_handle_rejected(
   '83000000-0000-0000-0000-000000000002',
-  'brad',
+  'integritybrad',
   'profiles_handle_normalized_unique_idx',
-  'Brad and brad must collide case-insensitively'
+  'IntegrityBrad and integritybrad must collide case-insensitively'
 );
 
 update public.profiles
@@ -176,24 +176,24 @@ select pg_temp.assert_true(
 );
 
 update public.profiles
-set handle = repeat('A', 30)
+set handle = repeat('A', 20)
 where user_id = '83000000-0000-0000-0000-000000000001';
 select pg_temp.assert_true(
-  (select char_length(handle) = 30 from public.profiles where user_id = '83000000-0000-0000-0000-000000000001'),
-  'thirty characters must be accepted as the maximum length'
+  (select char_length(handle) = 20 from public.profiles where user_id = '83000000-0000-0000-0000-000000000001'),
+  'twenty characters must be accepted as the maximum length'
 );
 
 select pg_temp.assert_handle_rejected(
   '83000000-0000-0000-0000-000000000002',
   'Ab',
-  'between 3 and 30',
+  'between 3 and 20',
   'a handle shorter than three characters must be rejected'
 );
 select pg_temp.assert_handle_rejected(
   '83000000-0000-0000-0000-000000000002',
-  repeat('A', 31),
-  'between 3 and 30',
-  'a handle longer than thirty characters must be rejected'
+  repeat('A', 21),
+  'between 3 and 20',
+  'a Fanatical Name longer than twenty characters must be rejected'
 );
 
 update public.profiles
@@ -276,6 +276,9 @@ select pg_temp.assert_handle_rejected(
 update public.profiles
 set handle = 'TakenHandle'
 where user_id = '83000000-0000-0000-0000-000000000002';
+update public.profiles
+set fanatical_name = 'Rollback-only legacy value'
+where user_id = '83000000-0000-0000-0000-000000000001';
 
 select set_config('request.jwt.claim.sub', '83000000-0000-0000-0000-000000000001', true);
 set local role authenticated;
@@ -294,15 +297,23 @@ select pg_temp.assert_true(
   (select handle = 'OwnerTwo' from public.profiles where user_id = '83000000-0000-0000-0000-000000000001'),
   'an owner must be able to change to another available valid handle with casing preserved'
 );
+select pg_temp.assert_true(
+  (
+    select fanatical_name = 'Rollback-only legacy value'
+    from public.profiles
+    where user_id = '83000000-0000-0000-0000-000000000001'
+  ),
+  'a Phase 5 profile save must preserve omitted rollback-only legacy name data'
+);
 
 select pg_temp.assert_profile_save_rejected(
   'takenhandle',
-  'Handle is already claimed',
+  'Fanatical Name is already claimed',
   'save_my_profile must report a normalized ownership collision clearly'
 );
 select pg_temp.assert_profile_save_rejected(
   'ADMIN',
-  'Handle is reserved',
+  'Fanatical Name is reserved',
   'save_my_profile must report a reserved handle clearly'
 );
 select pg_temp.assert_profile_save_rejected(

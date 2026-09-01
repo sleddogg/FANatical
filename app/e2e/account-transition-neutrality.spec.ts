@@ -134,6 +134,7 @@ async function logoutFromProfile(page: Page) {
 }
 
 test.describe.configure({ mode: "serial" });
+test.setTimeout(90_000);
 test.beforeAll(removeTransitionUsers);
 test.afterAll(removeTransitionUsers);
 

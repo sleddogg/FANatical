@@ -1,4 +1,6 @@
 import { AppIcon } from "../../components/AppIcon";
+import type { DiscussionOrigin } from "../community/types";
+import { NewsDiscussionAction } from "./NewsDiscussionAction";
 import type { FanSafeNewsItem } from "./types";
 
 type NewsActionRowProps = {
@@ -6,6 +8,7 @@ type NewsActionRowProps = {
   readonly onOutboundOpen: () => void;
   readonly onShare: () => void;
   readonly onDismiss?: () => void;
+  readonly discussionOrigin: DiscussionOrigin | null;
 };
 
 export function NewsActionRow({
@@ -13,6 +16,7 @@ export function NewsActionRow({
   onOutboundOpen,
   onShare,
   onDismiss,
+  discussionOrigin,
 }: NewsActionRowProps) {
   return (
     <div className="news-actions news-actions--card" role="group" aria-label={`Actions for ${item.headline}`}>
@@ -30,6 +34,7 @@ export function NewsActionRow({
         <AppIcon name="share" />
         <small>Share</small>
       </button>
+      <NewsDiscussionAction newsItemId={item.id} headline={item.headline} origin={discussionOrigin} />
       {onDismiss ? (
         <button type="button" aria-label={`Dismiss ${item.headline}`} onClick={onDismiss}>
           <AppIcon name="x-mark" />

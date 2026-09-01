@@ -1,8 +1,35 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRoutes } from "../../app/routes";
+
+const communityMocks = vi.hoisted(() => ({
+  loadTeamNewsDiscussions: vi.fn().mockResolvedValue([{
+    discussionId: "community-discussion-patriots",
+    newsItemId: "news-patriots-camp-tempo",
+    contextId: "football-nfl-new-england-patriots",
+    contextName: "New England Patriots",
+    commentCount: 4,
+    createdAt: "2026-08-20T12:00:00.000Z",
+    article: {
+      newsItemId: "news-patriots-camp-tempo",
+      itemKind: "written",
+      headline: "Patriots turn up the tempo as the offense enters its final camp phase",
+      publishedAt: "2026-08-20T11:00:00.000Z",
+      destinationUrl: "https://publisher.example/patriots-camp-tempo",
+      publisherName: "Boston Football Desk",
+      showName: null,
+      preview: null,
+      bylines: ["Alex Reporter"],
+    },
+  }]),
+}));
+
+vi.mock("../community/communityRepository", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../community/communityRepository")>(),
+  loadTeamNewsDiscussions: communityMocks.loadTeamNewsDiscussions,
+}));
 
 function renderRoute(route = "/fanbase") {
   const router = createMemoryRouter(appRoutes, { initialEntries: [route] });
@@ -565,39 +592,23 @@ describe("FANbase frontend", () => {
     expect(screen.getByText("Swipe or select a category to browse, rate, and celebrate how fans show up.")).toBeInTheDocument();
   });
 
-  it("keeps the existing Article Discussion separate from Phase 4 publisher-opening News cards", async () => {
-    const user = userEvent.setup();
-    const { router } = renderRoute("/fanbase?area=article-comments&item=patriots-camp-tempo");
+  it("surfaces the real Team discussion as another route to the canonical Item+Team thread", async () => {
+    renderRoute("/fanbase?area=article-comments");
 
-    expect(screen.getByRole("heading", { name: "Patriots turn up the tempo as the offense enters its final camp phase" })).toBeInTheDocument();
-    await user.type(screen.getByRole("textbox", { name: "Add to the conversation" }), "The secondary communication stood out to me.");
-    await user.click(screen.getByRole("button", { name: "Post comment" }));
-    expect(screen.getByText("The secondary communication stood out to me.")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("link", { name: /View News Item/i }));
-    expect(screen.getByRole("heading", { name: "News" })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/news");
-    expect(router.state.location.search).toBe("");
-    expect(screen.queryByRole("dialog", { name: /Patriots turn up/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Open FANbase Article Discussion/i })).not.toBeInTheDocument();
+    const discussion = await screen.findByRole("link", { name: /Patriots turn up the tempo/i });
+    expect(communityMocks.loadTeamNewsDiscussions).toHaveBeenCalled();
+    expect(discussion).toHaveAttribute(
+      "href",
+      "/news/discussions/news-patriots-camp-tempo?context=team&target=football-nfl-new-england-patriots",
+    );
+    expect(screen.getByText("4 comments", { exact: false })).toBeInTheDocument();
   });
 
-  it("uses one compact Article Discussion card and places the composer before comments", async () => {
-    const user = userEvent.setup();
-    renderRoute("/fanbase?area=article-comments&item=patriots-camp-tempo");
+  it("does not expose the prototype Article Discussion composer or reaction state as canonical", async () => {
+    renderRoute("/fanbase?area=article-comments");
 
-    const headline = "Patriots turn up the tempo as the offense enters its final camp phase";
-    expect(screen.getAllByRole("heading", { name: headline })).toHaveLength(1);
-    expect(screen.getByText(/Connected News Item/)).toBeInTheDocument();
-    const composer = screen.getByRole("textbox", { name: "Add to the conversation" }).closest("form");
-    const conversationHeading = screen.getByRole("heading", { name: "Conversation" });
-    expect(composer).not.toBeNull();
-    expect(composer!.compareDocumentPosition(conversationHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-
-    expect(screen.queryByRole("menu", { name: "Choose a reaction" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Choose discussion reaction" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Fire, 31 reactions" }));
-    expect(screen.getByRole("button", { name: "Choose discussion reaction" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Choose discussion reaction" })).toHaveTextContent("Fire · 99");
+    expect(await screen.findByText("Boston Football Desk")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Add to the conversation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Choose discussion reaction" })).not.toBeInTheDocument();
   });
 });

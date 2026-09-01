@@ -65,35 +65,6 @@ or when any continuous integration exists.
 **Required at trigger** — REQUIRED
 **Origin** — `GAP-04`; conversation, 27 Aug.
 
-### BL-006
-**What** — Build the screen where a fan chooses and changes their username,
-including the "already taken" and format error paths.
-**Why deferred** — The handle contract was built first so the rules are
-authoritative in the database before any interface can create bad data. No screen
-currently references a handle at all.
-**Trigger** — Before fans are asked to choose handles, and before tagging.
-**Required at trigger** — REQUIRED
-**Origin** — Frontend deep audit; `FAN-ACCT-07`.
-
-### BL-007
-**What** — Either build the public profile route or revoke the `anon` grant on
-`get_profile_for_viewer` until it exists.
-**Why deferred** — The capability exists in the database and nothing in the app
-consumes it, so personal fields on public profiles are readable by anyone holding
-a user ID for a feature that has not shipped. Current exposure is low because the
-only affected profile holds prototype values.
-**Trigger** — Before real fans enter genuine personal details, or when public
-profile viewing is built — whichever comes first.
-**Required at trigger** — REQUIRED
-**Origin** — Frontend deep audit; conversation, 27 Aug.
-**Assessment, 29 Aug 2026** — Phase 4 adds anonymous News Demo,
-navigation, contributor-profile, contributor-item and outbound-open RPCs. Their
-populations are mechanically bounded to the current governed Demo
-configuration, an explicitly addressed current followable News identity, and
-published fan-safe News rows. None calls `get_profile_for_viewer`, reads the fan
-profile population, or exposes fan personal fields. BL-007 therefore does not
-fire for Phase 4; its first real-fan-details/public-profile trigger is unchanged.
-
 ### BL-008
 **What** — Provide a fan-population exclusion that browser-side queries can
 actually apply, so operational identities never appear in fan-facing surfaces.
@@ -111,6 +82,11 @@ organizational contributors and Shows. It never queries `profiles` or treats an
 Auth user, staff actor or service actor as a fan. This is contributor discovery,
 not fan discovery, so BL-008 does not fire; tagging, fan-directory, leaderboard
 or equivalent fan-population discovery remains its trigger.
+**Assessment, 31 Aug 2026** — Phase 5A's direct current-Fanatical-Name profile
+route is not fan discovery. Its database reader resolves exactly one requested
+name through `private.fan_profile_population`; it neither lists nor searches fans.
+BL-008 therefore does not fire. Its first tagging, fan-directory, leaderboard or
+equivalent discovery trigger remains Phase 5B or later.
 
 ### BL-009
 **What** — Add direct proof for the untested Team registry surfaces.
@@ -150,6 +126,10 @@ already says not to grant the wildcard.
 **Trigger** — Before any operator other than Brad can grant capabilities.
 **Required at trigger** — REQUIRED
 **Origin** — `GAP-09`; defeats `FAN-AGT-02`.
+**Assessment, 31 Aug 2026** — Phase 5A community moderation does not use catalog
+capabilities. It requires the exact `community_moderate` permission on an active
+`staff_roles` row, and the real-role SQL suite denies a catalog wildcard actor.
+BL-012 therefore does not fire; its capability-grant trigger is unchanged.
 
 ### BL-013
 **What** — Schedule agent recovery so stale leases recover without a manual call.
@@ -210,15 +190,6 @@ and inflates the bundle well past its warning threshold.
 **Required at trigger** — REQUIRED
 **Origin** — Grok blind audit `M13`.
 
-### BL-020
-**What** — Replace the prototype persona values still on the `NorthStarFan`
-profile with real ones.
-**Why deferred** — The defect that wrote them is fixed; cleaning up what it
-already wrote is separate, and the account belongs to Brad.
-**Trigger** — Before that profile is visible to anyone other than Brad.
-**Required at trigger** — REQUIRED
-**Origin** — Grok blind audit `B2`; hosted verification, 27 Aug.
-
 ### BL-021
 **What** — Fix the eight places where the frontend reads the clock or writes to a
 ref while a component is rendering.
@@ -239,6 +210,10 @@ reader returns it; that reader converts database-expired mutes to `null`, so no
 frontend render-time clock read decides mute behavior. The triggered News slice
 is complete; the broader entry remains open for its other seven affected
 surfaces.
+**Assessment, 31 Aug 2026** — Phase 5A's seven-day comment edit window and
+7/7/14/14-day Community restriction cadence are enforced by database
+`statement_timestamp()` and returned as server decisions. No render-time clock
+governs either outcome, so Phase 5A does not pull the unrelated remaining work.
 
 ### BL-022
 **What** — Clear the remaining lint warnings: 22 synchronous state updates inside
@@ -299,6 +274,11 @@ are now three conceptual categories of decision action (intake, Resolution
 outcome, and factual relationship mutation on a non-identity case kind) being
 sorted by one binary classifier. The trigger is widened so that adding any action
 requires a conscious, recorded decision about which side it falls on.
+**Assessment, 31 Aug 2026** — Add-to-Feed Requests introduce request-domain
+submission and resolution RPCs, not a News identity decision action. Available
+resolution accepts only an identity already followable under the Phase 4
+authority and creates no intake/Resolution decision history. BL-025 therefore
+does not fire.
 
 ### BL-026
 **What** — Add governed canonical mutation paths and appropriately authorized
@@ -344,6 +324,10 @@ material operating choices and are not invented during local entry hardening.
 retention and storage-capacity controls while keeping navigation independent
 from recording success.
 **Origin** — Phase 4 final correction review, 29 Aug 2026.
+**Assessment, 31 Aug 2026** — Phase 5A does not expand or change anonymous
+outbound-open recording. Its anonymous Community surface returns only a bounded
+discussion count teaser and no comment bodies. BL-029 remains tied to the public
+launch of the anonymous News surface and is not pulled into 5A.
 
 ### BL-030
 **What** — Inventory and resolve legacy rows reported by
@@ -410,6 +394,10 @@ ambiguous merged period is removed from feed eligibility and marked for
 reselection, neither follow is silently reassigned, and the fan can still
 manage the exact fan-owned follow.
 **Origin** — Phase 4 documentation follow-up, 30 Aug 2026; `FAN-ATTR-05`.
+**Assessment, 31 Aug 2026** — Phase 5A proves Request resolution against a current
+followable target, including a governed Author-merge case, but it neither performs
+nor relies on a hosted person split. The missing split-reselection proof remains
+a Phase 5B-or-later gate under this entry's original trigger.
 
 ### BL-034
 **What** — Populate and curate the hosted, staff-governed signed-out News Demo
@@ -431,9 +419,210 @@ anonymous visitors can see only that configured fan-safe universe.
 **Origin** — Phase 4 production closeout, 31 Aug 2026. The currently empty
 hosted Demo universe is deliberate configuration state, not a Phase 4 defect.
 
+### BL-036
+**What** — Retire the legacy `public` profile-visibility compatibility and the
+legacy `profiles.fanatical_name` compatibility behavior.
+**Why deferred** — Both mechanisms preserve rollback compatibility while the
+Phase 4 frontend remains the immediately previous rollback-capable production
+frontend. Removing them during the local Phase 5A correction pass would make
+that rollback unsafe.
+**Trigger** — After the Phase 4 frontend is no longer the immediately previous
+rollback-capable production frontend.
+**Required at trigger** — REQUIRED: confirm the active and immediately previous
+frontends no longer depend on either legacy value/path; inventory and safely
+normalize any remaining compatible data; remove only the obsolete compatibility
+logic; and re-prove current profile privacy and Fanatical Name reads/writes.
+**Origin** — Phase 5A final audit reconciliation, 1 Sep 2026.
+
+### BL-037
+**What** — Establish a conscious, mechanically enforced mutation-governance
+boundary before introducing a new mutable application-table domain outside the
+currently governed News and Community domains.
+**Why deferred** — No such new domain is part of Phase 5A. News and Community
+already have scoped mechanical registries/assertions, BL-027 remains closed, and
+universalizing governance across every historical table is not justified by the
+current work.
+**Trigger** — Before a future migration introduces the first mutable
+application table in a new domain outside the currently governed News and
+Community domains.
+**Required at trigger** — REQUIRED: explicitly define the new domain boundary,
+its canonical mutation operations, direct-role grants/RLS expectations, and a
+migration-time mechanical assertion (or an approved equivalent) before the new
+table is accepted.
+**Origin** — Phase 5A final audit reconciliation, 1 Sep 2026.
+
+### BL-038
+**What** — Make `supabase/tests/phase5a_community_requests.sql`'s signed-out
+Team teaser assertions independent of a freshly reset database, or explicitly
+document the suite as reset-dependent.
+**Why deferred** — The suite is correct against a clean local rebuild today,
+and Phase 5A has one governed writer path for these fixtures. The hard-coded
+`comment_count: 0` assertions (around lines 219–229) assume no discussion
+already exists for the fixture Team/context; that is only true immediately
+after a reset.
+**Trigger** — Before this suite is relied on as a repeatable regression or
+merge gate, or before it is ever run against a non-reset or shared database.
+**Required at trigger** — REQUIRED: either reset state before the affected
+assertions, derive the expected count from the database rather than
+hard-coding zero, or isolate the fixture context so no other suite or run can
+have created prior discussion activity there.
+**Origin** — Retired-thread verification pass (Codex-lane finding),
+reconciled 1 Sep 2026; confirmed directly against
+`supabase/tests/phase5a_community_requests.sql` lines 219–229.
+
+### BL-039
+**What** — Add direct SQL proof that Hide and Report remain available to a
+suspended fan, matching the intended restriction scope.
+**Why deferred** — The build page states Community restriction blocks new
+posts, replies, edits, and deletes, while Hide/Unhide and Report remain
+available; the code matches that intent —
+`public.hide_community_user`, `hide_community_comment_author`,
+`unhide_community_user`, `unhide_community_intent`, and
+`report_community_comment` all call only `private.assert_community_fan`,
+never `private.assert_community_participation_allowed` or
+`assert_community_posting_allowed`. But no test in the current suite drives
+Hide or Report from a suspended account, so the match between code and intent
+is unproven, not just unenforced.
+**Trigger** — Before the next Community SQL suite expansion, or before any
+change routes Hide or Report through the suspension-enforcing helpers
+(`assert_community_participation_allowed` / `assert_community_posting_allowed`),
+even accidentally.
+**Required at trigger** — REQUIRED: add a real-role SQL proof that a
+suspended fan can still Hide and Report, and that Hide/Report remain denied to
+the boundaries they were already denied to (Auth requirement, population
+boundary) regardless of suspension.
+**Origin** — Retired-thread verification pass (Codex-lane finding),
+reconciled 1 Sep 2026; confirmed by tracing every caller of
+`assert_community_participation_allowed` / `assert_community_posting_allowed`
+against the five Hide/Report function definitions in
+`20260831203022_phase5a_community_foundation.sql`.
+
+### BL-040
+**What** — Add a cycle guard (visited-path or depth limit) to the recursive
+descendant-count CTE in `public.get_community_discussion`.
+**Why deferred** — Unreachable today: `parent_comment_id` is set once at
+insert and never updated, and the `community_comments` tables are revoked
+from `anon`/`authenticated`, so no path exists to create a cyclical parent
+chain. Adding a guard now would be defensive code with no current defect
+behind it.
+**Trigger** — Before anything is built that can update `parent_comment_id`
+after insert, including comment-import or comment-migration tooling,
+moderation re-parenting, or any admin correction path.
+**Required at trigger** — REQUIRED: add a visited-set or depth-bounded guard
+to the recursive CTE so a cyclical parent chain terminates instead of
+looping, and add a test that proves it.
+**Origin** — Retired-thread verification pass, reconciled 1 Sep 2026;
+confirmed by reading the recursive descendant-count CTE in
+`get_community_discussion`, `20260831203022_phase5a_community_foundation.sql`.
+
+### BL-041
+**What** — Correct or replace the `phase-4-complete` tag so it points at the
+actual Phase 4 closeout commit.
+**Why deferred** — Not a code defect, and nothing currently resolves the tag
+automatically; it is a documentation/reference-accuracy gap. Retagging is a
+small, low-risk git operation but is still a deliberate repository action
+outside a documentation-only pass.
+**Trigger** — Before `phase-4-complete` is cited as the Phase 5A base state
+in any audit, handoff, or rollback procedure, or before any tooling is built
+that resolves this tag automatically.
+**Required at trigger** — REQUIRED: move (or replace) the `phase-4-complete`
+tag to commit `97f25c85` ("Phase 4 Complete"), confirm no existing reference
+depends on the tag's current position, and note the correction wherever the
+tag was previously cited.
+**Origin** — Retired-thread verification pass, reconciled 1 Sep 2026;
+confirmed by cloning the repository and unshallowing: `phase-4-complete`
+resolves to `46cb51ce`, exactly one commit before `97f25c85`, its direct
+descendant (`git rev-list --count 46cb51ce..97f25c85` = 1).
+
+### BL-042
+**What** — Make a typed-name Request and a pasted-URL Request that are proven to
+identify the same underlying Author, Show, or organizational contributor
+converge on one canonical request target and one requester relationship per fan.
+**Why deferred** — Phase 5A deliberately performs conservative same-candidate
+dedupe: normalized repetitions of the same typed name converge, and normalized
+repetitions of the same URL converge, but a name and URL are not treated as
+equivalent without governed identity evidence. This avoids unsafe automatic
+identity conflation, but it can leave two request targets for one real identity.
+**Trigger** — Before claiming cross-input Request dedupe is complete, or before
+staff resolution, notification, or reporting assumes typed-name and pasted-URL
+requests for the same real identity already share one target.
+**Required at trigger** — REQUIRED: add a governed, provenance-preserving and
+concurrency-safe equivalence/merge path; retain every requester's raw name/URL
+evidence; converge duplicate per-fan relationships without losing ownership;
+preserve terminal outcome history; keep final notifications exactly once; and
+never auto-Follow. Prove same-name, same-URL, name-versus-URL convergence,
+ambiguous/non-equivalent cases, retry, and concurrent merge behavior.
+**Origin** — Phase 5A documentation correction, 1 Sep 2026; current
+`phase5a_community_requests.sql` proves same normalized-name dedupe and keeps
+distinct URL candidates separate, but does not prove name-versus-URL convergence.
+
+### BL-043
+**What** — Govern and verify the complete purge of the designated pre-launch fan
+test accounts—Brad, TestFan, and NorthStarFan—and all fan-owned test data/media.
+**Why deferred** — The three accounts are intentionally useful for controlled
+multi-fan acceptance testing before launch. `NorthStarFan` is therefore an
+approved test persona rather than an accidental real fan, and its legacy avatar
+already falls back to the generic avatar for other fans. Deleting the accounts
+now would remove needed test actors without improving the current boundary.
+**Trigger** — Before the first real beta/public fan is onboarded, and before any
+test identity could enter real discovery, leaderboards, rewards, analytics, or
+other production population/metric outputs.
+**Required at trigger** — REQUIRED: use one reviewed, recoverable and
+referentially complete cleanup procedure; clear/remove NorthStarFan's legacy
+active display derivative rather than migrating it; remove the three Auth users
+and every fan-owned profile, media, comment, reply, Hide, report, restriction,
+notification, Request, follow, preference, and other test record; preserve real
+application schema/migrations and governed News/catalog/Team/Competition data;
+and verify no test UUID, email, Fanatical Name, fixture content, or test media
+remains. Do not perform a casual Auth-only delete that leaves orphaned records.
+**Origin** — Settled Phase 5A closeout decision, 1 Sep 2026; supersedes the
+former BL-020 prototype-cleanup and BL-035 avatar-migration blockers.
+
 ---
 
 ## Done
+
+### BL-006 — closed 31 Aug 2026
+**What** — Build the screen where a fan chooses and changes their username,
+including the "already taken" and format error paths.
+**Closed by** — Phase 5A treats `profiles.handle` as the sole Fanatical Name,
+enforces the ratified 3–20 contract in `20260831203014`, and adds claim/change,
+taken/format handling plus race, immediate-release and reclaim proof. Hosted
+activation remains governed separately by FAN-RUN-04.
+**Origin** — Frontend deep audit; `FAN-ACCT-07`.
+
+### BL-007 — closed 31 Aug 2026
+**What** — Either build the public profile route or revoke the `anon` grant on
+`get_profile_for_viewer` until it exists.
+**Closed by** — `20260831203014` removes the UUID reader and anonymous profile
+access and establishes the Private/Members-visible current-name reader;
+`20260831203022` adds reciprocal-Hide enforcement to that boundary. The Phase 5A
+UI uses the combined contract, and real-role tests prove protected fields are
+absent rather than React-hidden. The designated pre-launch test-account purge is
+governed separately by BL-043.
+**Origin** — Frontend deep audit; conversation, 27 Aug.
+
+### BL-020 — closed 1 Sep 2026
+**What** — Resolve the hosted `NorthStarFan` prototype-persona concern before it
+is treated as a real fan account.
+**Closed by** — Brad designated `NorthStarFan` as the intentional third
+pre-launch acceptance persona alongside Brad and TestFan. It may participate in
+controlled hosted testing and needs no persona scrub or Brad-only lookup
+exception. BL-043 requires all three test accounts and their fan-owned data to
+be purged before any real beta/public fan is onboarded.
+**Origin** — Grok blind audit `B2`; hosted verification, 27 Aug; settled product
+decision, 1 Sep 2026.
+
+### BL-035 — closed 1 Sep 2026
+**What** — Resolve the one hosted active UUID-prefixed avatar display derivative.
+**Closed by** — Read-only inventory proved the only affected display belongs to
+the designated `NorthStarFan` test account. Phase 5A already refuses to return
+that path to other fans and uses the generic avatar, proving the real fan-facing
+boundary. The settled decision is not to migrate test media into the opaque
+namespace; clear/remove the legacy display and remove remaining test media under
+BL-043 before real beta/public onboarding.
+**Origin** — Phase 5A hosted read-only preflight and settled closeout decision,
+1 Sep 2026.
 
 ### BL-027 — closed 29 Aug
 **What** — Add a mechanical schema proof that every News-domain table either has
@@ -445,6 +634,10 @@ Phase 4 table. `202608290006_news_personal_feed_contract.sql` extends the
 registry before creating its seven tables, and `news_mutation_registry.sql`
 mechanically compares the registry with every current News-domain table. The
 clean local rebuild and full SQL suite passed with all 61 tables registered.
+**Extended, 31 Aug 2026** — Phase 5A extends the News mutation registry before
+its request-domain tables and adds the parallel mechanically enumerated Community
+registry/assertion before any `community_*` table escapes. This uses and extends
+the closed mechanism; it does not reopen BL-027.
 **Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
 
 ### BL-023 — closed 29 Aug

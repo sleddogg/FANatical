@@ -54,6 +54,13 @@ function classificationType(value: unknown): NewsClassificationType | null {
     : null;
 }
 
+function competitionKind(value: unknown): NewsNavigationEntry["competitionKindId"] {
+  return value === "league" || value === "cup" || value === "championship"
+    || value === "tournament" || value === "tour" || value === "series" || value === "other"
+    ? value
+    : null;
+}
+
 function mapBylines(value: unknown): readonly NewsByline[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((candidate) => {
@@ -276,6 +283,8 @@ export async function loadNewsNavigation(): Promise<readonly NewsNavigationEntry
       targetId: requiredString(row.target_id, "News filter ID"),
       displayName: requiredString(row.display_name, "News filter name"),
       sportId: requiredString(row.sport_id, "News filter Sport ID"),
+      competitionKindId: competitionKind(row.competition_kind_id),
+      isFollowed: row.is_followed === true,
     }];
   });
 }

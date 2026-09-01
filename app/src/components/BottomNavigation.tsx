@@ -35,7 +35,9 @@ export function BottomNavigation({ variant }: BottomNavigationProps) {
         </div>
       )}
 
-      <ProfileNavigationControl signedIn={Boolean(user)} avatar={avatar} shape={shape} />
+      <div className="bottom-navigation__account-links">
+        <ProfileNavigationControl signedIn={Boolean(user)} avatar={avatar} shape={shape} />
+      </div>
     </nav>
   );
 }

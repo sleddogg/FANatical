@@ -11,6 +11,7 @@
     "backend:reset": "node scripts/local-supabase.mjs reset",
     "backend:status": "node scripts/local-supabase.mjs status",
     "backend:test": "node scripts/local-supabase.mjs test",
+    "backend:test:phase5a-concurrency": "bash ../supabase/tests/phase5a_concurrency.sh && bash ../supabase/tests/phase5a_request_concurrency.sh",
     "backend:verify": "node scripts/verify-local-supabase.mjs",
     "backend:acceptance:reset-proof": "node scripts/verify-local-acceptance.mjs",
     "backend:types": "node scripts/generate-supabase-types.mjs",

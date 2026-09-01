@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AppIcon, type AppIconName } from "../../components/AppIcon";
 import { NewsActionRow } from "./NewsActionRow";
+import type { DiscussionOrigin } from "../community/types";
 import { formatFanSafeNewsPublishedAt, newsIdentityProfilePath } from "./newsPresentation";
 import type {
   FanSafeNewsItem,
@@ -13,6 +14,7 @@ type NewsCardProps = {
   readonly onOutboundOpen: (item: FanSafeNewsItem) => void;
   readonly onShare: (item: FanSafeNewsItem) => void;
   readonly onDismiss?: (item: FanSafeNewsItem) => void;
+  readonly discussionOrigin?: DiscussionOrigin | null;
 };
 
 const sportIcons: Readonly<Record<string, AppIconName>> = {
@@ -54,7 +56,7 @@ function NewsPreview({ item, onOutboundOpen }: { readonly item: FanSafeNewsItem;
   );
 }
 
-export function NewsCard({ item, onOutboundOpen, onShare, onDismiss }: NewsCardProps) {
+export function NewsCard({ item, onOutboundOpen, onShare, onDismiss, discussionOrigin = null }: NewsCardProps) {
   const typeLabel = item.itemKind === "podcast_episode" ? "Podcast" : "Written";
   return (
     <article className={`news-card news-card--${item.itemKind.replace("_", "-")}`}>
@@ -103,6 +105,7 @@ export function NewsCard({ item, onOutboundOpen, onShare, onDismiss }: NewsCardP
         item={item}
         onOutboundOpen={() => onOutboundOpen(item)}
         onShare={() => onShare(item)}
+        discussionOrigin={discussionOrigin}
         {...(onDismiss ? { onDismiss: () => onDismiss(item) } : {})}
       />
     </article>

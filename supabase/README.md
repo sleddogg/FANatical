@@ -32,7 +32,10 @@ Useful commands:
 npm run backend:status  # safe URLs and current local status
 npm run backend:reset   # local only: rebuild every repository migration
 npm run backend:test    # transactional local database SQL/privacy tests
+npm run backend:test:phase5a-concurrency # local multi-session name/comment/Request races
 npm run backend:verify  # live local Auth, Storage privacy, and Realtime checks
+npm run backend:acceptance:reset-proof # reset/restart fixture repair and preservation proof
+npm run backend:types   # regenerate app/src/lib/supabase/database.types.ts
 npm run backend:stop    # preserve local data and stop the stack
 ```
 
@@ -43,6 +46,13 @@ production; do not copy production users, credentials, or media. Studio is at
 `http://127.0.0.1:15423` and the captured local email inbox is at
 `http://127.0.0.1:15424`. FANatical uses the `15420–15429` local port block to
 avoid Bobby's ordinary ephemeral client-port range.
+
+The Phase 5A reset also provisions `FANatical Local Request Candidate` as a
+governed, followable local-only organization that is deliberately absent from
+the Demo universe and Brad/TestFan's baseline Following. To accept the Available
+Request path, submit that exact name as Brad, resolve it as Available in the
+admin shell (the matching target search is prefilled), then return as Brad and
+use the Request's explicit Follow action. Resolution never auto-Follows it.
 
 The `profile-media` bucket and all of its private-profile, display-derivative,
 and owner-only original policies are created by the migrations during local
@@ -81,36 +91,47 @@ inspect the pending migration list, obtain explicit approval, run
 `supabase db push`, and verify the hosted result. Never add `--linked` to a
 local reset command.
 
-The private `profile-media` bucket stores source and optimized display files
-under `<auth-user-id>/avatar/...` and `<auth-user-id>/profile-visual/...`.
-PostgreSQL stores paths and crop metadata; the UI creates short-lived signed
-URLs at read time and reuses them until the five-minute expiry safety window.
+The private `profile-media` bucket keeps owner source/original objects under the
+owner's `<auth-user-id>/...` prefix. Phase 5A fan-facing avatar derivatives use
+the owner's immutable random `fan-media-<opaque>/avatar/...` namespace instead.
+Owners may write/read both of their own namespaces. A fan-safe reader accepts
+only the active, registered avatar derivative in the opaque namespace; source
+objects, inactive media, UUID-prefixed legacy displays, and the wider media
+library stay owner-only. PostgreSQL stores paths and crop metadata; the UI creates
+short-lived signed URLs only after the current-name server reader authorizes the
+request. The bucket must remain private.
 
-`profiles.visibility` is the canonical profile audience. The currently
-supported values are `public` and `private`; existing profiles migrated to the
-equivalent value from the former `is_public` boolean. Owner tables remain
-owner-readable. Public profile delivery uses `get_profile_for_viewer(uuid)`,
-which omits original paths, filenames, media types, and inactive library data.
+`profiles.visibility` is the canonical profile audience. Phase 5A owner controls
+are `private` and `members_visible`. Legacy `public` remains constraint-valid only
+for rollback compatibility and is treated as Private by fan-safe readers; old
+unconsented Public rows are migrated to Private. The signed-in-only
+`get_member_profile_by_fanatical_name(text)` returns a server allowlist by current
+Fanatical Name and enforces the fan population and reciprocal Hide. The old UUID
+reader `get_profile_for_viewer(uuid)` is removed. Anonymous users receive no fan
+profile or comment body.
 
-Storage authorization is record-backed. Owners may read all objects in their
-own folder. Other authenticated or anonymous viewers may read an object only
-when its exact path is registered as a display derivative and the owning
-profile is viewable. Any path registered as an original is owner-only even if
-another record incorrectly attempts to label it as a display path. The bucket
-must remain private.
+Private comment attribution is narrow: a signed-in, non-separated ordinary fan
+may receive the author's current Fanatical Name and permitted active avatar
+derivative, not the member profile or optional personal fields. Members-visible
+may additionally return only the approved fields whose individual owner controls
+are enabled. Email, phone, exact date of birth, Auth UUIDs, internal owner IDs,
+security data, originals, and inactive media are absent from the payload.
 
 Supabase signed URLs are bearer URLs and cannot be revoked immediately. A URL
-issued while a profile is Public can remain usable until its one-hour expiry
-after the owner changes the profile to Private. FANatical clears the owner's
-browser cache on a visibility change so it will not deliberately reuse cached
-URLs, but immediate third-party revocation requires a future authorization
-proxy or shorter-lived delivery mechanism.
+issued to an authorized signed-in member can remain usable until its expiry after
+the owner changes visibility or either fan creates a Hide intent. FANatical does
+not deliberately reuse the prior URL after current authorization changes, but
+immediate third-party revocation would require an authorization proxy or a
+shorter-lived delivery mechanism.
 
 The `staff_roles` table is the authorization source for the separate production
 admin shell. Authenticated browser clients can read only their own active role;
 role assignment is restricted to trusted database/service-role operations.
-Future admin policies and RPCs should use `has_staff_access(...)` and grant the
-minimum role or permission required by each operation.
+Admin policies and RPCs grant the minimum role or permission required by each
+operation. In particular, Phase 5A Community moderation requires the exact
+`community_moderate` permission; a role label, catalog capability, or catalog
+wildcard does not authorize its queue or mutations. Request resolution remains a
+separate staff-role operation and revalidates current Phase 4 followability.
 
 The canonical team/competition/source/venue registry, active verification
 policies, and Trusted Source Registry review workflow are documented in
