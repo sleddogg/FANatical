@@ -223,8 +223,8 @@ select pg_temp.assert_statement_rejected(
       '[]'::jsonb
     )
   $statement$,
-  'cannot claim public fan handles',
-  'the authenticated profile-write RPC must not bypass operational handle exclusion'
+  'ordinary fan profile',
+  'the authenticated profile-write RPC must reject operational identities through the canonical ordinary-fan guard'
 );
 reset role;
 

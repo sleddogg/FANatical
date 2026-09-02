@@ -281,7 +281,7 @@ function ensurePhase5ModeratorAuthority(account, userIdValue) {
   const userId = requireUuid(userIdValue);
   const actorKey = escapeSqlString(account.operationalActorKey);
   const displayName = escapeSqlString(account.displayName);
-  runLocalSql(`do $fixture$ begin insert into public.staff_roles(user_id, role, permissions, is_active) values ('${userId}'::uuid, 'admin', array['community_moderate']::text[], true) on conflict (user_id) do update set role = 'admin', permissions = array['community_moderate']::text[], is_active = true; insert into public.catalog_actors(actor_key, actor_type, auth_user_id, display_name, active) values ('${actorKey}', 'service', '${userId}'::uuid, '${displayName}', true) on conflict (actor_key) do update set actor_type = 'service', auth_user_id = excluded.auth_user_id, display_name = excluded.display_name, active = true; end $fixture$;`);
+  runLocalSql(`do $fixture$ begin insert into public.staff_roles(user_id, role, permissions, is_active) values ('${userId}'::uuid, 'admin', array['community_moderate', 'news_request_resolve']::text[], true) on conflict (user_id) do update set role = 'admin', permissions = array['community_moderate', 'news_request_resolve']::text[], is_active = true; insert into public.catalog_actors(actor_key, actor_type, auth_user_id, display_name, active) values ('${actorKey}', 'service', '${userId}'::uuid, '${displayName}', true) on conflict (actor_key) do update set actor_type = 'service', auth_user_id = excluded.auth_user_id, display_name = excluded.display_name, active = true; end $fixture$;`);
 }
 
 async function ensurePhase5AcceptanceAccounts(status, { resetBaseline = false } = {}) {

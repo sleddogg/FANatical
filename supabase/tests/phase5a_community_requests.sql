@@ -165,7 +165,13 @@ insert into public.staff_roles(user_id, role, permissions, is_active)
 values (
   '85000000-0000-0000-0000-000000000001',
   'admin',
-  array['community_moderate']::text[],
+  array['community_moderate', 'news_request_resolve']::text[],
+  true
+),
+(
+  '85000000-0000-0000-0000-000000000004',
+  'admin',
+  array[]::text[],
   true
 );
 
@@ -196,6 +202,27 @@ values (
 
 select set_config(
   'request.jwt.claim.sub',
+  '85000000-0000-0000-0000-000000000004',
+  true
+);
+set local role authenticated;
+select pg_temp.assert_statement_rejected(
+  'select public.get_news_follow_request_queue()',
+  'News Request resolution staff access',
+  'a broad admin role without news_request_resolve must not read the Request queue'
+);
+select pg_temp.assert_statement_rejected(
+  $$select public.admin_resolve_news_follow_request(
+    'missing-request-target', 'unable', null, null,
+    'Broad role without exact capability must not work'
+  )$$,
+  'News Request resolution staff access',
+  'a broad admin role without news_request_resolve must not resolve a Request'
+);
+reset role;
+
+select set_config(
+  'request.jwt.claim.sub',
   '85000000-0000-0000-0000-000000000001',
   true
 );
@@ -216,8 +243,29 @@ select pg_temp.assert_true(
 );
 reset role;
 
--- Signed-out visitors receive only a contextual count teaser. Empty reads do
--- not create rows, and no-origin routing never infers Team.
+-- Signed-out visitors receive only a contextual count teaser. Reads must be
+-- reset-independent: capture the existing count and prove that the teaser does
+-- not create or alter a discussion.
+select set_config(
+  'test.phase5a.pre_teaser_discussion_count',
+  (select count(*)::text from public.community_discussions),
+  true
+);
+select set_config(
+  'test.phase5a.expected_team_teaser_count',
+  coalesce((
+    select discussion.comment_count
+    from public.news_items item
+    join public.catalog_teams team
+      on team.team_id = 'hockey-000027'
+    left join public.community_discussions discussion
+      on discussion.news_item_id = item.id
+     and discussion.context_kind = 'team'
+     and discussion.team_id = team.id
+    where item.news_item_id = current_setting('test.phase5a.team_item')
+  ), 0)::text,
+  true
+);
 select set_config('request.jwt.claim.sub', '', true);
 set local role anon;
 select pg_temp.assert_true(
@@ -225,16 +273,64 @@ select pg_temp.assert_true(
     current_setting('test.phase5a.team_item'),
     'team',
     'hockey-000027'
-  ) @> '{"available":true,"requires_auth":true,"comment_count":0}'::jsonb,
-  'signed-out explicit Team teaser must expose only availability and zero count'
+  ) @> '{"available":true,"requires_auth":true}'::jsonb
+    and (
+      public.get_news_discussion_teaser(
+        current_setting('test.phase5a.team_item'),
+        'team',
+        'hockey-000027'
+      ) ->> 'comment_count'
+    )::bigint =
+      current_setting('test.phase5a.expected_team_teaser_count')::bigint,
+  'signed-out explicit Team teaser must preserve the existing contextual count'
 );
 select pg_temp.assert_true(
   public.get_news_discussion_teaser(
     current_setting('test.phase5a.team_item'),
     'team',
     'hockey-nhl-edmonton-oilers'
-  ) @> '{"available":true,"context_id":"hockey-000027","comment_count":0}'::jsonb,
-  'an unambiguous legacy Team origin must resolve to the canonical Team context'
+  ) @> '{"available":true,"context_id":"hockey-000027"}'::jsonb
+    and (
+      public.get_news_discussion_teaser(
+        current_setting('test.phase5a.team_item'),
+        'team',
+        'hockey-nhl-edmonton-oilers'
+      ) ->> 'comment_count'
+    )::bigint =
+      current_setting('test.phase5a.expected_team_teaser_count')::bigint,
+  'an unambiguous legacy Team origin must preserve the canonical Team contextual count'
+);
+select pg_temp.assert_true(
+  (
+    select not exists (
+      select 1 from jsonb_object_keys(teaser.payload) top_key
+      where top_key <> all(array[
+        'available','requires_auth','viewer_can_access','news_item_id',
+        'context_kind','context_display_kind','context_id','context_name',
+        'discussion_id','comment_count','article'
+      ]::text[])
+    )
+    and not exists (
+      select 1 from jsonb_object_keys(teaser.payload -> 'article') article_key
+      where article_key <> all(array[
+        'news_item_id','item_kind','headline','publication_time',
+        'destination_url','publisher_name','show_name','preview_url',
+        'preview_kind','preview_alt_text','bylines'
+      ]::text[])
+    )
+    and not (teaser.payload ?| array[
+      'comments','profiles','profile','body','email','user_id',
+      'author_user_id','personal_fields','visibility'
+    ])
+    from (
+      select public.get_news_discussion_teaser(
+        current_setting('test.phase5a.team_item'),
+        'team',
+        'hockey-000027'
+      ) as payload
+    ) teaser
+  ),
+  'anonymous teaser keys must remain a strict published-article/count whitelist with no profile or comment fields'
 );
 select pg_temp.assert_true(
   public.get_news_discussion_teaser(
@@ -276,8 +372,9 @@ select pg_temp.assert_true(
 reset role;
 
 select pg_temp.assert_true(
-  (select count(*) = 0 from public.community_discussions),
-  'opening empty Team and direct discussion teasers must insert nothing'
+  (select count(*)::text from public.community_discussions) =
+    current_setting('test.phase5a.pre_teaser_discussion_count'),
+  'opening Team and direct discussion teasers must insert nothing on any starting state'
 );
 
 select set_config(
@@ -305,6 +402,21 @@ select pg_temp.assert_statement_rejected(
   ),
   'ordinary fan profile',
   'an operational actor cannot post as a real fan'
+);
+select pg_temp.assert_statement_rejected(
+  $$select public.set_my_profile_privacy('members_visible', '{}'::jsonb)$$,
+  'ordinary fan profile',
+  'an operational actor cannot change fan profile privacy'
+);
+select pg_temp.assert_statement_rejected(
+  $$select public.set_my_fanatical_name('OperationalFan')$$,
+  'ordinary fan profile',
+  'an operational actor cannot claim a Fanatical Name'
+);
+select pg_temp.assert_statement_rejected(
+  $$select public.save_my_profile('{}'::jsonb, '{}'::jsonb, '[]'::jsonb)$$,
+  'ordinary fan profile',
+  'an operational actor cannot use the ordinary fan profile writer'
 );
 reset role;
 
@@ -374,46 +486,53 @@ select pg_temp.assert_check_rejected(
 );
 
 select pg_temp.assert_true(
-  not exists (
-    select 1
+  (
+    select count(*) = 13
     from (
       values
-        ('community_discussions'),
-        ('community_comments'),
-        ('community_comment_versions'),
-        ('community_hide_intents'),
-        ('community_reports'),
-        ('community_posting_restrictions'),
+        ('community_discussions'),('community_comments'),
+        ('community_comment_versions'),('community_hide_intents'),
+        ('community_reports'),('community_posting_restrictions'),
         ('community_posting_restriction_lifts'),
-        ('community_moderation_actions'),
-        ('community_moderation_notices'),
-        ('community_notifications'),
-        ('news_follow_request_targets'),
+        ('community_moderation_actions'),('community_moderation_notices'),
+        ('community_notifications'),('news_follow_request_targets'),
         ('news_follow_request_resolution_decisions'),
         ('user_news_follow_requests')
     ) governed_table(table_name)
     join pg_catalog.pg_class relation
       on relation.relname = governed_table.table_name
+     and relation.relkind in ('r', 'p')
     join pg_catalog.pg_namespace namespace
       on namespace.oid = relation.relnamespace
      and namespace.nspname = 'public'
-    cross join unnest(array[
-      'SELECT', 'INSERT', 'UPDATE', 'DELETE'
-    ]::text[]) privilege(privilege_name)
-    where not relation.relrowsecurity
-      or has_table_privilege(
-        'anon',
-        format('public.%I', governed_table.table_name),
-        privilege.privilege_name
+    where relation.relrowsecurity
+      and pg_get_userbyid(relation.relowner) = 'postgres'
+      and not exists (
+        select 1 from pg_catalog.pg_policy policy
+        where policy.polrelid = relation.oid
       )
-      or has_table_privilege(
-        'authenticated',
-        format('public.%I', governed_table.table_name),
-        privilege.privilege_name
+      and not exists (
+        select 1
+        from aclexplode(coalesce(
+          relation.relacl, acldefault('r', relation.relowner)
+        )) access_entry
+        left join pg_catalog.pg_roles granted_role
+          on granted_role.oid = access_entry.grantee
+        where (
+          access_entry.grantee = 0
+          or granted_role.rolname in ('anon', 'authenticated')
+          or (
+            granted_role.rolname = 'service_role'
+            and access_entry.privilege_type in (
+              'SELECT', 'INSERT', 'UPDATE', 'DELETE'
+            )
+          )
+        )
       )
   ),
-  'all ten Community and three Request tables must enable RLS and expose no browser table writes or reads'
+  'all ten Community and three Request tables must remain public, postgres-owned, RLS-enabled, policy-free, and without browser/service row-data grants'
 );
+
 
 select pg_temp.assert_true(
   (
@@ -1955,6 +2074,35 @@ select pg_temp.assert_statement_rejected(
   'suspended until',
   'a Community suspension must block an otherwise-eligible owner delete'
 );
+select set_config(
+  'test.phase5a.restricted_report',
+  public.report_community_comment(
+    current_setting('test.phase5a.brad_root'),
+    'spam',
+    'Suspended fans must still be able to report accessible content'
+  ) ->> 'report_id',
+  true
+);
+select public.hide_community_user('BradRenamed');
+select set_config(
+  'test.phase5a.restricted_hide_intent',
+  (
+    select entry ->> 'hide_intent_id'
+    from jsonb_array_elements(public.get_my_hidden_fans()) entry
+    where entry ->> 'fanatical_name' = 'BradRenamed'
+  ),
+  true
+);
+select pg_temp.assert_true(
+  current_setting('test.phase5a.restricted_report') <> ''
+    and current_setting('test.phase5a.restricted_hide_intent') <> '',
+  'a suspended fan must still create a Report and directed Hide intent'
+);
+select pg_temp.assert_true(
+  public.unhide_community_user('BradRenamed') ->> 'hidden' = 'false',
+  'a suspended fan must retain owner-controlled Unhide'
+);
+
 select pg_temp.assert_true(
   public.get_community_discussion(
     current_setting('test.phase5a.team_discussion')

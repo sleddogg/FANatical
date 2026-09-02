@@ -81,6 +81,18 @@ Do not rely on frontend rollback to undo database or schema changes.
 
 ## Supabase production configuration
 
+### Local proofs required before hosted apply
+
+Migration authoring, local rebuilds, upgrade-from-hosted-ledger proofs,
+failure handling, and advisor classification live in `AGENTS.md` under
+Backend / Migration Completion. Do not apply hosted migrations that have
+not passed those local proofs.
+
+Material migrations — new roles, permission or privacy boundaries, schema
+moves, or other foundation or security changes — also require classified
+advisor results and independent audit as specified there, before this
+hosted apply sequence begins.
+
 ### Required first step before any hosted migration apply
 
 Before `supabase db push` or any other hosted migration apply, run the linked

@@ -104,7 +104,7 @@ values
   );
 
 insert into public.staff_roles(user_id, role, permissions, is_active)
-values ('$staff_c'::uuid, 'admin', array['community_moderate']::text[], true);
+values ('$staff_c'::uuid, 'admin', array['community_moderate', 'news_request_resolve']::text[], true);
 
 do \$fixture\$
 begin

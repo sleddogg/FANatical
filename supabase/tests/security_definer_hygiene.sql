@@ -47,4 +47,15 @@ select pg_temp.assert_true(
   'PostgreSQL PUBLIC must not execute any public/private SECURITY DEFINER'
 );
 
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from pg_catalog.pg_roles role_record
+    where role_record.rolname = 'fanatical_phase5a_executor'
+  ),
+  'the rejected Phase 5A executor/BYPASSRLS role must not exist'
+);
+
+
 rollback;

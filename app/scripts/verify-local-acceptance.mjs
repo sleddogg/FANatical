@@ -262,7 +262,7 @@ function expectedPhase5AccountSnapshot() {
     moderator_handle: "",
     moderator_visibility: "private",
     moderator_role: "admin",
-    moderator_permissions: ["community_moderate"],
+    moderator_permissions: ["community_moderate", "news_request_resolve"],
     moderator_service_actor: 1,
     moderator_fan_population: 0,
     acceptance_comments: 0,
