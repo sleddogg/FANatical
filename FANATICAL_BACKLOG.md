@@ -87,6 +87,9 @@ route is not fan discovery. Its database reader resolves exactly one requested
 name through `private.fan_profile_population`; it neither lists nor searches fans.
 BL-008 therefore does not fire. Its first tagging, fan-directory, leaderboard or
 equivalent discovery trigger remains Phase 5B or later.
+**Assessment, 2 Sep 2026** — TRIGGERED NOW. Mention autocomplete is the first
+fan-facing fan-discovery surface. It must use `private.fan_profile_population`.
+This is not a public fan directory.
 
 ### BL-009
 **What** — Add direct proof for the untested Team registry surfaces.
@@ -169,6 +172,9 @@ bypasses RLS, so those areas prove capability checks rather than table-level
 access control and are not yet proven for RLS enforcement. This entry was closed
 on 28 Aug on the strength of the News suite alone and reopened the same day; the
 trigger above is a standing guard on every future promotion, not a one-time task.
+**Assessment, 2 Sep 2026** — Standing real-role rule. Any new Guaranteed Phase 5B
+claim still requires a suite that switches roles. This entry is not a one-time
+task and is not closed by Phase 5B planning.
 
 ### BL-017
 **What** — Retire the `officialSportsDatabase` frontend fallback and give
@@ -179,6 +185,11 @@ to the repository adapter. Removing it early would break the app.
 repository adapter.
 **Required at trigger** — REQUIRED
 **Origin** — `GAP-07`; `FAN-SYS-02`.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED unless the last
+`officialSportsDatabase` fallback consumer moves. Phase 5B must safely resolve
+existing Team Follow identifiers when calculating inheritance and must not
+repeat that legacy design in new Follow tables, but it does not retire the
+fallback or claim the legacy foreign-key work complete.
 
 ### BL-019
 **What** — Stop shipping internal Cheer routing diagrams and prototype photo
@@ -214,6 +225,9 @@ surfaces.
 7/7/14/14-day Community restriction cadence are enforced by database
 `statement_timestamp()` and returned as server decisions. No render-time clock
 governs either outcome, so Phase 5A does not pull the unrelated remaining work.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED. Phase 5B uses database time for
+rating, voting, Poll close, and similar deadlines. Do not pull leftover
+render-clock sites that do not govern those outcomes.
 
 ### BL-022
 **What** — Clear the remaining lint warnings: 22 synchronous state updates inside
@@ -398,6 +412,8 @@ manage the exact fan-owned follow.
 followable target, including a governed Author-merge case, but it neither performs
 nor relies on a hosted person split. The missing split-reselection proof remains
 a Phase 5B-or-later gate under this entry's original trigger.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED. Journalist Score recomputation
+against the current canonical identity is not FAN-ATTR-05 Follow reselection.
 
 ### BL-034
 **What** — Populate and curate the hosted, staff-governed signed-out News Demo
@@ -433,6 +449,10 @@ frontends no longer depend on either legacy value/path; inventory and safely
 normalize any remaining compatible data; remove only the obsolete compatibility
 logic; and re-prove current profile privacy and Fanatical Name reads/writes.
 **Origin** — Phase 5A final audit reconciliation, 1 Sep 2026.
+**Assessment, 2 Sep 2026** — Conditional at a later frontend promotion when the
+Phase 4 frontend is no longer the immediately previous rollback-capable
+production frontend. Phase 5B local work must remain compatible with that
+previous frontend until then.
 
 ### BL-037
 **What** — Establish a conscious, mechanically enforced mutation-governance
@@ -450,6 +470,9 @@ its canonical mutation operations, direct-role grants/RLS expectations, and a
 migration-time mechanical assertion (or an approved equivalent) before the new
 table is accepted.
 **Origin** — Phase 5A final audit reconciliation, 1 Sep 2026.
+**Assessment, 2 Sep 2026** — Not triggered if every new mutable Phase 5B table
+stays in the governed News or Community domains. A third mutable domain would
+fire this entry.
 
 ### BL-038
 **What** — Make `supabase/tests/phase5a_community_requests.sql`'s signed-out
@@ -469,6 +492,9 @@ have created prior discussion activity there.
 **Origin** — Retired-thread verification pass (Codex-lane finding),
 reconciled 1 Sep 2026; confirmed directly against
 `supabase/tests/phase5a_community_requests.sql` lines 219–229.
+**Assessment, 2 Sep 2026** — TRIGGERED NOW. Make the Phase 5A community suite’s
+empty-count teasers reset-independent before relying on that suite as a
+repeatable Phase 5B regression or merge gate.
 
 ### BL-039
 **What** — Add direct SQL proof that Hide and Report remain available to a
@@ -496,6 +522,9 @@ reconciled 1 Sep 2026; confirmed by tracing every caller of
 `assert_community_participation_allowed` / `assert_community_posting_allowed`
 against the five Hide/Report function definitions in
 `20260831203022_phase5a_community_foundation.sql`.
+**Assessment, 2 Sep 2026** — TRIGGERED NOW. Prove that a suspended fan can still
+Hide, Unhide, manage Block, and Report, and that those actions remain denied to
+the boundaries they were already denied to.
 
 ### BL-040
 **What** — Add a cycle guard (visited-path or depth limit) to the recursive
@@ -514,6 +543,9 @@ looping, and add a test that proves it.
 **Origin** — Retired-thread verification pass, reconciled 1 Sep 2026;
 confirmed by reading the recursive descendant-count CTE in
 `get_community_discussion`, `20260831203022_phase5a_community_foundation.sql`.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED. Quote must not update
+`parent_comment_id` after insert. A later parent-update path would fire this
+entry.
 
 ### BL-041
 **What** — Correct or replace the `phase-4-complete` tag so it points at the
@@ -533,6 +565,9 @@ tag was previously cited.
 confirmed by cloning the repository and unshallowing: `phase-4-complete`
 resolves to `46cb51ce`, exactly one commit before `97f25c85`, its direct
 descendant (`git rev-list --count 46cb51ce..97f25c85` = 1).
+**Assessment, 2 Sep 2026** — Conditional. Cite commit SHAs unless the incorrect
+`phase-4-complete` tag is used in a Phase 5B audit, handoff, or rollback
+procedure.
 
 ### BL-042
 **What** — Make a typed-name Request and a pasted-URL Request that are proven to
@@ -555,6 +590,8 @@ ambiguous/non-equivalent cases, retry, and concurrent merge behavior.
 **Origin** — Phase 5A documentation correction, 1 Sep 2026; current
 `phase5a_community_requests.sql` proves same normalized-name dedupe and keeps
 distinct URL candidates separate, but does not prove name-versus-URL convergence.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED. Phase 5B does not claim cross-input
+Request dedupe complete.
 
 ### BL-043
 **What** — Govern and verify the complete purge of the designated pre-launch fan
@@ -577,6 +614,7 @@ and verify no test UUID, email, Fanatical Name, fixture content, or test media
 remains. Do not perform a casual Auth-only delete that leaves orphaned records.
 **Origin** — Settled Phase 5A closeout decision, 1 Sep 2026; supersedes the
 former BL-020 prototype-cleanup and BL-035 avatar-migration blockers.
+**Assessment, 2 Sep 2026** — NOT TRIGGERED. This remains the pre-beta purge only.
 
 ---
 
@@ -639,6 +677,9 @@ its request-domain tables and adds the parallel mechanically enumerated Communit
 registry/assertion before any `community_*` table escapes. This uses and extends
 the closed mechanism; it does not reopen BL-027.
 **Origin** — Phase 3 real-world canary #3 mutation-boundary audit, 29 Aug.
+**Assessment, 2 Sep 2026** — Closed mechanism still governs both registries.
+Phase 5B tables enter the existing News or Community registry before they
+escape; this uses the closed mechanism and does not reopen BL-027.
 
 ### BL-023 — closed 29 Aug
 **What** — Explicitly prove that a historical published byline remains attached

@@ -21,67 +21,126 @@ error.
 
 ## Header — fill in before issuing
 
-- **State under audit:** `Builder's complete unsaved Phase 5A change set
-  relative to the Phase 4 closeout base—not only the community migration and
-  SQL suite. The audit scope includes all four Phase 5A migrations
-  (20260831203014, 20260831203022, 20260831203030, and 20260901020424), all
-  Phase 5A SQL and concurrency proofs, the full Profile/Community/Request/
-  Notifications/Admin frontend and browser-test surface, generated database
-  types, supporting local-verification scripts, and the Phase 5A authority,
-  invariant, backlog, and audit-document changes. The frozen git inventory
-  issued with this brief is the exact scope. It excludes the non-authoritative
-  reference snapshots `Fanatical build page - 2026-08-31.md` and
-  `Fanatical build page - pre-Phase 5.md`; auditors must use only the canonical
-  `Fanatical build page.md`. The implementation tree was frozen and independently
-  audited on 1 Sep 2026; the accepted documentation/backlog reconciliation is
-  complete, and the resulting tree is not yet Saved. Built from Phase 4 closeout commit
-  97f25c85ca52a3539cb203386772677d56ec4621 ("Phase 4 Complete"). Do not cite
-  the phase-4-complete tag as the base state: it points one commit earlier, at
+- **State under audit:** `Not yet issued for Phase 5B implementation. Planning
+  baseline is 8017e9e5e0fcc9f489e3754ba8a960e9302f39d6 on production-foundation.
+  After the Phase 5B authority documentation is Saved, replace this line with
+  that authority-pass commit SHA. After Phase 5B implementation is complete,
+  replace it with the frozen implementation tree SHA. If this remains one
+  uncommitted tree on 8017e9e, that commit is the base. Do not cite the
+  phase-4-complete tag as the base state: it points one commit earlier, at
   46cb51ce61e793652ebf7a2d754aa868bdb98c30, and is pending correction under
-  BL-041. Replace this line with the actual commit SHA once the work is
-  Saved.`
+  BL-041. Auditors must use only the canonical Fanatical build page.md.`
 - **Branch:** `production-foundation`
-- **Phase under audit:** `5A`
-- **Audit outcome:** `PASS WITH NON-BLOCKING FINDINGS. No Phase 5A implementation
-  blocker remained. The accepted closeout findings were reconciled into the
-  canonical authority, invariant and backlog documents; they do not require a
-  second independent audit.`
+- **Phase under audit:** `5B`
+- **Audit outcome:** `Not yet issued.`
 - **Phase exit gate:**
 
-  > Fanatical Name and profile-privacy boundaries hold under real roles;
-  > contextual News-Item discussions are unique per Item/context with no
-  > duplicate roots under concurrency and no row created by an empty read;
-  > Team access requires a matching Team follow, while the expressly temporary
-  > signed-in Competition/League and Sport access remains until those direct
-  > follow types and inherited-access routing are built under Phase 5B;
-  > comments, Hide, and reports/moderation/restrictions work as specified,
-  > including preserved correction history; Requests dedupe repeat submissions
-  > of the same normalized candidate correctly, resolve only against a current
-  > followable target, and never auto-Follow; typed-name versus pasted-URL
-  > convergence for the same underlying identity remains explicitly deferred
-  > under BL-042;
-  > final Request outcomes and direct replies produce idempotent
-  > notifications; anonymous, owner, runtime, reviewer, and public RLS
-  > boundaries are all proven; Poll and rating schema/tests remain out of
-  > scope for this phase.
+  > Context Follows exist for Team, every current canonical Competition kind,
+  > and Sport. Access is matching direct or upward inherited Follow only; the
+  > Phase 5A signed-in League/Sport hole is gone; inheritance never creates
+  > parent Follow rows or downward access; lost access is restored if access
+  > returns. News and FANbase open the same Item-plus-context discussion; Team
+  > is never inferred. An Item with no uniquely valid discussion context has no
+  > engagement footer and cannot be reacted to or rated. Ordinary discussions
+  > sort Top/Newest/Oldest with intact reply branches. Comment reactions use the
+  > six named emojis plus a single-grapheme `+`; article reactions use only those
+  > six. Quote keeps provenance across source edit, author deletion, and staff
+  > removal (`Comment deleted` at source; staff-removed excerpt `Content
+  > unavailable` in Quotes; Hide/Block mask the other fan’s excerpt while a
+  > third party’s own words stay readable; between separated fans the other
+  > fan’s quoted excerpt displays `Content unavailable` and its source link is
+  > unavailable). Mentions bind to Auth UUID; a mention added by later edit or
+  > contained in locked quoted material does not notify; Reply/Quote takes
+  > precedence over Mention for the same fan. Block is independent of Hide and
+  > is not News Mute. Activity is one typed `community_notifications` inbox
+  > with grouped-reaction idempotency under retry, unread on the
+  > Profile/account control, two-tap access, inline Reply, and View to the
+  > exact comment or Poll. Article footer order is compact reference, reaction
+  > row, Your reaction, Rate the journalism, rating control, helper/status,
+  > comments. Ratings use 0–10 integer storage with five-star half-step
+  > presentation, the seven-day database-time revision rule, no withdraw to
+  > `No Rating`, hidden aggregate until self-rate, and public aggregate only
+  > at 20 valid ratings; below 20 a rater is told the score appears at 20;
+  > quarantine is reversible by exact `community_moderate`. Journalist Score
+  > averages per-fan averages equally, with independent 50-fan Overall and
+  > Sport gates, multi-Sport slice contribution, and no claiming workflow.
+  > Polls are 2–5 options; closing periods are 2 weeks, 1 month, 3 months,
+  > 6 months, or 1 year default; creator edit/delete only before the first
+  > vote; closed Polls are read-only with final results in Closed; close is
+  > immediate by database time; only the Poll-closed notice is materialized
+  > later, idempotent by Poll/recipient/type, with no Cron or queue.
+  > Suspension denies every new 5B participation path and does not hide
+  > existing content or Activity; Hide, Unhide, Block management, and Report
+  > remain. Signed-out visitors cannot read private Community bodies or
+  > perform Community actions. New tables are News- or Community-registered
+  > by prefix or exact-name sweep in the same migration. Browser roles have
+  > no direct base-table mutation. Prototype poll/reaction/article-discussion/
+  > localStorage systems are off the production path. Phone, desktop, touch,
+  > keyboard, focus, screen-reader, loading, empty, and error states are part
+  > of completion. Clean rebuild from migration 1 and upgrade-shaped proof
+  > from the hosted 5A ledger pass. Generated database types, targeted
+  > frontend tests, typecheck, lint, app build, security/advisor
+  > classification, and `git diff --check` pass. Codex provides a ready-to-use
+  > desktop and phone acceptance environment with working accounts and
+  > prepared governed scenarios; Brad is not required to seed data or
+  > manufacture threshold cases. No Phase 5B action creates News-feed
+  > eligibility, reorders the chronological News feed, or rewrites canonical
+  > classification, and no third-party article body is stored or republished.
+  > Hosted migrate and promotion are out of this local gate.
   >
-  > Source: `FANATICAL_NEWS_IMPLEMENTATION_PLAN.md`, Phase 5A row (§8) and the
+  > Source: `FANATICAL_NEWS_IMPLEMENTATION_PLAN.md`, Phase 5B row (§8) and the
   > SQL/RLS testing sequence (§7).
 
-- **Known local-versus-hosted status:** `BL-020 and BL-035 are closed decisions,
-  not local or hosted activation blockers. NorthStarFan is an intentional
-  pre-launch test persona; its legacy display path is withheld from other fans
-  by the generic-avatar fallback and will be cleared rather than migrated.
-  BL-043 requires Brad, TestFan, NorthStarFan, and their fan-owned test data/media
-  to be purged before the first real beta/public fan. The four Phase 5A
-  migrations remain unhosted; linked-ledger comparison, explicit apply approval,
-  hosted RLS/RPC/privacy verification, frontend promotion, and live smoke remain
-  separate hosted closeout work.`
+- **Known local-versus-hosted status:** `Phase 5A is hosted and active. All 42
+  hosted migrations are applied, including the six Phase 5A files
+  (20260831203014, 20260831203022, 20260831203030, 20260901020424,
+  20260901120000, and 20260901120010). Accepted hosted service-role defaults:
+  the secret service role retains direct access to 13 tables and can execute
+  save_my_profile. Phase 5B local work must stay compatible with the currently
+  live Phase 5A frontend and the immediately previous rollback-capable
+  frontend until Phase 5B promotion. Hosted migrate and Cloudflare promotion
+  remain separate from this local gate. BL-043 still requires Brad, TestFan,
+  NorthStarFan, and their fan-owned test data/media to be purged before the
+  first real beta/public fan.`
 
 The exit gate lives in this header and nowhere else in this file, so that a later
 phase cannot accidentally inherit an earlier phase's criteria. An auditor issued
 this brief with an empty state-under-audit field or an empty exit gate should stop
 and say so rather than infer either.
+
+For reference, the Phase 5A audit outcome was:
+
+> `PASS WITH NON-BLOCKING FINDINGS. No Phase 5A implementation blocker remained.
+> The accepted closeout findings were reconciled into the canonical authority,
+> invariant and backlog documents; they do not require a second independent
+> audit.`
+
+For reference, the Phase 5A exit gate was:
+
+> Fanatical Name and profile-privacy boundaries hold under real roles;
+> contextual News-Item discussions are unique per Item/context with no
+> duplicate roots under concurrency and no row created by an empty read;
+> Team access requires a matching Team follow, while the expressly temporary
+> signed-in Competition/League and Sport access remains until those direct
+> follow types and inherited-access routing are built under Phase 5B;
+> comments, Hide, and reports/moderation/restrictions work as specified,
+> including preserved correction history; Requests dedupe repeat submissions
+> of the same normalized candidate correctly, resolve only against a current
+> followable target, and never auto-Follow; typed-name versus pasted-URL
+> convergence for the same underlying identity remains explicitly deferred
+> under BL-042;
+> final Request outcomes and direct replies produce idempotent
+> notifications; anonymous, owner, runtime, reviewer, and public RLS
+> boundaries are all proven; Poll and rating schema/tests remain out of
+> scope for this phase.
+>
+> Source: `FANATICAL_NEWS_IMPLEMENTATION_PLAN.md`, Phase 5A row (§8) and the
+> SQL/RLS testing sequence (§7).
+
+*Historical, 1 Sep 2026:* when that Phase 5A brief was issued, the four Phase 5A
+migrations remained unhosted; linked-ledger comparison, explicit apply approval,
+hosted RLS/RPC/privacy verification, frontend promotion, and live smoke remained
+separate hosted closeout work. Those migrations are now hosted and active.
 
 For reference, the Phase 2 exit gate was:
 

@@ -2,7 +2,7 @@
 
 **FANatical Master Build Spec — Tracker / Status Map**
 
-Current status: Phase 4 News is complete at `97f25c85ca52a3539cb203386772677d56ec4621`. Phase 5A contextual News discussion, fan identity/profile privacy, moderation, Requests, the small in-app inbox, and the manual-acceptance corrections are implemented locally in migrations `20260831203014`, `20260831203022`, `20260831203030`, and `20260901020424`. The independent closeout audit passed with no implementation blockers, and its accepted non-blocking documentation/backlog findings have been reconciled. The local Phase 5A tree is ready to be Saved; hosted activation remains separate, and those four migrations are not hosted. BL-020 and BL-035 are resolved decisions, not activation blockers: `NorthStarFan` is an intentional pre-launch test persona, and its one legacy UUID-prefixed display derivative is already withheld from other fans in favor of the generic avatar. The legacy display is to be cleared rather than migrated, and Brad, TestFan, NorthStarFan, and their fan-owned test data/media must be purged under BL-043 before the first real beta/public fan is onboarded.
+Current status: Phase 4 News is complete at `97f25c85ca52a3539cb203386772677d56ec4621`. Phase 5A is hosted and active. All 42 hosted migrations are applied, including the six Phase 5A files: `20260831203014`, `20260831203022`, `20260831203030`, `20260901020424`, `20260901120000`, and `20260901120010`. Hosted browser-role RLS/RPC, profile privacy, and ordinary-fan-versus-staff controls were verified. Two accepted hosted differences concern Supabase’s secret service role, not browser users: it retains direct access to 13 tables, and it can execute `save_my_profile`. Cloudflare Worker version `4df5b0cd` was promoted to 100% production traffic. The local tree baseline for Phase 5B planning is `8017e9e5e0fcc9f489e3754ba8a960e9302f39d6` on `production-foundation`. BL-020 and BL-035 remain closed decisions. Brad, TestFan, NorthStarFan, and their fan-owned test data/media must still be purged under BL-043 before the first real beta/public fan is onboarded. Phase 5B authority is settled and not yet built.
 
 Legend  
  ✓ \= component is mostly complete / keep and clean  
@@ -53,7 +53,7 @@ Components
 
 ## **3\. News System**
 
-Authority status: reconciled for the approved News foundation. Later engagement details remain explicitly deferred in the News To-Do List.
+Authority status: reconciled for the approved News foundation. Phase 5B engagement, Follow, and Poll rules are recorded in §22 and `FANATICAL_INVARIANTS.md`. Remaining News To-Do items are listed in §26.
 
 Components
 
@@ -845,7 +845,7 @@ The Add-to-Feed surface has **Add**, **Following**, and **Requests** tabs. Its
 explanation moves to a small help `?`. Request resolution remains request-domain
 state and does not add a News identity-decision action.
 
-Email, browser, push, and digest delivery are outside Phase 5A.
+Email, browser, push, and digest delivery are outside Phase 5B.
 
 Manage Feed allows fans to inspect and change their explicit follows and coverage scopes.
 
@@ -1174,15 +1174,14 @@ favorites, follows, or global Team context. If neither fallback is unique,
 Discussion is unavailable.
 
 The permanent discussion-access rule is a matching fan follow for the resolved
-context across Team, Competition/League, and Sport. A News Item classification
-or temporary News filter is not a follow and never grants access by itself.
-Phase 5A currently enforces the rule for Team discussions because Team following
-exists. Competition/League and Sport discussions remain temporarily available
-to signed-in ordinary fans because those direct follow types do not exist yet;
-that is a transitional implementation state, not a different permanent rule.
-Phase 5B must add the missing direct follow paths and decide only which
-parent/child follows confer inherited access and how inherited access affects
-routing. It must not reopen the uniform matching-follow requirement.
+Team, Competition, or Sport context. A News Item classification or temporary
+News filter is not a follow and never grants access by itself. Phase 5A’s
+temporary signed-in access to Competition and Sport discussions ends in
+Phase 5B. Access then requires a direct Follow or upward inherited access as
+specified under FAN-COMM-08. Inheritance affects access only. It does not change
+discussion routing, rewrite classification, or choose a different discussion.
+Opening or starting a discussion from News or FANbase never infers a Team from
+tags, favourites, global Team state, or selected FANbase Team chrome.
 
 Opening or reading an empty Discussion creates no row. The first comment
 atomically resolves or creates the Item-plus-context discussion and inserts the
@@ -1252,15 +1251,79 @@ ratings, journalist scores, Polls, Group discussion/share, and wholesale FANbase
 prototype conversion. Those systems receive no empty placeholder tables in this
 phase.
 
-**Phase boundary:** Phase 5A implements only the current discussion, profile,
-moderation, Request, and small-inbox foundation explicitly described above.
-Settled sorting, reactions, Quote, structured Mentions, Block, Discussion
-Activity, Friends/Groups, ratings, Journalist Score, and other expanded
-Community behavior remain Phase 5B or later unless this authority explicitly
-states that a specific behavior is already implemented. Their presence in this
-Build Page does not authorize implementing them in Phase 5A.
+**Phase boundary:** Phase 5A implemented the discussion, profile, moderation,
+Request, and small-inbox foundation above. Phase 5B implements the settled
+context-Follow, inherited access, sorting, comment reactions, Quote, mentions,
+Block, Activity, article reactions, ratings, Journalist Score, and Poll rules
+recorded in §22 and in `FANATICAL_INVARIANTS.md`. Friends, Groups, Locker Room,
+Game Threads, and the other exclusions listed in §22 remain later work. Their
+presence elsewhere in this Build Page does not authorize building them in 5B.
 
-## **22. Publisher Identity and Factual Trust**
+## **22. Phase 5B Scope and Boundary**
+
+Phase 5B is one build, divided into five sequential implementation slices for
+safety and reviewability. These are not five separate launches. Local completion
+and audit come before one coordinated hosted release after local audit, with the
+hosted database migration and Cloudflare promotion separately approved.
+
+Slices:
+
+1. Context follows and access
+2. Fan discovery, mentions, and Block
+3. Discussions, reactions, Quote, and Activity
+4. Article reactions, ratings, integrity controls, and Journalist Score
+5. Canonical Polls
+
+Phase 5B builds:
+
+- Direct Follow/Unfollow for every current canonical Competition kind (League,
+  Cup, Championship, Tournament, Tour, Series, or Other) and for Sport
+- Upward-only inherited Community access
+- Canonical Item-plus-context discussions reachable identically from News and
+  FANbase
+- Top, Newest, and Oldest discussion sorting
+- Durable comment reactions
+- Structured Quote
+- Structured mentions and bounded fan discovery
+- Block as a stronger reciprocal fan-separation control than Hide
+- One unified Discussion Activity destination
+- Article reactions and journalism-quality ratings
+- Rating manipulation quarantine
+- Journalist Score
+- Canonical standalone and article-linked Polls
+- Consistent Community suspension across all new participation actions
+- Signed-out, signed-in, phone, desktop, keyboard, touch, focus, screen-reader,
+  loading, empty, and error states for every shipped surface
+
+This must extend the existing discussion, identity, moderation, notification,
+and ownership systems. It must not create parallel replacements.
+
+Phase 5B does not build: full Locker Room; Game Threads; Friends or connections;
+Groups, Group Chat, Group sharing, or Group Polls; community image or link
+attachments; Memes; Fan Photo ratings or rankings; Events; a public fan
+directory; leaderboards; unrestricted account search; journalist claiming or
+editable journalist biographies, images, or links; reaction, rating, or
+aggregate-score chrome on ordinary News feed cards; an expanded article `+`
+picker; sport-specific article reaction vocabularies; star iconography for
+Journalist Score; Journalist Score forced onto News cards; downward inherited
+access; fake inherited Follow rows; a second discussion, notification, identity,
+or moderation system; a hidden weighting system behind reactions; automatic
+fraud thresholds; any Community action that creates News eligibility or changes
+chronological News order; third-party article body storage or republication;
+placeholder Group destinations.
+
+Phase 6 remains responsible for the dedicated Cloudflare News Worker, Cron,
+queues, work-ledger consumers, ingestion adapters, automated Resolution /
+classification / deduplication workflows, canaries, and other unattended
+background ingestion. If Phase 5B requires a scheduler, queue, autonomous fetch,
+or unattended ingestion worker, it has crossed into Phase 6.
+
+Product rules for Follows, inheritance, sorting, reactions, Quote, mentions,
+Block, Activity, ratings, Journalist Score, Polls, and suspension are recorded
+under FAN-COMM-08 through FAN-COMM-13, FAN-DEST-06 through FAN-DEST-08, and
+FAN-ACCT-09. Do not reopen those decisions during implementation.
+
+## **23. Publisher Identity and Factual Trust**
 
 News may reuse the existing canonical publisher identity registry, including aliases, URL scopes, ownership relationships, redirects, and provenance.
 
@@ -1270,7 +1333,7 @@ A publisher may be valid for News without any factual trust assignment. Factual-
 
 The registry's historical **trusted_sources** name must not be presented to fans as an editorial judgment. News policy must not describe a publisher's journalism or opinions as trusted merely because the canonical identity is shared.
 
-## **23. Runtime Architecture**
+## **24. Runtime Architecture**
 
 The settled runtime boundary is:
 
@@ -1302,7 +1365,7 @@ Reuse the existing FANatical work-ledger, lease, wake, recovery, and duplicate-s
 
 News runtime code remains separate from the current asset-only web Worker.
 
-## **24. Bootstrap Direction**
+## **25. Bootstrap Direction**
 
 Before beta, bootstrap a useful, intentionally varied set of real:
 
@@ -1335,13 +1398,10 @@ it does not persist a parallel filter hierarchy or synthetic follow targets.
 
 Include deliberately difficult cases such as cross-competition writers, independent newsletter writers, multi-sport Staff identities, official Team content, wire-heavy publishers, shared-owner publications, podcasts, junior hockey, soccer cups, golf, and tennis.
 
-## **25. News To-Do List**
+## **26. News To-Do List**
 
 The following are intentionally deferred and are not blockers to the approved foundation phases:
 
-* rating revision and withdrawal behavior
-* exact News reaction set
-* detailed Poll creation, voting, and moderation rules
 * configured monitoring schedules, concurrency, response limits, timeouts, and retry values established from implementation and bootstrap evidence
 * final visual treatment for Add to Feed, profiles, and the EXAMPLE onboarding card
 * Competition proposal, evidence, verification-policy, decision, and audit workflows before any automated or agent promotion of Competition facts beyond `imported_unverified`
@@ -1353,9 +1413,15 @@ The following are intentionally deferred and are not blockers to the approved fo
 
 No deferred item silently restores publisher follows, automatic Team eligibility, classification-created eligibility, local third-party article bodies, fixed refresh intervals, or publisher-style view counts.
 
+*Rating revision, the article/comment reaction set, and Poll governance were settled for Phase 5B on 2 Sep 2026; see FAN-DEST-06, FAN-DEST-07, FAN-COMM-10, and FAN-COMM-12.*
+
 # Fanbase / Community System
 
 # **FANbase / Community System**
+
+Phase 5B scope, exclusions, and Community product rules are recorded in News
+§22 and in `FANATICAL_INVARIANTS.md` (FAN-COMM-08 through FAN-COMM-13). Do not
+build later FANbase products listed as out of 5B scope.
 
 ## **1\. Purpose**
 
@@ -1815,10 +1881,15 @@ The reaction row lets users respond quickly without needing to write a full comm
 
 Initial reaction options:
 
-● Like  
-● Love  
-● Fire  
-● Mind Blown
+● 👍 Agree  
+● 💡 Insightful  
+● 🤔 Thought-provoking  
+● 😂 Funny  
+● 🔥 Fire  
+● 👎 Disagree
+
+Comments also provide a `+` control for one additional emoji grapheme. Article
+reactions use the same six options and have no `+` picker.
 
 Report Button
 
@@ -4283,11 +4354,13 @@ Notification sends only when useful
 
 Notifications should be limited and intentional.
 
-Currently approved Phase 5A notification use cases:
+Currently approved notification use cases (Phase 5A, hosted):
 
-* a direct reply to the fan's comment, provided the two fans are not separated by Hide
+* a direct reply to the fan's comment, provided the two fans are not separated
 * a requested Author, podcast Show, or organizational contributor becomes Available; notify that requester exactly once in-app
 * a request is resolved as Unable to add; notify that requester exactly once in-app
+
+Settled for Phase 5B, unbuilt (FAN-COMM-13): a structured Quote of the fan's comment; a structured mention included when a comment is first posted; grouped reaction activity on the fan's own content; and one `Poll closed — see final results` notice to the creator and each voter. Reply or Quote takes precedence over Mention for the same fan; a mention added by a later edit, or contained in locked quoted material, does not notify.
 
 Other approved application notification use cases may include:
 
@@ -4295,10 +4368,10 @@ Other approved application notification use cases may include:
 
 Do not send notifications by default for:
 
-* every comment  
-* every reaction  
-* every rating  
-* routine ranking movement  
+* every comment
+* every individual reaction — reaction activity on the fan's own content notifies only as grouped Activity
+* every rating
+* routine ranking movement
 * low-value engagement loops
 
 ---

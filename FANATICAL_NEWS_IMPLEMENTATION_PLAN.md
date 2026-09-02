@@ -1,10 +1,10 @@
 The News system is in implementation. Phases 1–4 established the Competition,
 identity, canonical-content, governed fan-feed, and production React News
 foundations. Phase 4 is complete at
-`97f25c85ca52a3539cb203386772677d56ec4621`; the Phase 5A contextual discussion,
-fan-profile/privacy, moderation, Requests, and small in-app inbox slice is
-implemented locally and has passed independent closeout with no implementation
-blockers. Hosted activation remains pending. The route remains an additive
+`97f25c85ca52a3539cb203386772677d56ec4621`. Phase 5A is hosted and active: all
+42 hosted migrations are applied, including the six Phase 5A files, and
+Cloudflare Worker version `4df5b0cd` was promoted to 100% production traffic.
+Phase 5B is the next local implementation. The route remains an additive
 Supabase domain, a separate later
 Cloudflare News Worker, and incremental conversion of the existing React
 prototype.
@@ -23,19 +23,15 @@ per News Item plus valid Team, Competition, or Sport context atomically with the
 first comment. Opening an empty Discussion inserts nothing. Partial uniqueness
 constraints prevent duplicate roots within each context.
 
-### Required product decisions still missing
+### Required product decisions
 
-These do not block Competition, identity, content, or parser foundations, but they block the named feature:
+These do not block Competition, identity, content, or parser foundations.
 
-1. **Rating behavior.** Rating revision, withdrawal, and aggregate presentation
-   remain later work; Phase 4 does not implement ratings.
-2. **News reactions.** The reaction set remains later work; the prototype heart
-   is removed rather than promoted into product authority.
-3. **Poll governance.** Creation, lifecycle, moderation, voting, and option
-   limits remain later work.
-4. **Later notification channels.** Phase 5A approves only the account-owned
-   in-app inbox/counter for direct replies and final Request outcomes. Email,
-   push, browser, and digests remain later work.
+1. **Rating, reaction, and Poll behavior.** Settled for Phase 5B on 2 Sep 2026
+   under FAN-DEST-06, FAN-DEST-07, FAN-COMM-10, and FAN-COMM-12. They are no
+   longer missing product decisions.
+2. **Later notification channels.** Phase 5B extends the existing typed in-app
+   inbox under FAN-COMM-13. Email, push, browser, and digests remain later work.
 
 Wire services, official Team newsrooms, and other genuine organizational
 contributors follow the same explicit individual-follow rule as every other
@@ -51,8 +47,8 @@ The completed/current migrations use these approved choices:
 - Treat existing `trusted_sources` as canonical publisher/publication-brand identities. Use `source_independence_groups` for common control; do not introduce a duplicate News publisher registry.
 - Add the narrowly reusable Phase 5A Community foundation for contextual News
   discussions, comments, Hide, reports/moderation, restrictions, and the small
-  inbox. Do not add Poll/reaction/rating placeholders or convert unrelated
-  prototype FANbase features.
+  inbox. *Historical Phase 5A instruction:* do not add Poll/reaction/rating
+  placeholders or convert unrelated prototype FANbase features in that phase.
 
 ### Technical decisions still to approve
 
@@ -286,21 +282,23 @@ policy and wire status are not eligibility. Do not materialize one feed row per
 user.
 
 Missing-identity Requests and their final in-app notifications were correctly
-excluded from Phase 4 and are implemented locally in Migration 7 / Phase 5A.
+excluded from Phase 4 and are implemented in Migration 7 / Phase 5A (hosted).
 
 Legacy account Team IDs should be resolved through `catalog_team_identifiers` inside the feed boundary. A destructive account migration is unnecessary for the first News slice.
 
 ## Migration 7 — Phase 5A contextual Community, Requests, and profile safety
 
 Migration 6 is implemented through `202608290008`. Conceptual Migration 7 is
-implemented locally as four reviewable physical migrations:
+hosted as six physical migrations:
 
 - `20260831203014_phase5a_fan_identity_privacy.sql`;
 - `20260831203022_phase5a_community_foundation.sql`;
 - `20260831203030_phase5a_news_requests.sql`;
-- `20260901020424_phase5a_manual_acceptance_corrections.sql`.
+- `20260901020424_phase5a_manual_acceptance_corrections.sql`;
+- `20260901120000_phase5a_private_authority_boundary.sql`;
+- `20260901120010_phase5a_index_integrity.sql`.
 
-They are pending hosted review/approval and together add only the approved
+They are hosted and together add only the approved
 Phase 5A foundation:
 
 - update `profiles.handle` validation to the ratified 3–20 Fanatical Name and
@@ -369,8 +367,10 @@ Extend the News mutation registry before creating request-domain `news_*` or
 registry covering every mutable `community_*` table, including the inbox and
 moderation-notice tables, and assert both at migration/test completion.
 
-Do not add reactions, ratings, scores, Polls, mention tables, Group sharing, or
-empty Phase 5B placeholders.
+*Historical Phase 5A instruction:* do not add reactions, ratings, scores, Polls,
+mention tables, Group sharing, or empty Phase 5B placeholders in that phase.
+Phase 5B now implements the settled subset of those systems under the current
+authority.
 
 ## Deliberate non-tables
 
@@ -686,7 +686,7 @@ Every phase should run local database reset/tests, backend verification, targete
 | 3                                        | Core News Items/manifestations/classification/dedupe plus manually inserted controlled records                        | A real-shaped chronological feed works without monitoring                      |
 | 4                                        | Production News repository and UI conversion: feed, filters, Add to Feed, profiles, direct opens, Demo Mode           | Responsive/accessibility review and no global Team mutation                    |
 | 5A                                       | Fanatical Name/profile privacy, contextual News discussions, comments/Hide, reports/moderation/restrictions, Requests, direct-reply/final-request inbox | Real-role, concurrency, component, targeted browser, registry, and manual acceptance evidence pass |
-| 5B                                       | Later mentions/discovery and only separately approved reactions, ratings, Polls, scores, or Group sharing | Fresh authority/backlog review and feature-specific governance                 |
+| 5B                                       | Context Follows and inherited access; canonical Item-plus-context discussions; ordinary sort; comment reactions and Quote; mentions and Block; unified Activity; article reactions and ratings; quarantine; Journalist Score; canonical Polls; suspension on new participation | Local rebuild from migration 1, upgrade-shaped proof from the hosted 5A ledger, real-role SQL, concurrency, registries, targeted frontend tests, generated types, typecheck, lint, app build, advisor classification, `git diff --check`, independent audit; hosted migrate and Cloudflare promotion remain separate |
 | 6                                        | Work ledger integration and dedicated Worker shell; Feed adapter supports written RSS/Atom and podcast RSS            | Duplicate/recovery/security tests and local end-to-end path pass               |
 | 7                                        | Resolution, byline, classification, dedupe, publication, and reviewer workflows over real canary content              | Ambiguous cases stop safely; no full bodies are retained                       |
 | 8                                        | Sitemap, Web Page, API, and Newsletter adapters added incrementally                                                   | Publisher safety and endpoint-specific review after each method                |
@@ -712,10 +712,10 @@ After Phase 1 contracts stabilize, pure parsers, Admin presentation, and React c
   and hosted RLS/RPC verification, not merely local SQL files. Local handoff must
   state the pending hosted migrations and blockers without applying them.
 
-Phase 5A's local implementation and independent closeout are complete. The next
-step is the separately approved hosted activation sequence; it is not another
-local implementation or audit pass. The former BL-020 and BL-035 hosted-blocker
-questions are settled, and BL-043 governs the later pre-beta test-account purge.
-Phase 5B or later scope requires a fresh authority and backlog review after the
-Phase 5A hosted closeout; Phase 0 and the Competition foundation are historical
+Phase 5A is hosted and active. Phase 5B is the next local implementation.
+Do not cite the `phase-4-complete` tag as the Phase 5A or Phase 5B base state;
+the planning baseline is `8017e9e5e0fcc9f489e3754ba8a960e9302f39d6` until an
+authority-pass commit exists. Hosted migrate and Cloudflare promotion remain
+separate from local Phase 5B implementation. BL-043 governs the later pre-beta
+test-account purge. Phase 0 and the Competition foundation are historical
 completed work.
